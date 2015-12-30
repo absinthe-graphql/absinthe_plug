@@ -26,15 +26,13 @@ end
 ```elixir
 def deps do
   [
-    {:absinthe_plug, "~> 0.1.0"},
+    {:absinthe_plug, "~> 0.1.2"},
     {:poison, "~> 1.3.0"}
   ]
 end
 ```
 
-## Usage
-
-### Plug Generally
+## General Usage
 
 As a plug, `AbsinthePlug` requires very little configuration. If you want to support
 `application/x-www-form-urlencoded` or `application/json` you'll need to plug
@@ -59,7 +57,8 @@ returning `camelCaseNames`.
 
 It also takes several options. See $INSERT_DOCS_LINK HERE for a list of all options
 
-### In Phoenix
+## In Phoenix
+
 Here is an example phoenix endpoint that uses `AbsinthePlug`
 
 ```elixir
@@ -85,16 +84,16 @@ defmodule MyApp.Endpoint do
     adapter: Absinthe.Adapter.LanguageConventions
 end
 ```
+
 If you still want to use your phoenix router, you can and it would be plugged
 `AbsinthePlug`. However, you must pass a `path: "/path/for/absinthe"` option to
 `AbsinthePlug` so it can know which path to respond to. All other paths will be
 passed along to plugs farther down the line such as a phoenix router
 
-See $Example-app-link for further information.
+### HTTP API
 
-### HTTP Usage
-
-Interaction with the plug is designed to closely match that of the official
+How clients interact with the plug over HTTP is designed to closely match that
+of the official
 [express-graphql](https://github.com/graphql/express-graphql) middleware.
 
 Once installed at a path, the plug will accept requests with the
@@ -110,14 +109,14 @@ following parameters:
     provided, a 400 error will be returned if the `query` contains multiple
     named operations.
 
-The plug will first look for each parameter in the URL's query-string:
+The plug will first look for each parameter in the query string, eg:
 
 ```
 /graphql?query=query+getUser($id:ID){user(id:$id){name}}&variables={"id":"4"}
 ```
 
 If not found in the query string, it will look in the POST request body, using
-the `Content-Type` header.
+a strategy based on the `Content-Type` header.
 
 For content types `application/json` and `application/x-www-form-urlencoded`,
 configure `Plug.Parsers` (or equivalent) to parse the request body before `AbsinthePlug`, eg:
@@ -133,7 +132,125 @@ For `application/graphql`, the POST body will be parsed as GraphQL query string,
 which provides the `query` parameter. If `variables` or `operationName` are
 needed, they should be passed as part of the
 
-### Roadmap & Contributions
+## Example
+
+Assuming the following Absinthe schema:
+
+```elixir
+defmodule AbsinthePlug.TestSchema do
+  use Absinthe.Schema
+  alias Absinthe.Type
+
+  # Example data
+  @items %{
+    "foo" => %{id: "foo", name: "Foo"},
+    "bar" => %{id: "bar", name: "Bar"}
+  }
+
+  def query do
+    %Type.Object{
+      fields: fields(
+        item: [
+          type: :item,
+          args: args(
+            id: [type: non_null(:string)]
+          ),
+          resolve: fn %{id: item_id}, _ ->
+            {:ok, @items[item_id]}
+          end
+        ]
+      )
+    }
+  end
+
+  @absinthe :type
+  def item do
+    %Type.Object{
+      description: "An item",
+      fields: fields(
+        id: [type: :id],
+        name: [type: :string]
+      )
+    }
+  end
+
+end
+
+```
+
+And the following plug configuration:
+
+```elixir
+  plug AbsinthePlug,
+    schema: MyApp.Schema
+```
+
+We could retrieve the name of the `"foo"` item a number with this query document:
+
+```
+query GetItem($id: ID!) {
+  item(id: $id) {
+    name
+  }
+}
+```
+
+As long as we pass in `"foo"` for the `id` variable. This would be the result,
+in JSON:
+
+```json
+{
+  "item": {
+    "name": "Foo"
+  }
+}
+```
+
+The plug supports making the request a number of ways:
+
+### Via a GET
+
+With a query string:
+
+```
+?query=query+GetItem{item(id:foo){name}}&variables={id:"foo"}
+```
+
+Due to [varying limits on the maximum size of URLs](http://stackoverflow.com/questions/417142/what-is-the-maximum-length-of-a-url-in-different-browsers), we recommend using one of the POST options below instead, putting the `query` into the body of the request.
+
+## Via an application/json POST
+
+With a POST body:
+
+```
+{
+  "query": "query GetItem($id: ID) { item(id: $id) { name } }",
+  "variables": {
+    "id": "foo"
+  }
+}
+```
+
+(We could also pull either `query` or `variables` out to the query string, just
+as in the [GET example](./README.md#via-a-get).)
+
+## Via an application/graphql POST
+
+With a query string:
+
+`?variables={id:"foo"}`
+
+And a POST body:
+
+```
+query GetItem($id: ID!) {
+  item(id: $id) {
+    name
+  }
+}
+```
+
+## Roadmap & Contributions
 
 For a list of specific planned features and version targets, see the
 [milestone list](https://github.com/CargoSense/absinthe-plug/milestones).
