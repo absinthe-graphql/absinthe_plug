@@ -1,3 +1,5 @@
 %{"absinthe": {:git, "git@github.com:CargoSense/absinthe.git", "948094feb0436f6749d302ea9a9f20ca6a563dce", []},
+  "earmark": {:hex, :earmark, "0.1.19"},
+  "ex_doc": {:hex, :ex_doc, "0.11.2"},
   "plug": {:hex, :plug, "1.0.3"},
   "poison": {:hex, :poison, "1.5.0"}}
