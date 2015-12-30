@@ -24,6 +24,21 @@ defmodule AbsinthePlug.TestSchema do
     }
   end
 
+  def mutation do
+    %Type.Object{
+      fields: fields(
+        addItem: [
+          type: :item,
+          args: args(
+            name: [
+              type: :string
+            ]
+          )
+        ]
+      )
+    }
+  end
+
   @absinthe :type
   def item do
     %Type.Object{
