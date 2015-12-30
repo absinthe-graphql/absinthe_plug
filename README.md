@@ -186,7 +186,7 @@ And the following plug configuration:
     schema: MyApp.Schema
 ```
 
-We could retrieve the name of the `"foo"` item a number with this query document:
+We could retrieve the name of the `"foo"` item with this query document:
 
 ```
 query GetItem($id: ID!) {
@@ -201,8 +201,10 @@ in JSON:
 
 ```json
 {
-  "item": {
-    "name": "Foo"
+  "data": {
+    "item": {
+      "name": "Foo"
+    }
   }
 }
 ```
@@ -214,7 +216,7 @@ The plug supports making the request a number of ways:
 With a query string:
 
 ```
-?query=query+GetItem{item(id:foo){name}}&variables={id:"foo"}
+?query=query+GetItem($id:ID!){item(id:$id){name}}&variables={id:"foo"}
 ```
 
 Due to [varying limits on the maximum size of URLs](http://stackoverflow.com/questions/417142/what-is-the-maximum-length-of-a-url-in-different-browsers), we recommend using one of the POST options below instead, putting the `query` into the body of the request.
@@ -225,7 +227,7 @@ With a POST body:
 
 ```
 {
-  "query": "query GetItem($id: ID) { item(id: $id) { name } }",
+  "query": "query GetItem($id: ID!) { item(id: $id) { name } }",
   "variables": {
     "id": "foo"
   }
