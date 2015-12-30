@@ -1,6 +1,7 @@
 defmodule AbsinthePlug do
   @behaviour Plug
   import Plug.Conn
+  require Logger
 
   @type opts :: [
     schema: atom,
@@ -47,6 +48,11 @@ defmodule AbsinthePlug do
     input = Map.get(conn.params, "query", body || :input_error)
     variables = Map.get(conn.params, "variables", "{}")
     operation_name = conn.params["operationName"]
+
+    Logger.debug("""
+    GraphQL Document:
+    #{input}
+    """)
 
     with input when is_binary(input) <- input,
       {:ok, variables} <- json_codec.module.decode(variables) do
