@@ -2,6 +2,18 @@ defmodule AbsinthePlug do
   @behaviour Plug
   import Plug.Conn
 
+  @type opts :: [
+    schema: atom,
+    adapter: atom,
+    path: binary,
+    context: map,
+    json_codec: atom | {atom, Keyword.t}
+  ]
+
+  @doc """
+  Sets up and validates the Absinthe schema
+  """
+  @spec init(opts :: opts) :: map
   def init(opts) do
     adapter = Keyword.get(opts, :adapter, Absinthe.Adapter.Passthrough)
     context = Keyword.get(opts, :context, %{})
@@ -11,47 +23,55 @@ defmodule AbsinthePlug do
       other -> other
     end
 
-    schema = opts
-    |> Keyword.fetch!(:schema)
+    schema_mod = case Keyword.fetch!(opts, :schema) |> IO.inspect do
+      schema_mod when is_atom(schema_mod) -> schema_mod
+      _ -> raise ArgumentError, "The schema: should be the module holding your schema"
+    end
+
+    schema_mod
     |> Absinthe.Schema.verify
     |> case do
-      {:ok, schema} -> schema
+      {:ok, _} -> schema_mod
       {:error, errors} -> raise ArgumentError, errors |> Enum.join("\n")
     end
 
-    %{schema: schema, adapter: adapter, context: context, json_codec: json_codec}
+    %{schema: schema_mod, adapter: adapter, context: context, json_codec: json_codec}
   end
 
-  def call(conn, %{context: context} = config) do
-    IO.puts "YOOOO"
-    {input, variables, operation_name} = case get_req_header(conn, "content-type") do
-      "application/json" ->
-        # if it doesn't have query it should do an http error 400 "Must provide query string."
-        # TODO: make variables and operationName optional
-        %{"query" => input, "variables" => variables, "operationName" => operation_name} = conn.params
-        {input, variables, operation_name}
-      "application/x-www-form-urlencoded" ->
-        %{"query" => input, "variables" => variables, "operationName" => operation_name} = conn.params
-        {input, variables, operation_name}
-      "application/graphql" ->
-        input = conn.body
-        %{"variables" => variables, "operationName" => operation_name} = conn.params
-        {input, variables, operation_name}
-    end
+  @doc """
+  Parses, validates, resolves, and executes the given Graphql Document
+  """
+  def call(conn, %{json_codec: json_codec} = config) do
+    {body, %{params: params}} = load_body_and_params(conn)
 
-    context = Map.merge(context, conn.private.blah)
-    opts = %{variables: variables, adapter: config.adapter, context: context, operation_name: operation_name}
-    do_call(conn, input, config.schema, opts, config)
+    input = Map.get(conn.params, "query", body || :input_error)
+    variables = Map.get(params, "variables", "{}")
+    operation_name = conn.params["operationName"]
+
+    with input when is_binary(input) <- input,
+      {:ok, variables} <- json_codec.module.decode(variables) do
+        %{variables: variables,
+          adapter: config.adapter,
+          context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
+          operation_name: operation_name}
+    end
+    |> case do
+      %{} = opts ->
+        do_call(conn, input, config.schema, opts, config)
+      :input_error ->
+        conn
+        |> send_resp(400, "Either the `query` parameter or the request body should contain a graphql document")
+      {:error, _} ->
+        conn
+        |> send_resp(400, "The variables parameter must be valid JSON")
+    end
   end
 
   def do_call(conn, input, schema, opts, %{json_codec: json_codec}) do
     with {:ok, doc} <- Absinthe.parse(input),
       :ok <- validate_single_operation(doc),
-      :ok <- validate_http_method(conn, doc),
-      :ok <- Absinthe.validate(doc, schema),
-      {:ok, result} <- Absinthe.execute(doc, schema, opts) do
-
-      {:ok, result}
+      :ok <- validate_http_method(conn, doc) do
+      Absinthe.run(doc, schema, opts)
     end
     |> case do
       {:ok, result} ->
@@ -65,6 +85,15 @@ defmodule AbsinthePlug do
       {:error, %{message: message, locations: locations}} ->
         conn
         |> json(400, %{errors: [%{message: message, locations: locations}]}, json_codec)
+    end
+  end
+
+  defp load_body_and_params(conn) do
+    case get_req_header(conn, "content-type") do
+      ["application/graphql"] ->
+        {:ok, body, conn} = read_body(conn)
+        {body, conn |> fetch_query_params}
+        _ -> {"", conn}
     end
   end
 
