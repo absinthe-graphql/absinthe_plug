@@ -55,7 +55,8 @@ plug AbsinthePlug,
 allows you to use `snake_case_names` in your schema while still accepting and
 returning `camelCaseNames`.
 
-It also takes several options. See $INSERT_DOCS_LINK HERE for a list of all options
+It also takes several options. See [the documentation](https://hexdocs.pm/absinthe_plug/AbsinthePlug.html#init/1)
+for the full listing.
 
 ## In Phoenix
 
@@ -218,7 +219,7 @@ With a query string:
 
 Due to [varying limits on the maximum size of URLs](http://stackoverflow.com/questions/417142/what-is-the-maximum-length-of-a-url-in-different-browsers), we recommend using one of the POST options below instead, putting the `query` into the body of the request.
 
-## Via an application/json POST
+## Via an `application/json` POST
 
 With a POST body:
 
@@ -234,7 +235,7 @@ With a POST body:
 (We could also pull either `query` or `variables` out to the query string, just
 as in the [GET example](./README.md#via-a-get).)
 
-## Via an application/graphql POST
+## Via an `application/graphql` POST
 
 With a query string:
 
