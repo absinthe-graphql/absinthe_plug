@@ -1,0 +1,3 @@
+%{"absinthe": {:git, "git@github.com:CargoSense/absinthe.git", "e6492be210512bf235f2e77c4efde62a2165e4f8", []},
+  "plug": {:hex, :plug, "1.0.3"},
+  "poison": {:hex, :poison, "1.5.0"}}
