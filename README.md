@@ -21,11 +21,78 @@ def application do
 end
 ```
 
+`AbsinthePlug` also requires a JSON codec. Poison works out of the box.
+
+```elixir
+def deps do
+  [
+    {:absinthe_plug, "~> 0.1.0"},
+    {:poison, "~> 1.3.0"}
+  ]
+end
+```
+
 ## Usage
 
-### In Elixir
+### Plug Generally
 
-### HTTP Usage@joh
+As a plug, `AbsinthePlug` requires very little configuration. If you want to support
+`application/x-www-form-urlencoded` or `application/json` you'll need to plug
+`Plug.Parsers` first.
+
+Here is an example plug module.
+
+```elixir
+plug Plug.Parsers,
+  parsers: [:urlencoded, :multipart, :json],
+  pass: ["*/*"],
+  json_decoder: Poison
+
+plug AbsinthePlug,
+  schema: MyApp.Linen.Schema,
+  adapter: Absinthe.Adapter.LanguageConventions
+```
+
+`AbsinthePlug` requires a `schema:` config. The `LanguageConventions` adapter
+allows you to use `snake_case_names` in your schema while still accepting and
+returning `camelCaseNames`.
+
+It also takes several options. See $INSERT_DOCS_LINK HERE for a list of all options
+
+### In Phoenix
+Here is an example phoenix endpoint that uses `AbsinthePlug`
+
+```elixir
+defmodule MyApp.Endpoint do
+  use Phoenix.Endpoint, otp_app: :my_app
+
+  if code_reloading? do
+    plug Phoenix.CodeReloader
+  end
+
+  plug Plug.RequestId
+  plug Plug.Logger
+
+  # other standard phoenix plugs go here
+
+  plug Plug.Parsers,
+    parsers: [:urlencoded, :multipart, :json],
+    pass: ["*/*"],
+    json_decoder: Poison
+
+  plug AbsinthePlug,
+    schema: MyApp.Schema,
+    adapter: Absinthe.Adapter.LanguageConventions
+end
+```
+If you still want to use your phoenix router, you can and it would be plugged
+`AbsinthePlug`. However, you must pass a `path: "/path/for/absinthe"` option to
+`AbsinthePlug` so it can know which path to respond to. All other paths will be
+passed along to plugs farther down the line such as a phoenix router
+
+See $Example-app-link for further information.
+
+### HTTP Usage
 
 Interaction with the plug is designed to closely match that of the official
 [express-graphql](https://github.com/graphql/express-graphql) middleware.
