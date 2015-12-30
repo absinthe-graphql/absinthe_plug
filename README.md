@@ -272,7 +272,7 @@ For a list of specific planned features and version targets, see the
 (If your issue is Absinthe (not Plug) related, please see the
 [Absinthe](https://github.com/CargoSense/absinthe) project.)
 
-We welcome issues and pull requests; please see CONTRIBUTING.
+We welcome issues and pull requests; please see [CONTRIBUTING](./CONTRIBUTING.md).
 
 ## License
 
