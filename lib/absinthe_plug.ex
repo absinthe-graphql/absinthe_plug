@@ -23,7 +23,7 @@ defmodule AbsinthePlug do
       other -> other
     end
 
-    schema_mod = case Keyword.fetch!(opts, :schema) |> IO.inspect do
+    schema_mod = case Keyword.fetch!(opts, :schema) do
       schema_mod when is_atom(schema_mod) -> schema_mod
       _ -> raise ArgumentError, "The schema: should be the module holding your schema"
     end
@@ -42,10 +42,10 @@ defmodule AbsinthePlug do
   Parses, validates, resolves, and executes the given Graphql Document
   """
   def call(conn, %{json_codec: json_codec} = config) do
-    {body, %{params: params}} = load_body_and_params(conn)
+    {body, conn} = load_body_and_params(conn)
 
     input = Map.get(conn.params, "query", body || :input_error)
-    variables = Map.get(params, "variables", "{}")
+    variables = Map.get(conn.params, "variables", "{}")
     operation_name = conn.params["operationName"]
 
     with input when is_binary(input) <- input,
@@ -93,7 +93,7 @@ defmodule AbsinthePlug do
       ["application/graphql"] ->
         {:ok, body, conn} = read_body(conn)
         {body, conn |> fetch_query_params}
-        _ -> {"", conn}
+        other -> {"", conn}
     end
   end
 
