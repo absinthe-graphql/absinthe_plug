@@ -7,7 +7,7 @@ If you're creating a pull request, please consider these suggestions:
 
 Fork, then clone the repo:
 
-    git clone git@github.com:your-username/absinthe-plug.git
+    git clone git@github.com:your-username/absinthe_plug.git
 
 Install the dependencies:
 
@@ -24,7 +24,7 @@ Make your change. Add tests for your change. Make the tests pass:
 Push to your fork (preferably to a non-`master` branch) and
 [submit a pull request][pr].
 
-[pr]: https://github.com/CargoSense/absinthe-plug/compare/
+[pr]: https://github.com/CargoSense/absinthe_plug/compare/
 
 We'll review and answer your pull request as soon as possible. We may suggest
 some changes, improvements, or alternatives. Let's work through it together.

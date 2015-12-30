@@ -267,7 +267,7 @@ needed, they should be passed as part of the
 ## Roadmap & Contributions
 
 For a list of specific planned features and version targets, see the
-[milestone list](https://github.com/CargoSense/absinthe-plug/milestones).
+[milestone list](https://github.com/CargoSense/absinthe_plug/milestones).
 
 (If your issue is Absinthe (not Plug) related, please see the
 [Absinthe](https://github.com/CargoSense/absinthe) project.)
