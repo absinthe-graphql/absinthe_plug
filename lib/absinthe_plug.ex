@@ -99,7 +99,7 @@ defmodule AbsinthePlug do
       ["application/graphql"] ->
         {:ok, body, conn} = read_body(conn)
         {body, conn |> fetch_query_params}
-        other -> {"", conn}
+      _ -> {"", conn}
     end
   end
 
@@ -110,8 +110,24 @@ defmodule AbsinthePlug do
   end
 
   # This is a temporarily limitation
-  defp validate_single_operation(%{definitions: [_]}), do: :ok
-  defp validate_single_operation(_), do: {:http_error, "Can only accept one operation per query (temporary)"}
+  defp validate_single_operation(%{definitions: defs}) do
+    case count_operations(defs) do
+      1 ->
+        :ok
+      _ ->
+        {:http_error, "Can currently only accept one operation per query document"}
+    end
+  end
+
+  defp count_operations(definitions) do
+    definitions
+    |> Enum.count(fn
+      %Absinthe.Language.OperationDefinition{} ->
+        true
+      _ ->
+        false
+    end)
+  end
 
   defp validate_http_method(%{method: "GET"}, %{definitions: [%{operation: operation}]})
     when operation in ~w(mutation subscription)a do
