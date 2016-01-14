@@ -46,7 +46,7 @@ defmodule AbsinthePlug do
     {body, conn} = load_body_and_params(conn)
 
     input = Map.get(conn.params, "query", body || :input_error)
-    variables = Map.get(conn.params, "variables", "{}")
+    variables = Map.get(conn.params, "variables") || "{}"
     operation_name = conn.params["operationName"]
 
     Logger.debug("""
