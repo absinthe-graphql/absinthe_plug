@@ -1,7 +1,7 @@
-defmodule AbsinthePlug.Mixfile do
+defmodule Absinthe.Plug.Mixfile do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.4.0"
 
   def project do
     [app: :absinthe_plug,
@@ -9,8 +9,9 @@ defmodule AbsinthePlug.Mixfile do
      elixir: "~> 1.2-dev",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     elixirc_paths: elixirc_paths(Mix.env),
      package: package,
-     docs: [source_ref: "v#{@version}", main: "AbsinthePlug"],
+     docs: [source_ref: "v#{@version}", main: "Absinthe.Plug"],
      deps: deps]
   end
 
@@ -26,10 +27,14 @@ defmodule AbsinthePlug.Mixfile do
     [applications: [:logger, :plug, :absinthe]]
   end
 
+  # Specifies which paths to compile per environment.
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_),     do: ["lib"]
+
   defp deps do
     [
       {:plug, "~> 1.0"},
-      {:absinthe, "~> 0.4.0"},
+      {:absinthe, "~> 0.4.1"},
       {:poison, ">= 0.0.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.11.0", only: :dev},
       {:earmark, "~> 0.1.19", only: :dev},

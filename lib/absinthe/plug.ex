@@ -1,4 +1,4 @@
-defmodule AbsinthePlug do
+defmodule Absinthe.Plug do
   @behaviour Plug
   import Plug.Conn
   require Logger
@@ -75,9 +75,8 @@ defmodule AbsinthePlug do
 
   def do_call(conn, input, schema, opts, %{json_codec: json_codec}) do
     with {:ok, doc} <- Absinthe.parse(input),
-      :ok <- validate_single_operation(doc),
       :ok <- validate_http_method(conn, doc) do
-      Absinthe.run(doc, schema, opts)
+        Absinthe.run(doc, schema, opts)
     end
     |> case do
       {:ok, result} ->
@@ -107,26 +106,6 @@ defmodule AbsinthePlug do
     conn
     |> put_resp_content_type("application/json")
     |> send_resp(status, json_codec.module.encode!(body, json_codec.opts))
-  end
-
-  # This is a temporarily limitation
-  defp validate_single_operation(%{definitions: defs}) do
-    case count_operations(defs) do
-      1 ->
-        :ok
-      _ ->
-        {:http_error, "Can currently only accept one operation per query document"}
-    end
-  end
-
-  defp count_operations(definitions) do
-    definitions
-    |> Enum.count(fn
-      %Absinthe.Language.OperationDefinition{} ->
-        true
-      _ ->
-        false
-    end)
   end
 
   defp validate_http_method(%{method: "GET"}, %{definitions: [%{operation: operation}]})
