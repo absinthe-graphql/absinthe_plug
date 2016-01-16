@@ -1,4 +1,4 @@
-defmodule AbsinthePlug do
+defmodule Absinthe.Plug do
   @behaviour Plug
   import Plug.Conn
   require Logger
@@ -46,7 +46,7 @@ defmodule AbsinthePlug do
     {body, conn} = load_body_and_params(conn)
 
     input = Map.get(conn.params, "query", body || :input_error)
-    variables = Map.get(conn.params, "variables", "{}")
+    variables = Map.get(conn.params, "variables") || "{}"
     operation_name = conn.params["operationName"]
 
     Logger.debug("""
@@ -75,9 +75,8 @@ defmodule AbsinthePlug do
 
   def do_call(conn, input, schema, opts, %{json_codec: json_codec}) do
     with {:ok, doc} <- Absinthe.parse(input),
-      :ok <- validate_single_operation(doc),
       :ok <- validate_http_method(conn, doc) do
-      Absinthe.run(doc, schema, opts)
+        Absinthe.run(doc, schema, opts)
     end
     |> case do
       {:ok, result} ->
@@ -99,7 +98,7 @@ defmodule AbsinthePlug do
       ["application/graphql"] ->
         {:ok, body, conn} = read_body(conn)
         {body, conn |> fetch_query_params}
-        other -> {"", conn}
+      _ -> {"", conn}
     end
   end
 
@@ -108,10 +107,6 @@ defmodule AbsinthePlug do
     |> put_resp_content_type("application/json")
     |> send_resp(status, json_codec.module.encode!(body, json_codec.opts))
   end
-
-  # This is a temporarily limitation
-  defp validate_single_operation(%{definitions: [_]}), do: :ok
-  defp validate_single_operation(_), do: {:http_error, "Can only accept one operation per query (temporary)"}
 
   defp validate_http_method(%{method: "GET"}, %{definitions: [%{operation: operation}]})
     when operation in ~w(mutation subscription)a do

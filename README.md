@@ -21,7 +21,7 @@ def application do
 end
 ```
 
-`AbsinthePlug` also requires a JSON codec. Poison works out of the box.
+`Absinthe.Plug` also requires a JSON codec. Poison works out of the box.
 
 ```elixir
 def deps do
@@ -81,7 +81,7 @@ end
 And the following plug configuration:
 
 ```elixir
-  plug AbsinthePlug,
+  plug Absinthe.Plug,
     schema: MyApp.Schema
 ```
 
@@ -156,7 +156,7 @@ For more information on how requests are handled, see [HTTP API](./README.md#htt
 
 ## Configuration
 
-As a plug, `AbsinthePlug` requires very little configuration. If you want to support
+As a plug, `Absinthe.Plug` requires very little configuration. If you want to support
 `application/x-www-form-urlencoded` or `application/json` you'll need to plug
 `Plug.Parsers` first.
 
@@ -168,21 +168,21 @@ plug Plug.Parsers,
   pass: ["*/*"],
   json_decoder: Poison
 
-plug AbsinthePlug,
+plug Absinthe.Plug,
   schema: MyApp.Linen.Schema,
   adapter: Absinthe.Adapter.LanguageConventions
 ```
 
-`AbsinthePlug` requires a `schema:` config. The `LanguageConventions` adapter
+`Absinthe.Plug` requires a `schema:` config. The `LanguageConventions` adapter
 allows you to use `snake_case_names` in your schema while still accepting and
 returning `camelCaseNames`.
 
-It also takes several options. See [the documentation](https://hexdocs.pm/absinthe_plug/AbsinthePlug.html#init/1)
+It also takes several options. See [the documentation](https://hexdocs.pm/absinthe_plug/Absinthe.Plug.html#init/1)
 for the full listing.
 
 ## From Phoenix
 
-Here is an example [Phoenix](https://hex.pm/packages/phoenix) endpoint that uses `AbsinthePlug`
+Here is an example [Phoenix](https://hex.pm/packages/phoenix) endpoint that uses `Absinthe.Plug`
 
 ```elixir
 defmodule MyApp.Endpoint do
@@ -202,7 +202,7 @@ defmodule MyApp.Endpoint do
     pass: ["*/*"],
     json_decoder: Poison
 
-  plug AbsinthePlug,
+  plug Absinthe.Plug,
     schema: MyApp.Schema,
     adapter: Absinthe.Adapter.LanguageConventions
 end
@@ -213,7 +213,7 @@ so it will know which path to respond to. All other paths will be
 passed along to plugs farther down the line such as a Phoenix router.
 
 ```elixir
-plug AbsinthePlug,
+plug Absinthe.Plug,
   schema: MyApp.Schema,
   adapter: Absinthe.Adapter.LanguageConventions,
   path: "/api"
@@ -251,7 +251,7 @@ If not found in the query string, it will look in the POST request body, using
 a strategy based on the `Content-Type` header.
 
 For content types `application/json` and `application/x-www-form-urlencoded`,
-configure `Plug.Parsers` (or equivalent) to parse the request body before `AbsinthePlug`, eg:
+configure `Plug.Parsers` (or equivalent) to parse the request body before `Absinthe.Plug`, eg:
 
 ```elixir
 plug Plug.Parsers,
