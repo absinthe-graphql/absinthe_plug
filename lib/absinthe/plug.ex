@@ -32,11 +32,11 @@ defmodule Absinthe.Plug do
     schema_mod
     |> Absinthe.Schema.verify
     |> case do
-      {:ok, _} -> schema_mod
+      {:ok, _} -> _
       {:error, errors} -> raise ArgumentError, errors |> Enum.join("\n")
     end
 
-    %{schema: schema_mod, adapter: adapter, context: context, json_codec: json_codec}
+    %{schema_mod: schema_mod, adapter: adapter, context: context, json_codec: json_codec}
   end
 
   @doc """
@@ -63,7 +63,7 @@ defmodule Absinthe.Plug do
     end
     |> case do
       %{} = opts ->
-        do_call(conn, input, config.schema, opts, config)
+        do_call(conn, input, config.schema_mod, opts, config)
       :input_error ->
         conn
         |> send_resp(400, "Either the `query` parameter or the request body should contain a graphql document")
@@ -73,10 +73,13 @@ defmodule Absinthe.Plug do
     end
   end
 
-  def do_call(conn, input, schema, opts, %{json_codec: json_codec}) do
+  def do_call(conn, input, schema_mod, opts, %{json_codec: json_codec}) do
+    schema = Absinthe.Plug.Cache.get(schema_mod)
+
     with {:ok, doc} <- Absinthe.parse(input),
       :ok <- validate_http_method(conn, doc) do
-        Absinthe.run(doc, schema, opts)
+        %Absinthe.Execution{schema: schema, document: doc}
+        |> Absinthe.Execution.run(opts)
     end
     |> case do
       {:ok, result} ->
