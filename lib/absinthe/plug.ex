@@ -32,7 +32,7 @@ defmodule Absinthe.Plug do
     schema_mod
     |> Absinthe.Schema.verify
     |> case do
-      {:ok, _} -> _
+      {:ok, _} -> :ok
       {:error, errors} -> raise ArgumentError, errors |> Enum.join("\n")
     end
 
