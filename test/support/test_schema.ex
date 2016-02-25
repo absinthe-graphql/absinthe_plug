@@ -1,53 +1,44 @@
 defmodule Absinthe.Plug.TestSchema do
   use Absinthe.Schema
-  alias Absinthe.Type
 
-  # Example data
   @items %{
     "foo" => %{id: "foo", name: "Foo"},
     "bar" => %{id: "bar", name: "Bar"}
   }
 
-  def query do
-    %Type.Object{
-      fields: fields(
-        item: [
-          type: :item,
-          args: args(
-            id: [type: non_null(:string)]
-          ),
-          resolve: fn %{id: item_id}, _ ->
-            {:ok, @items[item_id]}
-          end
-        ]
-      )
-    }
+  query do
+
+    field :item,
+      type: :item,
+      args: [
+        id: [type: non_null(:id)]
+      ],
+      resolve: fn %{id: item_id}, _ ->
+        {:ok, @items[item_id]}
+      end
+
   end
 
-  def mutation do
-    %Type.Object{
-      fields: fields(
-        addItem: [
-          type: :item,
-          args: args(
-            name: [
-              type: :string
-            ]
-          )
-        ]
-      )
-    }
+  @desc "A Basic Type"
+  object :item do
+    field :id, :id
+    field :name, :string
   end
 
-  @absinthe :type
-  def item do
-    %Type.Object{
-      description: "An item",
-      fields: fields(
-        id: [type: :id],
-        name: [type: :string]
-      )
-    }
+  @desc "An author"
+  object :author do
+    field :id, :id
+    field :first_name, :string
+    field :last_name, :string
+    field :books, list_of(:book)
+  end
+
+  @desc "A Book"
+  object :book, name: "NonFictionBook" do
+    field :id, :id
+    field :title, :string
+    field :isbn, :string
+    field :authors, list_of(:author)
   end
 
 end

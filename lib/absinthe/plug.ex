@@ -16,7 +16,7 @@ defmodule Absinthe.Plug do
   """
   @spec init(opts :: opts) :: map
   def init(opts) do
-    adapter = Keyword.get(opts, :adapter, Absinthe.Adapter.Passthrough)
+    adapter = Keyword.get(opts, :adapter, Absinthe.Adapter.LanguageConventions)
     context = Keyword.get(opts, :context, %{})
 
     json_codec = case Keyword.get(opts, :json_codec, Poison) do
@@ -27,13 +27,6 @@ defmodule Absinthe.Plug do
     schema_mod = case Keyword.fetch!(opts, :schema) do
       schema_mod when is_atom(schema_mod) -> schema_mod
       _ -> raise ArgumentError, "The schema: should be the module holding your schema"
-    end
-
-    schema_mod
-    |> Absinthe.Schema.verify
-    |> case do
-      {:ok, _} -> :ok
-      {:error, errors} -> raise ArgumentError, errors |> Enum.join("\n")
     end
 
     %{schema_mod: schema_mod, adapter: adapter, context: context, json_codec: json_codec}
@@ -74,12 +67,9 @@ defmodule Absinthe.Plug do
   end
 
   def do_call(conn, input, schema_mod, opts, %{json_codec: json_codec}) do
-    schema = Absinthe.Plug.Cache.get(schema_mod)
-
     with {:ok, doc} <- Absinthe.parse(input),
-      :ok <- validate_http_method(conn, doc) do
-        %Absinthe.Execution{schema: schema, document: doc}
-        |> Absinthe.Execution.run(opts)
+    :ok <- validate_http_method(conn, doc) do
+      Absinthe.run(doc, schema_mod, opts)
     end
     |> case do
       {:ok, result} ->
@@ -93,6 +83,10 @@ defmodule Absinthe.Plug do
       {:error, %{message: message, locations: locations}} ->
         conn
         |> json(400, %{errors: [%{message: message, locations: locations}]}, json_codec)
+
+      {:error, error} ->
+        conn
+        |> json(400, %{errors: [error]}, json_codec)
     end
   end
 
