@@ -1,4 +1,4 @@
-%{"absinthe": {:git, "https://github.com/cargosense/absinthe.git", "72d1a634f2ae5d7a4a18377367b654b399a8e1a4", [branch: "macrotastic"]},
+%{"absinthe": {:git, "https://github.com/cargosense/absinthe.git", "dab7dbcfb6ea071482bf03070de4487ab8e7bc4f", [branch: "macrotastic"]},
   "earmark": {:hex, :earmark, "0.1.19"},
   "ex_doc": {:hex, :ex_doc, "0.11.2"},
   "plug": {:hex, :plug, "1.0.3"},
