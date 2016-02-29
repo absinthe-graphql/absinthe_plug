@@ -16,7 +16,7 @@ defmodule Absinthe.Plug do
   """
   @spec init(opts :: opts) :: map
   def init(opts) do
-    adapter = Keyword.get(opts, :adapter, Absinthe.Adapter.LanguageConventions)
+    adapter = Keyword.get(opts, :adapter)
     context = Keyword.get(opts, :context, %{})
 
     json_codec = case Keyword.get(opts, :json_codec, Poison) do
@@ -29,7 +29,7 @@ defmodule Absinthe.Plug do
       _ -> raise ArgumentError, "The schema: should be the module holding your schema"
     end
 
-    %{schema_mod: schema_mod, adapter: adapter, context: context, json_codec: json_codec}
+    %{adapter: adapter, schema_mod: schema_mod, context: context, json_codec: json_codec}
   end
 
   @doc """
