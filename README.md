@@ -9,7 +9,7 @@ Install from [Hex.pm](https://hex.pm/packages/absinthe_plug):
 
 ```elixir
 def deps do
-  [{:absinthe_plug, "~> 0.1.0"}]
+  [{:absinthe_plug, "~> 1.0.0"}]
 end
 ```
 
@@ -32,80 +32,13 @@ def deps do
 end
 ```
 
-## Example
+## Basic Usage
 
-Assuming the following [Absinthe schema](http://hexdocs.pm/absinthe/Absinthe.Schema.html):
-
-```elixir
-defmodule MyApp.Schema do
-  use Absinthe.Schema
-  alias Absinthe.Type
-
-  # Example data
-  @items %{
-    "foo" => %{id: "foo", name: "Foo"},
-    "bar" => %{id: "bar", name: "Bar"}
-  }
-
-  def query do
-    %Type.Object{
-      fields: fields(
-        item: [
-          type: :item,
-          args: args(
-            id: [type: non_null(:string)]
-          ),
-          resolve: fn %{id: item_id}, _ ->
-            {:ok, @items[item_id]}
-          end
-        ]
-      )
-    }
-  end
-
-  @absinthe :type
-  def item do
-    %Type.Object{
-      description: "An item",
-      fields: fields(
-        id: [type: :id],
-        name: [type: :string]
-      )
-    }
-  end
-
-end
-
-```
-
-And the following plug configuration:
+All you need to do to use this plug is
 
 ```elixir
   plug Absinthe.Plug,
     schema: MyApp.Schema
-```
-
-We could retrieve the name of the `"foo"` item with this query document:
-
-```
-query GetItem($id: ID!) {
-  item(id: $id) {
-    name
-  }
-}
-```
-
-As long as we pass in `"foo"` for the `id` variable. This would be the result,
-in JSON:
-
-```json
-{
-  "data": {
-    "item": {
-      "name": "Foo"
-    }
-  }
-}
 ```
 
 The plug supports making the request a number of ways:
@@ -180,45 +113,6 @@ returning `camelCaseNames`.
 It also takes several options. See [the documentation](https://hexdocs.pm/absinthe_plug/Absinthe.Plug.html#init/1)
 for the full listing.
 
-## From Phoenix
-
-Here is an example [Phoenix](https://hex.pm/packages/phoenix) endpoint that uses `Absinthe.Plug`
-
-```elixir
-defmodule MyApp.Endpoint do
-  use Phoenix.Endpoint, otp_app: :my_app
-
-  if code_reloading? do
-    plug Phoenix.CodeReloader
-  end
-
-  plug Plug.RequestId
-  plug Plug.Logger
-
-  # other standard phoenix plugs go here
-
-  plug Plug.Parsers,
-    parsers: [:urlencoded, :multipart, :json],
-    pass: ["*/*"],
-    json_decoder: Poison
-
-  plug Absinthe.Plug,
-    schema: MyApp.Schema,
-    adapter: Absinthe.Adapter.LanguageConventions
-end
-```
-
-If you still want to use your Phoenix router, you need to add a `:path` option
-so it will know which path to respond to. All other paths will be
-passed along to plugs farther down the line such as a Phoenix router.
-
-```elixir
-plug Absinthe.Plug,
-  schema: MyApp.Schema,
-  adapter: Absinthe.Adapter.LanguageConventions,
-  path: "/api"
-```
-
 ### HTTP API
 
 How clients interact with the plug over HTTP is designed to closely match that
@@ -263,16 +157,6 @@ plug Plug.Parsers,
 For `application/graphql`, the POST body will be parsed as GraphQL query string,
 which provides the `query` parameter. If `variables` or `operationName` are
 needed, they should be passed as part of the
-
-## Roadmap & Contributions
-
-For a list of specific planned features and version targets, see the
-[milestone list](https://github.com/CargoSense/absinthe_plug/milestones).
-
-(If your issue is Absinthe (not Plug) related, please see the
-[Absinthe](https://github.com/CargoSense/absinthe) project.)
-
-We welcome issues and pull requests; please see [CONTRIBUTING](./CONTRIBUTING.md).
 
 ## License
 
