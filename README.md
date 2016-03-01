@@ -3,6 +3,8 @@
 [Plug](https://hex.pm/packages/plug) support for [Absinthe](https://hex.pm/packages/absinthe),
 an experimental GraphQL API toolkit.
 
+Please see the website at [http://absinthe-graphql.org](http://absinthe-graphql.org).
+
 ## Installation
 
 Install from [Hex.pm](https://hex.pm/packages/absinthe_plug):
@@ -32,131 +34,25 @@ def deps do
 end
 ```
 
-## Basic Usage
-
-All you need to do to use this plug is
-
-```elixir
-  plug Absinthe.Plug,
-    schema: MyApp.Schema
-```
-
-The plug supports making the request a number of ways:
-
-### Via a GET
-
-With a query string:
-
-```
-?query=query+GetItem($id:ID!){item(id:$id){name}}&variables={id:"foo"}
-```
-
-Due to [varying limits on the maximum size of URLs](http://stackoverflow.com/questions/417142/what-is-the-maximum-length-of-a-url-in-different-browsers), we recommend using one of the POST options below instead, putting the `query` into the body of the request.
-
-### Via an `application/json` POST
-
-With a POST body:
-
-```
-{
-  "query": "query GetItem($id: ID!) { item(id: $id) { name } }",
-  "variables": {
-    "id": "foo"
-  }
-}
-```
-
-(We could also pull either `query` or `variables` out to the query string, just
-as in the [GET example](./README.md#via-a-get).)
-
-### Via an `application/graphql` POST
-
-With a query string:
-
-`?variables={id:"foo"}`
-
-And a POST body:
-
-```
-query GetItem($id: ID!) {
-  item(id: $id) {
-    name
-  }
-}
-```
-
-For more information on how requests are handled, see [HTTP API](./README.md#http-api), below.
-
 ## Configuration
 
-As a plug, `Absinthe.Plug` requires very little configuration. If you want to support
-`application/x-www-form-urlencoded` or `application/json` you'll need to plug
-`Plug.Parsers` first.
+See the [Plug and Phoenix Guide](http://absinthe-graphql.org/guides/plug-phoenix)
+on the website for a detailed explanation of how to configure Plug/Phoenix for
+Absinthe.
 
-Here is an example plug module.
+## Documentation
 
-```elixir
-plug Plug.Parsers,
-  parsers: [:urlencoded, :multipart, :json],
-  pass: ["*/*"],
-  json_decoder: Poison
+- For the tutorial, guides, and general information about Absinthe-related
+  projects, see [http://absinthe-graphql.org](http://absithe-graphql.org).
+- Links to the API documentation are available in the [project list](https://absinthe-graphql.org/projects).
 
-plug Absinthe.Plug,
-  schema: MyApp.Linen.Schema,
-  adapter: Absinthe.Adapter.LanguageConventions
-```
+### Roadmap
 
-`Absinthe.Plug` requires a `schema:` config. The `LanguageConventions` adapter
-allows you to use `snake_case_names` in your schema while still accepting and
-returning `camelCaseNames`.
+See the Roadmap on [absinthe-graphql.org](https://absinthe-graphql.org/roadmap).
 
-It also takes several options. See [the documentation](https://hexdocs.pm/absinthe_plug/Absinthe.Plug.html#init/1)
-for the full listing.
+## Related Projects
 
-### HTTP API
-
-How clients interact with the plug over HTTP is designed to closely match that
-of the official
-[express-graphql](https://github.com/graphql/express-graphql) middleware.
-
-In the [example above](./README.md#example), we went over the various ways to
-make a request, but here are the details:
-
-Once installed at a path, the plug will accept requests with the
-following parameters:
-
-  * `query` - A string GraphQL document to be executed.
-
-  * `variables` - The runtime values to use for any GraphQL query variables
-    as a JSON object.
-
-  * `operationName` - If the provided `query` contains multiple named
-    operations, this specifies which operation should be executed. If not
-    provided, a 400 error will be returned if the `query` contains multiple
-    named operations.
-
-The plug will first look for each parameter in the query string, eg:
-
-```
-/graphql?query=query+getUser($id:ID){user(id:$id){name}}&variables={"id":"4"}
-```
-
-If not found in the query string, it will look in the POST request body, using
-a strategy based on the `Content-Type` header.
-
-For content types `application/json` and `application/x-www-form-urlencoded`,
-configure `Plug.Parsers` (or equivalent) to parse the request body before `Absinthe.Plug`, eg:
-
-```elixir
-plug Plug.Parsers,
-  parsers: [:urlencoded, :multipart, :json],
-  pass: ["*/*"],
-  json_decoder: Poison
-```
-
-For `application/graphql`, the POST body will be parsed as GraphQL query string,
-which provides the `query` parameter. If `variables` or `operationName` are
-needed, they should be passed as part of the
+See the Project List on [absinthe-graphql.org](http://absinthe-graphql.org/projects).
 
 ## License
 
