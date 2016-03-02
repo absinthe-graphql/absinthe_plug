@@ -24,8 +24,7 @@ defmodule Absinthe.Plug.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :plug, :absinthe],
-    mod: {Absinthe.Plug.Application, []}]
+    [applications: [:logger, :plug, :absinthe]]
   end
 
   # Specifies which paths to compile per environment.
