@@ -3,6 +3,17 @@ defmodule Absinthe.PlugTest do
   use Plug.Test
   alias Absinthe.Plug.TestSchema
 
+  @foo_result ~s({"data":{"item":{"name":"Foo"}}})
+  @bar_result ~s({"data":{"item":{"name":"Bar"}}})
+
+  @variable_query """
+  query FooQuery($id: String){
+    item(id: $id) {
+      name
+    }
+  }
+  """
+
   @query """
   {
     item(id: "foo") {
@@ -11,13 +22,20 @@ defmodule Absinthe.PlugTest do
   }
   """
 
-  @foo_result ~s({"data":{"item":{"name":"Foo"}}})
-  @bar_result ~s({"data":{"item":{"name":"Bar"}}})
-
   test "content-type application/graphql works" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @query)
+    |> put_req_header("content-type", "application/graphql")
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == @foo_result
+  end
+
+  test "content-type application/graphql works with variables" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, ~s(/?variables={"id":"foo"}), @variable_query)
     |> put_req_header("content-type", "application/graphql")
     |> Absinthe.Plug.call(opts)
 
@@ -35,10 +53,32 @@ defmodule Absinthe.PlugTest do
     assert resp_body == @foo_result
   end
 
+  test "content-type application/x-www-urlencoded works with variables" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, ~s(/?variables={"id":"foo"}), query: @variable_query)
+    |> put_req_header("content-type", "application/x-www-urlencoded")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == @foo_result
+  end
+
   test "content-type application/json works" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Poison.encode!(%{query: @query}))
+    |> put_req_header("content-type", "application/json")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == @foo_result
+  end
+
+  test "content-type application/json works with variables" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Poison.encode!(%{query: @variable_query, variables: %{id: "foo"}}))
     |> put_req_header("content-type", "application/json")
     |> plug_parser
     |> Absinthe.Plug.call(opts)

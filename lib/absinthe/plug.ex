@@ -54,7 +54,7 @@ defmodule Absinthe.Plug do
     """)
 
     with input when is_binary(input) <- input,
-      {:ok, variables} <- json_codec.module.decode(variables) do
+      {:ok, variables} <- decode_variables(variables, json_codec) do
         %{variables: variables,
           adapter: config.adapter,
           context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
@@ -95,6 +95,9 @@ defmodule Absinthe.Plug do
         |> json(400, %{errors: [error]}, json_codec)
     end
   end
+
+  defp decode_variables(%{} = variables, _), do: {:ok, variables}
+  defp decode_variables(variables, codec), do: codec.module.decode(variables)
 
   defp load_body_and_params(conn) do
     case get_req_header(conn, "content-type") do
