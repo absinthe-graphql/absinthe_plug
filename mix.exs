@@ -35,7 +35,7 @@ defmodule Absinthe.Plug.Mixfile do
   defp deps do
     [
       {:plug, "~> 1.0"},
-      {:absinthe, github: "cargosense/absinthe"},
+      {:absinthe, "~> 1.0.0"},
       {:poison, ">= 0.0.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.11.0", only: :dev},
       {:earmark, "~> 0.1.19", only: :dev},
