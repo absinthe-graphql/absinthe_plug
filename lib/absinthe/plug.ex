@@ -1,4 +1,10 @@
 defmodule Absinthe.Plug do
+  @moduledoc """
+  A plug for using Absinthe
+
+  See [The Guides](http://absinthe-graphql.org/guides/plug-phoenix/) for usage details
+  """
+
   @behaviour Plug
   import Plug.Conn
   require Logger
