@@ -1,5 +1,8 @@
 # Absinthe Plug
 
+[![Build Status](https://travis-ci.org/absinthe-graphql/absinthe_plug.svg?branch=master
+"Build Status")](https://travis-ci.org/absinthe-graphql/absinthe_plug)
+
 [Plug](https://hex.pm/packages/plug) support for [Absinthe](https://hex.pm/packages/absinthe),
 an experimental GraphQL API toolkit.
 
