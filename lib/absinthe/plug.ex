@@ -54,7 +54,7 @@ defmodule Absinthe.Plug do
     """)
 
     with input when is_binary(input) <- input,
-      {:ok, variables} <- decode_variables(json_codec, variables) do
+      variables <- decode_variables(json_codec, variables) do
         %{variables: variables,
           adapter: config.adapter,
           context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
@@ -124,5 +124,5 @@ defmodule Absinthe.Plug do
       {:error, _} -> %{} # Even express-graphql ignores these errors currently
     end
   end
-  defp decode_variables(_, variables), do: {:ok, variables}
+  defp decode_variables(_, variables), do: variables
 end
