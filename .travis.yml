@@ -5,5 +5,5 @@ notifications:
   recipients:
     - ben.wilson@cargosense.com
 otp_release:
-  - 18.3
+  - 18.1
 script: "MIX_ENV=test mix local.hex --force && MIX_ENV=test mix do deps.get, test"
