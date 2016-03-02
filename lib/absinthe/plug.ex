@@ -45,7 +45,7 @@ defmodule Absinthe.Plug do
     {body, conn} = load_body_and_params(conn)
 
     input = Map.get(conn.params, "query", body || :input_error)
-    variables = Map.get(conn.params, "variables") || "{}"
+    variables = Map.get(conn.params, "variables", %{})
     operation_name = conn.params["operationName"]
 
     Logger.debug("""
@@ -54,7 +54,7 @@ defmodule Absinthe.Plug do
     """)
 
     with input when is_binary(input) <- input,
-      {:ok, variables} <- json_codec.module.decode(variables) do
+      variables <- decode_variables(json_codec, variables) do
         %{variables: variables,
           adapter: config.adapter,
           context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
@@ -117,4 +117,12 @@ defmodule Absinthe.Plug do
     {:http_error, "Can only perform a #{operation} from a POST request"}
   end
   defp validate_http_method(_, _), do: :ok
+  
+  defp decode_variables(json_codec, variables) when is_binary(variables) do
+    case json_codec.module.decode(variables) do
+      {:ok, variables} -> variables
+      {:error, _} -> %{} # Even express-graphql ignores these errors currently
+    end
+  end
+  defp decode_variables(_, variables), do: variables
 end
