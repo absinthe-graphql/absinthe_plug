@@ -97,6 +97,9 @@ defmodule Absinthe.Plug do
   end
 
   defp decode_variables(%{} = variables, _), do: {:ok, variables}
+  defp decode_variables("", _), do: {:ok, %{}}
+  defp decode_variables("null", _), do: {:ok, %{}}
+  defp decode_variables(nil, _), do: {:ok, %{}}
   defp decode_variables(variables, codec), do: codec.module.decode(variables)
 
   defp load_body_and_params(conn) do

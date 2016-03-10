@@ -7,7 +7,6 @@ defmodule Absinthe.Plug.TestSchema do
   }
 
   query do
-
     field :item,
       type: :item,
       args: [
@@ -16,7 +15,6 @@ defmodule Absinthe.Plug.TestSchema do
       resolve: fn %{id: item_id}, _ ->
         {:ok, @items[item_id]}
       end
-
   end
 
   object :item do
