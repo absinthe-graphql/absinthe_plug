@@ -11,6 +11,7 @@ defmodule Absinthe.Plug.Mixfile do
      start_permanent: Mix.env == :prod,
      elixirc_paths: elixirc_paths(Mix.env),
      package: package,
+     env: env(Mix.env),
      docs: [source_ref: "v#{@version}", main: "Absinthe.Plug"],
      deps: deps]
   end
@@ -26,6 +27,11 @@ defmodule Absinthe.Plug.Mixfile do
   def application do
     [applications: [:logger, :plug, :absinthe]]
   end
+
+  defp env(:dev) do
+    [serve_graphiql: true]
+  end
+  defp env(_), do: []
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
