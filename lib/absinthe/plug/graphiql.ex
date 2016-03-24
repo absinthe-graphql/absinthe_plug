@@ -1,19 +1,15 @@
-defmodule Absinthe.Plug.GraphIQL do
+defmodule Absinthe.Plug.GraphiQL do
   @moduledoc """
-  Enables GraphIQL
+  Enables GraphiQL
 
   # Usage
 
   ```elixir
-  if Absinthe.Plug.GraphIQL.serve? do
-    plug Absinthe.Plug.GraphIQL
+  if Absinthe.Plug.GraphiQL.serve? do
+    plug Absinthe.Plug.GraphiQL
   end
   ```
   """
-
-  def serve? do
-    Application.get_env(:absinthe_plug, :serve_graphiql)
-  end
 
   require EEx
   @graphql_version "0.6.0"

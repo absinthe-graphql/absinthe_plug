@@ -89,7 +89,13 @@ defmodule Absinthe.Plug do
   def prepare(conn, %{json_codec: json_codec} = config) do
     {body, conn} = load_body_and_params(conn)
 
-    input = Map.get(conn.params, "query", body) || {:input_error, "No query document supplied"}
+    input = conn.params
+    |> Map.get("query", body)
+    |> case do
+      nil -> {:input_error, "No query document supplied"}
+      "" -> {:input_error, "No query document supplied"}
+    end
+
     variables = Map.get(conn.params, "variables") || "{}"
     operation_name = conn.params["operationName"]
 

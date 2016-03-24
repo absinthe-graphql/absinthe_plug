@@ -37,6 +37,8 @@ def deps do
 end
 ```
 
+## GraphIQL
+
 ## Configuration
 
 See the [Plug and Phoenix Guide](http://absinthe-graphql.org/guides/plug-phoenix)
