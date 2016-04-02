@@ -30,54 +30,34 @@ defmodule Absinthe.Plug do
       other -> other
     end
 
-    schema_mod = case Keyword.fetch!(opts, :schema) do
-      schema_mod when is_atom(schema_mod) -> schema_mod
-      _ -> raise ArgumentError, "The schema: should be the module holding your schema"
-    end
+    schema_mod = opts |> get_schema
 
     %{adapter: adapter, schema_mod: schema_mod, context: context, json_codec: json_codec}
+  end
+
+  defp get_schema(opts) do
+    default = Application.get_env(:absinthe, :schema)
+    schema = Keyword.get(opts, :schema, default)
+    try do
+      Absinthe.Schema.types(schema)
+    rescue
+      UndefinedFunctionError ->
+        raise ArgumentError, "The supplied schema: #{inspect schema} is not a valid Absinthe Schema"
+    end
+    schema
   end
 
   @doc """
   Parses, validates, resolves, and executes the given Graphql Document
   """
   def call(conn, %{json_codec: json_codec} = config) do
-    {body, conn} = load_body_and_params(conn)
-
-    input = Map.get(conn.params, "query", body || :input_error)
-    variables = Map.get(conn.params, "variables") || "{}"
-    operation_name = conn.params["operationName"]
-
-    Logger.debug("""
-    GraphQL Document:
-    #{input}
-    """)
-
-    with input when is_binary(input) <- input,
-      {:ok, variables} <- decode_variables(variables, json_codec) do
-        %{variables: variables,
-          adapter: config.adapter,
-          context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
-          operation_name: operation_name}
-    end
+    conn
+    |> execute(config)
     |> case do
-      %{} = opts ->
-        do_call(conn, input, config.schema_mod, opts, config)
-      :input_error ->
+      {:input_error, msg} ->
         conn
-        |> send_resp(400, "Either the `query` parameter or the request body should contain a graphql document")
-      {:error, _} ->
-        conn
-        |> send_resp(400, "The variables parameter must be valid JSON")
-    end
-  end
+        |> send_resp(400, msg)
 
-  def do_call(conn, input, schema_mod, opts, %{json_codec: json_codec}) do
-    with {:ok, doc} <- Absinthe.parse(input),
-    :ok <- validate_http_method(conn, doc) do
-      Absinthe.run(doc, schema_mod, opts)
-    end
-    |> case do
       {:ok, result} ->
         conn
         |> json(200, result, json_codec)
@@ -96,6 +76,45 @@ defmodule Absinthe.Plug do
     end
   end
 
+  @doc false
+  def execute(conn, config)do
+    with {:ok, input, opts} <- prepare(conn, config),
+    {:ok, doc} <- Absinthe.parse(input),
+    :ok <- validate_http_method(conn, doc) do
+      Absinthe.run(doc, config.schema_mod, opts)
+    end
+  end
+
+  @doc false
+  def prepare(conn, %{json_codec: json_codec} = config) do
+    {body, conn} = load_body_and_params(conn)
+
+    raw_input = Map.get(conn.params, "query", body)
+
+    Logger.debug("""
+    GraphQL Document:
+    #{raw_input}
+    """)
+
+    input = case raw_input do
+      nil -> {:input_error, "No query document supplied"}
+      "" -> {:input_error, "No query document supplied"}
+      doc -> {:ok, doc}
+    end
+    variables = Map.get(conn.params, "variables") || "{}"
+    operation_name = conn.params["operationName"]
+
+    with {:ok, input} <- input,
+      {:ok, variables} <- decode_variables(variables, json_codec) do
+        absinthe_opts = %{
+          variables: variables,
+          adapter: config.adapter,
+          context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
+          operation_name: operation_name}
+        {:ok, input, absinthe_opts}
+    end
+  end
+
   defp decode_variables(%{} = variables, _), do: {:ok, variables}
   defp decode_variables("", _), do: {:ok, %{}}
   defp decode_variables("null", _), do: {:ok, %{}}
@@ -111,16 +130,18 @@ defmodule Absinthe.Plug do
     end
   end
 
-  defp json(conn, status, body, json_codec) do
+  @doc false
+  def json(conn, status, body, json_codec) do
     conn
     |> put_resp_content_type("application/json")
     |> send_resp(status, json_codec.module.encode!(body, json_codec.opts))
   end
 
-  defp validate_http_method(%{method: "GET"}, %{definitions: [%{operation: operation}]})
+  @doc false
+  def validate_http_method(%{method: "GET"}, %{definitions: [%{operation: operation}]})
     when operation in ~w(mutation subscription)a do
 
     {:http_error, "Can only perform a #{operation} from a POST request"}
   end
-  defp validate_http_method(_, _), do: :ok
+  def validate_http_method(_, _), do: :ok
 end

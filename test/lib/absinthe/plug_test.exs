@@ -7,7 +7,7 @@ defmodule Absinthe.PlugTest do
   @bar_result ~s({"data":{"item":{"name":"Bar"}}})
 
   @variable_query """
-  query FooQuery($id: String){
+  query FooQuery($id: ID!){
     item(id: $id) {
       name
     }
@@ -165,10 +165,11 @@ defmodule Absinthe.PlugTest do
   test "can select an operation by name" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/?operationName=Foo", @multiple_ops_query)
+    assert %{status: status, resp_body: resp_body} = conn(:post, "/?operationName=Foo", @multiple_ops_query)
     |> put_req_header("content-type", "application/graphql")
     |> Absinthe.Plug.call(opts)
 
+    assert 200 == status
     assert resp_body == @foo_result
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/?operationName=Bar", @multiple_ops_query)
