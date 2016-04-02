@@ -89,22 +89,22 @@ defmodule Absinthe.Plug do
   def prepare(conn, %{json_codec: json_codec} = config) do
     {body, conn} = load_body_and_params(conn)
 
-    input = conn.params
-    |> Map.get("query", body)
-    |> case do
-      nil -> {:input_error, "No query document supplied"}
-      "" -> {:input_error, "No query document supplied"}
-    end
-
-    variables = Map.get(conn.params, "variables") || "{}"
-    operation_name = conn.params["operationName"]
+    raw_input = Map.get(conn.params, "query", body)
 
     Logger.debug("""
     GraphQL Document:
-    #{input}
+    #{raw_input}
     """)
 
-    with input when is_binary(input) <- input,
+    input = case raw_input do
+      nil -> {:input_error, "No query document supplied"}
+      "" -> {:input_error, "No query document supplied"}
+      doc -> {:ok, doc}
+    end
+    variables = Map.get(conn.params, "variables") || "{}"
+    operation_name = conn.params["operationName"]
+
+    with {:ok, input} <- input,
       {:ok, variables} <- decode_variables(variables, json_codec) do
         absinthe_opts = %{
           variables: variables,
