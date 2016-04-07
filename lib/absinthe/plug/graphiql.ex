@@ -24,7 +24,23 @@ defmodule Absinthe.Plug.GraphiQL do
 
   defdelegate init(opts), to: Absinthe.Plug
 
-  def call(conn, %{json_codec: json_codec} = config) do
+  def call(conn, config) do
+    case html?(conn) do
+      true -> do_call(conn, config)
+      _ -> Absinthe.Plug.call(conn, config)
+    end
+  end
+
+  defp html?(conn) do
+    Plug.Conn.get_req_header(conn, "accept")
+    |> List.first
+    |> case do
+      string when is_binary(string) -> String.contains?(string, "text/html")
+      _ -> false
+    end
+  end
+
+  defp do_call(conn, %{json_codec: json_codec} = config) do
     with {:ok, input, opts} <- prepare(conn, config),
     {:ok, doc} <- Absinthe.parse(input),
     :ok <- validate_http_method(conn, doc),
@@ -33,6 +49,10 @@ defmodule Absinthe.Plug.GraphiQL do
     end
     |> case do
       {:ok, result, variables, query} ->
+        query = query
+        |> String.replace(~r/\n/, "\\n")
+        |> String.replace(~r/'/, "\\'")
+
         var_string = variables
         |> Poison.encode!
 
