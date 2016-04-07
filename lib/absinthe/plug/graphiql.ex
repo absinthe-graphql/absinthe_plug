@@ -49,15 +49,15 @@ defmodule Absinthe.Plug.GraphiQL do
     end
     |> case do
       {:ok, result, variables, query} ->
-        query = query
-        |> String.replace(~r/\n/, "\\n")
-        |> String.replace(~r/'/, "\\'")
+        query = query |> js_escape
 
         var_string = variables
-        |> Poison.encode!
+        |> Poison.encode!(pretty: true)
+        |> js_escape
 
         result = result
-        |> Poison.encode!
+        |> Poison.encode!(pretty: true)
+        |> js_escape
 
         html = graphiql_html(@graphql_version, query, var_string, result)
         conn
@@ -80,5 +80,11 @@ defmodule Absinthe.Plug.GraphiQL do
         conn
         |> json(400, %{errors: [error]}, json_codec)
     end
+  end
+
+  defp js_escape(string) do
+    string
+    |> String.replace(~r/\n/, "\\n")
+    |> String.replace(~r/'/, "\\'")
   end
 end
