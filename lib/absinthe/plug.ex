@@ -79,6 +79,7 @@ defmodule Absinthe.Plug do
   @doc false
   def execute(conn, config)do
     with {:ok, input, opts} <- prepare(conn, config),
+    {:ok, input} <- validate_input(input),
     {:ok, doc} <- Absinthe.parse(input),
     :ok <- validate_http_method(conn, doc) do
       Absinthe.run(doc, config.schema_mod, opts)
@@ -96,24 +97,22 @@ defmodule Absinthe.Plug do
     #{raw_input}
     """)
 
-    input = case raw_input do
-      nil -> {:input_error, "No query document supplied"}
-      "" -> {:input_error, "No query document supplied"}
-      doc -> {:ok, doc}
-    end
     variables = Map.get(conn.params, "variables") || "{}"
     operation_name = conn.params["operationName"]
 
-    with {:ok, input} <- input,
-      {:ok, variables} <- decode_variables(variables, json_codec) do
+    with {:ok, variables} <- decode_variables(variables, json_codec) do
         absinthe_opts = %{
           variables: variables,
           adapter: config.adapter,
           context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
           operation_name: operation_name}
-        {:ok, input, absinthe_opts}
+        {:ok, raw_input, absinthe_opts}
     end
   end
+
+  defp validate_input(nil), do: {:input_error, "No query document supplied"}
+  defp validate_input(""), do: {:input_error, "No query document supplied"}
+  defp validate_input(doc), do: {:ok, doc}
 
   defp decode_variables(%{} = variables, _), do: {:ok, variables}
   defp decode_variables("", _), do: {:ok, %{}}
