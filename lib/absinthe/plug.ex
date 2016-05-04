@@ -51,9 +51,9 @@ defmodule Absinthe.Plug do
   Parses, validates, resolves, and executes the given Graphql Document
   """
   def call(conn, %{json_codec: json_codec} = config) do
-    conn
-    |> execute(config)
-    |> case do
+    {conn, result} = conn  |> execute(config)
+
+    case result do
       {:input_error, msg} ->
         conn
         |> send_resp(400, msg)
@@ -78,18 +78,20 @@ defmodule Absinthe.Plug do
 
   @doc false
   def execute(conn, config)do
-    with {:ok, input, opts} <- prepare(conn, config),
+    {conn, body} = load_body_and_params(conn)
+
+    result = with {:ok, input, opts} <- prepare(conn, body, config),
     {:ok, input} <- validate_input(input),
     {:ok, doc} <- Absinthe.parse(input),
     :ok <- validate_http_method(conn, doc) do
       Absinthe.run(doc, config.schema_mod, opts)
     end
+
+    {conn, result}
   end
 
   @doc false
-  def prepare(conn, %{json_codec: json_codec} = config) do
-    {body, conn} = load_body_and_params(conn)
-
+  def prepare(conn, body, %{json_codec: json_codec} = config) do
     raw_input = Map.get(conn.params, "query", body)
 
     Logger.debug("""
@@ -120,12 +122,12 @@ defmodule Absinthe.Plug do
   defp decode_variables(nil, _), do: {:ok, %{}}
   defp decode_variables(variables, codec), do: codec.module.decode(variables)
 
-  defp load_body_and_params(conn) do
+  def load_body_and_params(conn) do
     case get_req_header(conn, "content-type") do
       ["application/graphql"] ->
         {:ok, body, conn} = read_body(conn)
-        {body, conn |> fetch_query_params}
-      _ -> {"", conn}
+        {fetch_query_params(conn), body}
+      _ -> {conn, ""}
     end
   end
 

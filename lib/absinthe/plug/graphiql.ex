@@ -20,7 +20,7 @@ defmodule Absinthe.Plug.GraphiQL do
   @behaviour Plug
 
   import Plug.Conn
-  import Absinthe.Plug, only: [prepare: 2, validate_http_method: 2, json: 4]
+  import Absinthe.Plug, only: [prepare: 3, validate_http_method: 2, json: 4, load_body_and_params: 1]
 
   defdelegate init(opts), to: Absinthe.Plug
 
@@ -41,7 +41,9 @@ defmodule Absinthe.Plug.GraphiQL do
   end
 
   defp do_call(conn, %{json_codec: json_codec} = config) do
-    with {:ok, input, opts} <- prepare(conn, config),
+    {conn, body} = load_body_and_params(conn)
+
+    with {:ok, input, opts} <- prepare(conn, body, config),
     {:ok, doc} <- Absinthe.parse(input),
     :ok <- validate_http_method(conn, doc),
     {:ok, result} <- Absinthe.run(doc, config.schema_mod, opts) do
