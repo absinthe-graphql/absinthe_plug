@@ -100,7 +100,7 @@ defmodule Absinthe.Plug do
     """)
 
     variables = Map.get(conn.params, "variables") || "{}"
-    operation_name = conn.params["operationName"]
+    operation_name = Map.get(conn.params, "operationName")
 
     with {:ok, variables} <- decode_variables(variables, json_codec) do
         absinthe_opts = %{
