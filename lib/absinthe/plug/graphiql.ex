@@ -12,7 +12,7 @@ defmodule Absinthe.Plug.GraphiQL do
   """
 
   require EEx
-  @graphql_version "0.6.0"
+  @graphiql_version "0.7.1"
   EEx.function_from_file :defp, :graphiql_html, Path.join(__DIR__, "graphiql.html.eex"),
     [:graphiql_version, :query_string, :variables_string, :result_string]
 
@@ -61,7 +61,7 @@ defmodule Absinthe.Plug.GraphiQL do
         |> Poison.encode!(pretty: true)
         |> js_escape
 
-        html = graphiql_html(@graphql_version, query, var_string, result)
+        html = graphiql_html(@graphiql_version, query, var_string, result)
         conn
         |> put_resp_content_type("text/html")
         |> send_resp(200, html)
