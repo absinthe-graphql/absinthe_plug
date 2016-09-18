@@ -97,7 +97,6 @@ defmodule Absinthe.Plug do
   @doc false
   def prepare(conn, body, %{json_codec: json_codec} = config) do
     raw_input = Map.get(conn.params, "query", body)
-
     Logger.debug("""
     GraphQL Document:
     #{raw_input}
@@ -126,7 +125,7 @@ defmodule Absinthe.Plug do
   defp decode_variables(nil, _), do: {:ok, %{}}
   defp decode_variables(variables, codec), do: codec.module.decode(variables)
 
-  defp load_body_and_params(conn) do
+  def load_body_and_params(conn) do
     case get_req_header(conn, "content-type") do
       ["application/graphql"] ->
         {:ok, body, conn} = read_body(conn)

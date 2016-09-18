@@ -25,9 +25,9 @@ defmodule Absinthe.Plug.GraphiQLTest do
   test "content-type application/graphql works" do
     opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema)
 
-    assert %{status: status} = conn(:post, "/", @query)
+    assert %{status: status, resp_body: msg} = conn(:post, "/", @query)
+    |> put_req_header("content-type", "application/graphql")
     |> plug_parser
-    |> put_req_header("accept", "text/html")
     |> Absinthe.Plug.GraphiQL.call(opts)
 
     assert 200 == status

@@ -27,6 +27,7 @@ defmodule Absinthe.PlugTest do
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @query)
     |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
     |> Absinthe.Plug.call(opts)
 
     assert resp_body == @foo_result
@@ -37,6 +38,7 @@ defmodule Absinthe.PlugTest do
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, ~s(/?variables={"id":"foo"}), @variable_query)
     |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
     |> Absinthe.Plug.call(opts)
 
     assert resp_body == @foo_result
@@ -141,6 +143,7 @@ defmodule Absinthe.PlugTest do
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @fragment_query)
     |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
     |> Absinthe.Plug.call(opts)
 
     assert resp_body == @foo_result
@@ -167,6 +170,7 @@ defmodule Absinthe.PlugTest do
 
     assert %{status: status, resp_body: resp_body} = conn(:post, "/?operationName=Foo", @multiple_ops_query)
     |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
     |> Absinthe.Plug.call(opts)
 
     assert 200 == status
@@ -174,6 +178,7 @@ defmodule Absinthe.PlugTest do
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/?operationName=Bar", @multiple_ops_query)
     |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
     |> Absinthe.Plug.call(opts)
 
     assert resp_body == @bar_result

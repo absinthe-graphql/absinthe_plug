@@ -2,10 +2,9 @@ defmodule Absinthe.Plug.Batch do
   @moduledoc """
   Support for React-Relay-Network-Layer's batched GraphQL requests,
   to be used with https://github.com/nodkz/react-relay-network-layer.
-
-  This (mostly) solves https://github.com/facebook/relay/issues/724 in practice.
-
   Consult the README of that project for detailed usage information.
+
+  This solves the transport side of https://github.com/facebook/relay/issues/724 in practice.
 
   You can integrate this into your Phoenix router in combination with a
   "vanilla" Absinthe.Plug, like so:
@@ -13,8 +12,8 @@ defmodule Absinthe.Plug.Batch do
   ```
   scope "/graphql", Absinthe do
     pipe_through [:your_favorite_auth, :other_stuff]
-    get "/batch", Relay.BatchPlug, schema: App.Schema
-    post "/batch", Relay.BatchPlug, schema: App.Schema
+    get "/batch", Plug.Batch, schema: App.Schema
+    post "/batch", Plug.Batch, schema: App.Schema
     get "/", Plug, schema: App.Schema
     post "/", Plug, schema: App.Schema
   end
@@ -50,7 +49,6 @@ defmodule Absinthe.Plug.Batch do
 
   @doc false
   def execute(conn, config) do
-
     result_list = with {:ok, prepared_queries} <- prepare(conn, config),
       parsed_prepared_queries <- parse_prepared_queries(prepared_queries) do
 
@@ -70,15 +68,16 @@ defmodule Absinthe.Plug.Batch do
 
   @doc false
   def prepare(conn, config) do
-    with queries <- conn.body_params["_json"] do
-
+    with "POST" <- conn.method, queries <- conn.params["_json"] do
       Logger.debug("""
       Batched GraphQL Documents:
       #{inspect(queries)}
       """)
 
-      prepared_queries = queries
-        |> Enum.map(&prepare_query(conn, config, &1))
+      prepared_queries = case queries do
+        nil -> [{:input_error, "No queries found"}]
+        queries -> Enum.map(queries, &prepare_query(conn, config, &1))
+      end
 
       prepared_queries
       |> Enum.filter_map(fn
@@ -89,14 +88,14 @@ defmodule Absinthe.Plug.Batch do
         [] -> {:ok, prepared_queries}
         msgs -> {:input_error, Enum.join(msgs, "; ")}
       end
+    else
+      "GET" -> {:http_error, "Can only perform batch queries from a POST request"}
     end
   end
 
   defp prepare_query(conn, config, %{"query" => query, "variables" => variables, "id" => id}) do
     with {:ok, operation_name} <- get_operation_name(query),
-    {:ok, doc} <- validate_input(query),
-    :ok <- validate_http_method(conn, doc) do
-
+    {:ok, doc} <- validate_input(query) do
       absinthe_opts = %{
         variables: variables,
         adapter: config.adapter,
@@ -137,13 +136,4 @@ defmodule Absinthe.Plug.Batch do
     |> put_resp_content_type("application/json")
     |> send_resp(status, json_codec.module.encode!(body, json_codec.opts))
   end
-
-  @doc false
-  def validate_http_method(%{method: "GET"}, %{definitions: [%{operation: operation}]})
-    when operation in ~w(mutation subscription)a do
-
-    {:http_error, "Can only perform a #{operation} from a POST request"}
-  end
-  def validate_http_method(_, _), do: :ok
-
 end

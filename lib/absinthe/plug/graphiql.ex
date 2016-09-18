@@ -42,6 +42,7 @@ defmodule Absinthe.Plug.GraphiQL do
 
   defp do_call(conn, %{json_codec: json_codec} = config) do
     {conn, body} = load_body_and_params(conn)
+    IO.inspect("Conn: #{inspect(conn)}, body: #{inspect(body)}")
 
     with {:ok, input, opts} <- prepare(conn, body, config),
     {:ok, doc} <- Absinthe.parse(input),
