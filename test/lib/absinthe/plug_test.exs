@@ -113,7 +113,7 @@ defmodule Absinthe.PlugTest do
   }
   """
 
-  test "document with error returns errors" do
+  test "document with error returns validation errors" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
     assert %{status: 400, resp_body: resp_body} = conn(:get, "/", query: @query)

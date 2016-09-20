@@ -20,7 +20,7 @@ defmodule Absinthe.Plug.GraphiQL do
   @behaviour Plug
 
   import Plug.Conn
-  import Absinthe.Plug, only: [prepare: 3, validate_http_method: 2, json: 4, load_body_and_params: 1]
+  import Absinthe.Plug, only: [prepare: 3, setup_pipeline: 3, json: 4, load_body_and_params: 1]
 
   defdelegate init(opts), to: Absinthe.Plug
 
@@ -44,10 +44,9 @@ defmodule Absinthe.Plug.GraphiQL do
     {conn, body} = load_body_and_params(conn)
 
     with {:ok, input, opts} <- prepare(conn, body, config),
-    {:ok, doc} <- Absinthe.parse(input),
-    :ok <- validate_http_method(conn, doc),
-    {:ok, result} <- Absinthe.run(doc, config.schema_mod, opts) do
-      {:ok, result, opts.variables, input}
+    pipeline <- setup_pipeline(conn, config, opts),
+    {:ok, absinthe_result, _} <- Absinthe.Pipeline.run(input, pipeline) do
+      {:ok, absinthe_result}
     end
     |> case do
       {:ok, result, variables, query} ->
@@ -70,17 +69,22 @@ defmodule Absinthe.Plug.GraphiQL do
         conn
         |> send_resp(400, msg)
 
-      {:http_error, text} ->
+      {:ok, %{data: _} = result} ->
+        conn
+        |> json(200, result, json_codec)
+
+      {:ok, %{errors: _} = result} ->
+        conn
+        |> json(400, result, json_codec)
+
+      {:error, {:http_method, text}, _} ->
         conn
         |> send_resp(405, text)
 
-      {:error, %{message: message, locations: locations}} ->
+      {:error, error, _} when is_binary(error) ->
         conn
-        |> json(400, %{errors: [%{message: message, locations: locations}]}, json_codec)
+        |> send_resp(500, error)
 
-      {:error, error} ->
-        conn
-        |> json(400, %{errors: [error]}, json_codec)
     end
   end
 

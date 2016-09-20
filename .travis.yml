@@ -1,9 +1,10 @@
 language: elixir
 sudo: false
-elixir: 1.2.3
+elixir: 1.3
 notifications:
   recipients:
     - ben.wilson@cargosense.com
+    - bruce.williams@cargosense.com
 otp_release:
   - 18.1
 script: "MIX_ENV=test mix local.hex --force && MIX_ENV=test mix do deps.get, test"

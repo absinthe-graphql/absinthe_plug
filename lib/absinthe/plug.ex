@@ -58,21 +58,22 @@ defmodule Absinthe.Plug do
         conn
         |> send_resp(400, msg)
 
-      {:ok, result} ->
+      {:ok, %{data: _} = result} ->
         conn
         |> json(200, result, json_codec)
 
-      {:http_error, text} ->
+      {:ok, %{errors: _} = result} ->
+        conn
+        |> json(400, result, json_codec)
+
+      {:error, {:http_method, text}, _} ->
         conn
         |> send_resp(405, text)
 
-      {:error, %{message: message, locations: locations}} ->
+      {:error, error, _} when is_binary(error) ->
         conn
-        |> json(400, %{errors: [%{message: message, locations: locations}]}, json_codec)
+        |> send_resp(500, error)
 
-      {:error, error} ->
-        conn
-        |> json(400, %{errors: [error]}, json_codec)
     end
   end
 
@@ -82,12 +83,20 @@ defmodule Absinthe.Plug do
 
     result = with {:ok, input, opts} <- prepare(conn, body, config),
     {:ok, input} <- validate_input(input),
-    {:ok, doc} <- Absinthe.parse(input),
-    :ok <- validate_http_method(conn, doc) do
-      Absinthe.run(doc, config.schema_mod, opts)
+    pipeline <- setup_pipeline(conn, config, opts),
+    {:ok, absinthe_result, _} <- Absinthe.Pipeline.run(input, pipeline) do
+      {:ok, absinthe_result}
     end
 
     {conn, result}
+  end
+
+  def setup_pipeline(conn, config, opts) do
+    Absinthe.Pipeline.for_document(config.schema_mod, opts)
+    |> Absinthe.Pipeline.insert_after(
+      Absinthe.Phase.Document.CurrentOperation,
+      {Absinthe.Plug.Validation.HTTPMethod, conn.method}
+    )
   end
 
   @doc false
@@ -105,7 +114,6 @@ defmodule Absinthe.Plug do
     with {:ok, variables} <- decode_variables(variables, json_codec) do
         absinthe_opts = %{
           variables: variables,
-          adapter: config.adapter,
           context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
           operation_name: operation_name}
         {:ok, raw_input, absinthe_opts}
@@ -138,11 +146,4 @@ defmodule Absinthe.Plug do
     |> send_resp(status, json_codec.module.encode!(body, json_codec.opts))
   end
 
-  @doc false
-  def validate_http_method(%{method: "GET"}, %{definitions: [%{operation: operation}]})
-    when operation in ~w(mutation subscription)a do
-
-    {:http_error, "Can only perform a #{operation} from a POST request"}
-  end
-  def validate_http_method(_, _), do: :ok
 end
