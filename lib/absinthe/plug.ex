@@ -95,7 +95,7 @@ defmodule Absinthe.Plug do
     Absinthe.Pipeline.for_document(config.schema_mod, opts)
     |> Absinthe.Pipeline.insert_after(
       Absinthe.Phase.Document.CurrentOperation,
-      {Absinthe.Plug.Validation.HTTPMethod, conn.method}
+      {Absinthe.Plug.Validation.HTTPMethod, method: conn.method}
     )
   end
 
@@ -112,10 +112,11 @@ defmodule Absinthe.Plug do
     operation_name = conn.params["operationName"]
 
     with {:ok, variables} <- decode_variables(variables, json_codec) do
-        absinthe_opts = %{
+        absinthe_opts = [
           variables: variables,
           context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
-          operation_name: operation_name}
+          operation_name: operation_name
+        ]
         {:ok, raw_input, absinthe_opts}
     end
   end
@@ -135,7 +136,8 @@ defmodule Absinthe.Plug do
       ["application/graphql"] ->
         {:ok, body, conn} = read_body(conn)
         {fetch_query_params(conn), body}
-      _ -> {conn, ""}
+      _ ->
+        {conn, ""}
     end
   end
 
