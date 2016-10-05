@@ -86,6 +86,17 @@ defmodule Absinthe.PlugTest do
     assert resp_body == @foo_result
   end
 
+  test "content-type application/json works with empty operation name" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Poison.encode!(%{query: @query, operationName: ""}))
+    |> put_req_header("content-type", "application/json")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == @foo_result
+  end
+
   @mutation """
   mutation AddItem {
     addItem(name: "Baz") {
