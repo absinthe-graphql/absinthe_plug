@@ -100,7 +100,7 @@ defmodule Absinthe.Plug do
     """)
 
     variables = Map.get(conn.params, "variables") || "{}"
-    operation_name = conn.params["operationName"]
+    operation_name = conn.params["operationName"] |> decode_operation_name
 
     with {:ok, variables} <- decode_variables(variables, json_codec) do
         absinthe_opts = %{
@@ -115,6 +115,10 @@ defmodule Absinthe.Plug do
   defp validate_input(nil), do: {:input_error, "No query document supplied"}
   defp validate_input(""), do: {:input_error, "No query document supplied"}
   defp validate_input(doc), do: {:ok, doc}
+
+  # GraphQL.js treats an empty operation name as no operation name.
+  defp decode_operation_name(""), do: nil
+  defp decode_operation_name(name), do: name
 
   defp decode_variables(%{} = variables, _), do: {:ok, variables}
   defp decode_variables("", _), do: {:ok, %{}}
