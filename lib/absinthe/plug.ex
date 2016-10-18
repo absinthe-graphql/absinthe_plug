@@ -9,12 +9,15 @@ defmodule Absinthe.Plug do
   import Plug.Conn
   require Logger
 
+  @type function_name :: atom
+
   @type opts :: [
     schema: atom,
     adapter: atom,
     path: binary,
     context: map,
-    json_codec: atom | {atom, Keyword.t}
+    json_codec: atom | {atom, Keyword.t},
+    pipeline: {Module.t, function_name},
   ]
 
   @doc """
@@ -25,6 +28,8 @@ defmodule Absinthe.Plug do
     adapter = Keyword.get(opts, :adapter)
     context = Keyword.get(opts, :context, %{})
 
+    pipeline = Keyword.get(opts, :pipeline, {__MODULE__, :default_pipeline})
+
     json_codec = case Keyword.get(opts, :json_codec, Poison) do
       module when is_atom(module) -> %{module: module, opts: []}
       other -> other
@@ -32,7 +37,7 @@ defmodule Absinthe.Plug do
 
     schema_mod = opts |> get_schema
 
-    %{adapter: adapter, schema_mod: schema_mod, context: context, json_codec: json_codec}
+    %{adapter: adapter, schema_mod: schema_mod, context: context, json_codec: json_codec, pipeline: pipeline}
   end
 
   defp get_schema(opts) do
@@ -51,7 +56,7 @@ defmodule Absinthe.Plug do
   Parses, validates, resolves, and executes the given Graphql Document
   """
   def call(conn, %{json_codec: json_codec} = config) do
-    {conn, result} = conn  |> execute(config)
+    {conn, result} = conn |> execute(config)
 
     case result do
       {:input_error, msg} ->
@@ -92,10 +97,19 @@ defmodule Absinthe.Plug do
   end
 
   def setup_pipeline(conn, config, opts) do
-    Absinthe.Pipeline.for_document(config.schema_mod, opts)
-    |> Absinthe.Pipeline.insert_after(
-      Absinthe.Phase.Document.CurrentOperation,
-      {Absinthe.Plug.Validation.HTTPMethod, method: conn.method}
+    private = conn.private[:absinthe] || %{}
+    private = Map.put(private, :http_method, conn.method)
+    config = Map.put(config, :conn_private, private)
+
+    {module, fun} = config.pipeline
+    apply(module, fun, [config, opts])
+  end
+
+  def default_pipeline(config, opts) do
+    config.schema_mod
+    |> Absinthe.Pipeline.for_document(opts)
+    |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
+      {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
     )
   end
 
