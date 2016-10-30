@@ -1,7 +1,7 @@
 defmodule Absinthe.Plug.Mixfile do
   use Mix.Project
 
-  @version "1.2.0-alpha0"
+  @version "1.2.0-beta.0"
 
   def project do
     [app: :absinthe_plug,
@@ -34,7 +34,7 @@ defmodule Absinthe.Plug.Mixfile do
   defp deps do
     [
       {:plug, "~> 1.0"},
-      {:absinthe, "~> 1.2.0-alpha0"},
+      {:absinthe, "~> 1.2.0-beta.0"},
       {:poison, ">= 0.0.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.11.0", only: :dev},
       {:earmark, "~> 0.1.19", only: :dev},
