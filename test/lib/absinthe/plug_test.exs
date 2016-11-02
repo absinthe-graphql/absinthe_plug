@@ -14,6 +14,13 @@ defmodule Absinthe.PlugTest do
   }
   """
 
+  test "returns 400 with invalid variables syntax" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+    assert %{status: 400} = conn(:post, ~s(/?variables={invalid_syntax}), @variable_query)
+    |> put_req_header("content-type", "application/graphql")
+    |> Absinthe.Plug.call(opts)
+  end
+
   @query """
   {
     item(id: "foo") {

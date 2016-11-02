@@ -147,7 +147,14 @@ defmodule Absinthe.Plug do
   defp decode_variables("", _), do: {:ok, %{}}
   defp decode_variables("null", _), do: {:ok, %{}}
   defp decode_variables(nil, _), do: {:ok, %{}}
-  defp decode_variables(variables, codec), do: codec.module.decode(variables)
+  defp decode_variables(variables, codec) do
+    case codec.module.decode(variables) do
+      {:ok, results} ->
+        {:ok, results}
+      _ ->
+        {:input_error, "The variable values could not be decoded"}
+    end
+  end
 
   def load_body_and_params(conn) do
     case get_req_header(conn, "content-type") do
