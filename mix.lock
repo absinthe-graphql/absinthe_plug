@@ -1,4 +1,4 @@
-%{"absinthe": {:hex, :absinthe, "1.2.0-rc.0", "e3b077b721ba82656894ea816d23ed27d04d71c737b259ac60d2243500cac422", [:mix], []},
+%{"absinthe": {:hex, :absinthe, "1.2.0", "684d96c8ea43c4d2d5a7d1c8f975fcffd2c7f8c5e89c3a76c115f992b739de35", [:mix], []},
   "earmark": {:hex, :earmark, "0.1.19", "ffec54f520a11b711532c23d8a52b75a74c09697062d10613fa2dbdf8a9db36e", [:mix], []},
   "ex_doc": {:hex, :ex_doc, "0.11.2", "8ac82c6144a27faca6a623eeebfbf5a791bc20a54ce29a9c02e499536d253d9b", [:mix], [{:earmark, "~> 0.1.17 or ~> 0.2", [hex: :earmark, optional: true]}]},
   "plug": {:hex, :plug, "1.0.3", "8bbcbdaa4cb15170b9a15cb12153e8a6d9e176ce78e4c1990ea0b505b0ca24a0", [:mix], [{:cowboy, "~> 1.0", [hex: :cowboy, optional: true]}]},
