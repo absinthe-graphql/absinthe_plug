@@ -9,12 +9,15 @@ defmodule Absinthe.Plug do
   import Plug.Conn
   require Logger
 
+  @type function_name :: atom
+
   @type opts :: [
     schema: atom,
     adapter: atom,
     path: binary,
     context: map,
-    json_codec: atom | {atom, Keyword.t}
+    json_codec: atom | {atom, Keyword.t},
+    pipeline: {Module.t, function_name},
   ]
 
   @doc """
@@ -25,6 +28,8 @@ defmodule Absinthe.Plug do
     adapter = Keyword.get(opts, :adapter)
     context = Keyword.get(opts, :context, %{})
 
+    pipeline = Keyword.get(opts, :pipeline, {__MODULE__, :default_pipeline})
+
     json_codec = case Keyword.get(opts, :json_codec, Poison) do
       module when is_atom(module) -> %{module: module, opts: []}
       other -> other
@@ -32,7 +37,7 @@ defmodule Absinthe.Plug do
 
     schema_mod = opts |> get_schema
 
-    %{adapter: adapter, schema_mod: schema_mod, context: context, json_codec: json_codec}
+    %{adapter: adapter, schema_mod: schema_mod, context: context, json_codec: json_codec, pipeline: pipeline}
   end
 
   defp get_schema(opts) do
@@ -51,28 +56,29 @@ defmodule Absinthe.Plug do
   Parses, validates, resolves, and executes the given Graphql Document
   """
   def call(conn, %{json_codec: json_codec} = config) do
-    {conn, result} = conn  |> execute(config)
+    {conn, result} = conn |> execute(config)
 
     case result do
       {:input_error, msg} ->
         conn
         |> send_resp(400, msg)
 
-      {:ok, result} ->
+      {:ok, %{data: _} = result} ->
         conn
         |> json(200, result, json_codec)
 
-      {:http_error, text} ->
+      {:ok, %{errors: _} = result} ->
+        conn
+        |> json(400, result, json_codec)
+
+      {:error, {:http_method, text}, _} ->
         conn
         |> send_resp(405, text)
 
-      {:error, %{message: message, locations: locations}} ->
+      {:error, error, _} when is_binary(error) ->
         conn
-        |> json(400, %{errors: [%{message: message, locations: locations}]}, json_codec)
+        |> send_resp(500, error)
 
-      {:error, error} ->
-        conn
-        |> json(400, %{errors: [error]}, json_codec)
     end
   end
 
@@ -82,12 +88,29 @@ defmodule Absinthe.Plug do
 
     result = with {:ok, input, opts} <- prepare(conn, body, config),
     {:ok, input} <- validate_input(input),
-    {:ok, doc} <- Absinthe.parse(input),
-    :ok <- validate_http_method(conn, doc) do
-      Absinthe.run(doc, config.schema_mod, opts)
+    pipeline <- setup_pipeline(conn, config, opts),
+    {:ok, absinthe_result, _} <- Absinthe.Pipeline.run(input, pipeline) do
+      {:ok, absinthe_result}
     end
 
     {conn, result}
+  end
+
+  def setup_pipeline(conn, config, opts) do
+    private = conn.private[:absinthe] || %{}
+    private = Map.put(private, :http_method, conn.method)
+    config = Map.put(config, :conn_private, private)
+
+    {module, fun} = config.pipeline
+    apply(module, fun, [config, opts])
+  end
+
+  def default_pipeline(config, opts) do
+    config.schema_mod
+    |> Absinthe.Pipeline.for_document(opts)
+    |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
+      {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
+    )
   end
 
   @doc false
@@ -103,11 +126,11 @@ defmodule Absinthe.Plug do
     operation_name = conn.params["operationName"] |> decode_operation_name
 
     with {:ok, variables} <- decode_variables(variables, json_codec) do
-        absinthe_opts = %{
+        absinthe_opts = [
           variables: variables,
-          adapter: config.adapter,
           context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
-          operation_name: operation_name}
+          operation_name: operation_name
+        ]
         {:ok, raw_input, absinthe_opts}
     end
   end
@@ -124,14 +147,22 @@ defmodule Absinthe.Plug do
   defp decode_variables("", _), do: {:ok, %{}}
   defp decode_variables("null", _), do: {:ok, %{}}
   defp decode_variables(nil, _), do: {:ok, %{}}
-  defp decode_variables(variables, codec), do: codec.module.decode(variables)
+  defp decode_variables(variables, codec) do
+    case codec.module.decode(variables) do
+      {:ok, results} ->
+        {:ok, results}
+      _ ->
+        {:input_error, "The variable values could not be decoded"}
+    end
+  end
 
   def load_body_and_params(conn) do
     case get_req_header(conn, "content-type") do
       ["application/graphql"] ->
         {:ok, body, conn} = read_body(conn)
         {fetch_query_params(conn), body}
-      _ -> {conn, ""}
+      _ ->
+        {conn, ""}
     end
   end
 
@@ -142,11 +173,4 @@ defmodule Absinthe.Plug do
     |> send_resp(status, json_codec.module.encode!(body, json_codec.opts))
   end
 
-  @doc false
-  def validate_http_method(%{method: "GET"}, %{definitions: [%{operation: operation}]})
-    when operation in ~w(mutation subscription)a do
-
-    {:http_error, "Can only perform a #{operation} from a POST request"}
-  end
-  def validate_http_method(_, _), do: :ok
 end

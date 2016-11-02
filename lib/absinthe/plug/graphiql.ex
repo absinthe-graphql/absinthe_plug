@@ -12,17 +12,37 @@ defmodule Absinthe.Plug.GraphiQL do
   """
 
   require EEx
-  @graphiql_version "0.7.1"
+  @graphiql_version "0.7.8"
   EEx.function_from_file :defp, :graphiql_html, Path.join(__DIR__, "graphiql.html.eex"),
     [:graphiql_version, :query_string, :variables_string, :result_string]
 
+  @graphql_toolbox_version "1.0.1"
+  EEx.function_from_file :defp, :graphql_toolbox_html, Path.join(__DIR__, "graphql_toolbox.html.eex"),
+    [:graphql_toolbox_version, :query_string, :variables_string]
 
   @behaviour Plug
 
   import Plug.Conn
-  import Absinthe.Plug, only: [prepare: 3, validate_http_method: 2, json: 4, load_body_and_params: 1]
+  import Absinthe.Plug, only: [prepare: 3, setup_pipeline: 3, load_body_and_params: 1]
 
-  defdelegate init(opts), to: Absinthe.Plug
+  @type opts :: [
+    schema: atom,
+    adapter: atom,
+    path: binary,
+    context: map,
+    json_codec: atom | {atom, Keyword.t},
+    interface: atom
+  ]
+
+  @doc """
+  Sets up and validates the Absinthe schema
+  """
+  @spec init(opts :: opts) :: map
+  def init(opts) do
+    opts
+    |> Absinthe.Plug.init
+    |> Map.put(:interface, Keyword.get(opts, :interface, :advanced))
+  end
 
   def call(conn, config) do
     case html?(conn) do
@@ -40,14 +60,13 @@ defmodule Absinthe.Plug.GraphiQL do
     end
   end
 
-  defp do_call(conn, %{json_codec: json_codec} = config) do
+  defp do_call(conn, %{json_codec: _, interface: interface} = config) do
     {conn, body} = load_body_and_params(conn)
 
     with {:ok, input, opts} <- prepare(conn, body, config),
-    {:ok, doc} <- Absinthe.parse(input),
-    :ok <- validate_http_method(conn, doc),
-    {:ok, result} <- Absinthe.run(doc, config.schema_mod, opts) do
-      {:ok, result, opts.variables, input}
+    pipeline <- setup_pipeline(conn, config, opts),
+    {:ok, result, _} <- Absinthe.Pipeline.run(input, pipeline) do
+      {:ok, result, opts[:variables], input}
     end
     |> case do
       {:ok, result, variables, query} ->
@@ -61,7 +80,11 @@ defmodule Absinthe.Plug.GraphiQL do
         |> Poison.encode!(pretty: true)
         |> js_escape
 
-        html = graphiql_html(@graphiql_version, query, var_string, result)
+        html = case interface do
+          :advanced -> graphql_toolbox_html(@graphql_toolbox_version, query, var_string)
+          :simple -> graphiql_html(@graphiql_version, query, var_string, result)
+        end
+
         conn
         |> put_resp_content_type("text/html")
         |> send_resp(200, html)
@@ -70,17 +93,14 @@ defmodule Absinthe.Plug.GraphiQL do
         conn
         |> send_resp(400, msg)
 
-      {:http_error, text} ->
+      {:error, {:http_method, text}, _} ->
         conn
         |> send_resp(405, text)
 
-      {:error, %{message: message, locations: locations}} ->
+      {:error, error, _} when is_binary(error) ->
         conn
-        |> json(400, %{errors: [%{message: message, locations: locations}]}, json_codec)
+        |> send_resp(500, error)
 
-      {:error, error} ->
-        conn
-        |> json(400, %{errors: [error]}, json_codec)
     end
   end
 
