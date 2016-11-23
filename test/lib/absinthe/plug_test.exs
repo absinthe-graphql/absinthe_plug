@@ -205,7 +205,7 @@ defmodule Absinthe.PlugTest do
 
   defp plug_parser(conn) do
     opts = Plug.Parsers.init(
-      parsers: [:urlencoded, :multipart, :json, Absinthe.Parser],
+      parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
       json_decoder: Poison
     )
     Plug.Parsers.call(conn, opts)

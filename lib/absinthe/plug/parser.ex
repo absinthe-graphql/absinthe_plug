@@ -1,4 +1,4 @@
-defmodule Absinthe.Parser do
+defmodule Absinthe.Plug.Parser do
   @moduledoc """
   Extracts the graphql request body.
   """
