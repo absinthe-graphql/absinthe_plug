@@ -18,6 +18,7 @@ defmodule Absinthe.PlugTest do
     opts = Absinthe.Plug.init(schema: TestSchema)
     assert %{status: 400} = conn(:post, ~s(/?variables={invalid_syntax}), @variable_query)
     |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
     |> Absinthe.Plug.call(opts)
   end
 
@@ -34,6 +35,7 @@ defmodule Absinthe.PlugTest do
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @query)
     |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
     |> Absinthe.Plug.call(opts)
 
     assert resp_body == @foo_result
@@ -44,27 +46,28 @@ defmodule Absinthe.PlugTest do
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, ~s(/?variables={"id":"foo"}), @variable_query)
     |> put_req_header("content-type", "application/graphql")
-    |> Absinthe.Plug.call(opts)
-
-    assert resp_body == @foo_result
-  end
-
-  test "content-type application/x-www-urlencoded works" do
-    opts = Absinthe.Plug.init(schema: TestSchema)
-
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", query: @query)
-    |> put_req_header("content-type", "application/x-www-urlencoded")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
     assert resp_body == @foo_result
   end
 
-  test "content-type application/x-www-urlencoded works with variables" do
+  test "content-type application/x-www-form-urlencoded works" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", query: @query)
+    |> put_req_header("content-type", "application/x-www-form-urlencoded")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == @foo_result
+  end
+
+  test "content-type application/x-www-form-urlencoded works with variables" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, ~s(/?variables={"id":"foo"}), query: @variable_query)
-    |> put_req_header("content-type", "application/x-www-urlencoded")
+    |> put_req_header("content-type", "application/x-www-form-urlencoded")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
@@ -116,7 +119,7 @@ defmodule Absinthe.PlugTest do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
     assert %{status: 405, resp_body: resp_body} = conn(:get, "/", query: @mutation)
-    |> put_req_header("content-type", "application/x-www-urlencoded")
+    |> put_req_header("content-type", "application/x-www-form-urlencoded")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
@@ -135,7 +138,7 @@ defmodule Absinthe.PlugTest do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
     assert %{status: 400, resp_body: resp_body} = conn(:get, "/", query: @query)
-    |> put_req_header("content-type", "application/x-www-urlencoded")
+    |> put_req_header("content-type", "application/x-www-form-urlencoded")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
@@ -159,6 +162,7 @@ defmodule Absinthe.PlugTest do
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @fragment_query)
     |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
     |> Absinthe.Plug.call(opts)
 
     assert resp_body == @foo_result
@@ -185,6 +189,7 @@ defmodule Absinthe.PlugTest do
 
     assert %{status: status, resp_body: resp_body} = conn(:post, "/?operationName=Foo", @multiple_ops_query)
     |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
     |> Absinthe.Plug.call(opts)
 
     assert 200 == status
@@ -192,6 +197,7 @@ defmodule Absinthe.PlugTest do
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/?operationName=Bar", @multiple_ops_query)
     |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
     |> Absinthe.Plug.call(opts)
 
     assert resp_body == @bar_result
@@ -199,8 +205,7 @@ defmodule Absinthe.PlugTest do
 
   defp plug_parser(conn) do
     opts = Plug.Parsers.init(
-      parsers: [:urlencoded, :multipart, :json],
-      pass: ["*/*"],
+      parsers: [:urlencoded, :multipart, :json, Absinthe.Parser],
       json_decoder: Poison
     )
     Plug.Parsers.call(conn, opts)
