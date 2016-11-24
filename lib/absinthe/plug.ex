@@ -18,6 +18,7 @@ defmodule Absinthe.Plug do
     context: map,
     json_codec: atom | {atom, Keyword.t},
     pipeline: {Module.t, function_name},
+    no_query_message: binary,
   ]
 
   @doc """
@@ -27,6 +28,8 @@ defmodule Absinthe.Plug do
   def init(opts) do
     adapter = Keyword.get(opts, :adapter)
     context = Keyword.get(opts, :context, %{})
+    
+    no_query_message = Keyword.get(opts, :no_query_message, "No query document supplied")
 
     pipeline = Keyword.get(opts, :pipeline, {__MODULE__, :default_pipeline})
 
@@ -37,7 +40,8 @@ defmodule Absinthe.Plug do
 
     schema_mod = opts |> get_schema
 
-    %{adapter: adapter, schema_mod: schema_mod, context: context, json_codec: json_codec, pipeline: pipeline}
+    %{adapter: adapter, schema_mod: schema_mod, context: context, json_codec: json_codec,
+      pipeline: pipeline, no_query_message: no_query_message}
   end
 
   defp get_schema(opts) do
@@ -87,7 +91,7 @@ defmodule Absinthe.Plug do
     {conn, body} = load_body_and_params(conn)
 
     result = with {:ok, input, opts} <- prepare(conn, body, config),
-    {:ok, input} <- validate_input(input),
+    {:ok, input} <- validate_input(input, config.no_query_message),
     pipeline <- setup_pipeline(conn, config, opts),
     {:ok, absinthe_result, _} <- Absinthe.Pipeline.run(input, pipeline) do
       {:ok, absinthe_result}
@@ -135,9 +139,9 @@ defmodule Absinthe.Plug do
     end
   end
 
-  defp validate_input(nil), do: {:input_error, "No query document supplied"}
-  defp validate_input(""), do: {:input_error, "No query document supplied"}
-  defp validate_input(doc), do: {:ok, doc}
+  defp validate_input(nil, no_query_message), do: {:input_error, no_query_message}
+  defp validate_input("", no_query_message), do: {:input_error, no_query_message}
+  defp validate_input(doc, _), do: {:ok, doc}
 
   # GraphQL.js treats an empty operation name as no operation name.
   defp decode_operation_name(""), do: nil
