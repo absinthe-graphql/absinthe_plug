@@ -1,8 +1,30 @@
 defmodule Absinthe.Plug.Batch do
   @moduledoc """
-  A plug for using Absinthe
+  A batch plug for using Absinthe.
 
-  See [The Guides](http://absinthe-graphql.org/guides/plug-phoenix/) for usage details
+  See [The Guides](http://absinthe-graphql.org/guides/plug-phoenix/) for usage details.
+
+  This batch plug implements support for React-Relay-Network-Layer's batched GraphQL requests,
+  to be used with https://github.com/nodkz/react-relay-network-layer.
+  Consult the README of that project for detailed usage information.
+
+  This module is a variation on Absinthe.Plug.Batch. In this module, the operations in queries
+  are joined together into one operation.
+
+  This solves the transport side of https://github.com/facebook/relay/issues/724 in practice.
+
+  You can integrate this into your Phoenix router in combination with a
+  "vanilla" Absinthe.Plug, like so:
+
+  ```
+  scope "/graphql", Absinthe do
+    pipe_through [:your_favorite_auth, :other_stuff]
+    get "/batch", Plug.Batch, schema: App.Schema
+    post "/batch", Plug.Batch, schema: App.Schema
+    get "/", Plug, schema: App.Schema
+    post "/", Plug, schema: App.Schema
+  end
+  ```
   """
 
   @behaviour Plug
@@ -102,7 +124,6 @@ defmodule Absinthe.Plug.Batch do
       # Check if any of the prepared documents have errors. At this stage,
       # this could mean they have non-empty :error fields *OR* they are simply
       # an {:input_error, msg}.
-
       {valid_prepared_documents_with_ids, invalid_documents_with_ids} = queries
         |> Enum.map(&Keyword.get(&1.opts, :query_id, nil))
         |> Enum.zip(prepared_documents)
@@ -124,8 +145,51 @@ defmodule Absinthe.Plug.Batch do
       {:error, msg} -> {conn, {:error, msg}}
     end
   end
+
+  @doc false
+  def prepare_queries(conn, body, config) do
+    raw_input = Map.get(conn.params, "query", body)
+
+    Logger.debug("""
+    GraphQL Document:
+    #{inspect(raw_input)}
+    """)
+
+    raw_input
+    |> case do
+      nil -> {:input_error, config.no_query_message}
+      "" -> {:input_error, config.no_query_message}
+      q -> {:ok, Enum.map(q, &prepare(conn, &1, config))}
+    end
+  end
+
+  def prepare(conn, query_input, config) do
+    variables = Map.get(query_input, "variables", %{})
+    query_string = Map.get(query_input, "query", "")
+    query_id = Map.get(query_input, "id", nil)
+
+    absinthe_opts = [
+      variables: variables,
+      context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
+      operation_name: nil, # doesn't matter -- the first one is set to current anyway
+      query_id: query_id,
+      jump_phases: false,
+    ]
+    %{query_string: query_string, opts: absinthe_opts}
+  end
+
+  defp validate_query_list(queries, no_query_message) do
+    all_queries_valid = queries
+      |> Enum.all?(fn q ->
+        String.valid?(q.query_string)
+        and q.query_string != ""
+        and not is_nil(Keyword.get(q.opts, :query_id, nil))
+      end)
+
+    if all_queries_valid, do: {:ok, queries}, else: {:input_error, no_query_message}
+  end
   
-  def prepare_documents(conn, config, queries) do
+  defp prepare_documents(conn, config, queries) do
     queries
     |> Enum.map(fn q ->
       with preparation_pipeline <- setup_pipeline(conn, config, {__MODULE__, :preparation_pipeline}, q.opts),
@@ -182,29 +246,17 @@ defmodule Absinthe.Plug.Batch do
     end)
   end
 
-  # Takes care of parsing queries into blueprints and validating them
-  def preparation_pipeline(config, opts) do
-    config.schema_mod
-    |> Absinthe.Pipeline.for_document(opts)
-    |> Absinthe.Pipeline.upto(Absinthe.Phase.Document.Flatten)
-    |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.Flatten,
-      {Absinthe.Plug.Batch.PutQueryId, opts})
-  end
-
-  # Takes a list of blueprints, joins them 
-  def resolution_pipeline(config, _opts) do
-    resolution_opts = [
-      # doesn't need operation-specific variables etc. anymore – that's behind us now
-      context: config.context #Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
-    ]
-
-    [{Absinthe.Plug.Batch.BatchResolutionPhase, resolution_opts}]
-  end
-
-  # Takes results and json-ifies them
-  def formatting_pipeline(_config, _opts) do
-    [Phase.Document.Result]
-  end
+  # Pipelines: This module makes use of three pipelines.
+  # 1. Query documents are first processed by the `preparation_pipeline`, which
+  #    encompasses all the parsing and validation phases of the default
+  #    `for_document` pipeline. Finally, the custom `PutQueryId` phase tags every
+  #    operation with a flag such that we can assign results later on.
+  # 2. The array of validated blueprint structs is passed to the custom
+  #    `BatchResolutionPhase`, which concats all operations, resolves
+  #    everything, and then teases the results apart based on the flags added
+  #    earlier
+  # 3. Last, we're running the individual results through
+  #    `Phase.Document.Result` to turn them into JSONifiable maps.
 
   def setup_pipeline(conn, config, pipeline, opts) do
     private = conn.private[:absinthe] || %{}
@@ -215,52 +267,30 @@ defmodule Absinthe.Plug.Batch do
     apply(module, fun, [config, opts])
   end
 
+  def preparation_pipeline(config, opts) do
+    config.schema_mod
+    |> Absinthe.Pipeline.for_document(opts)
+    |> Absinthe.Pipeline.upto(Absinthe.Phase.Document.Flatten)
+    |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.Flatten,
+      {Absinthe.Plug.Batch.PutQueryId, opts})
+  end
+
+  def resolution_pipeline(config, _opts) do
+    resolution_opts = [
+      # doesn't need operation-specific variables etc. anymore – that's behind us now
+      context: config.context #Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
+    ]
+
+    [{Absinthe.Plug.Batch.BatchResolutionPhase, resolution_opts}]
+  end
+
+  def formatting_pipeline(_config, _opts) do
+    [Phase.Document.Result]
+  end
+
   @doc false
   defp ensure_http_post_method(%{method: "POST"}, body, _config), do: {:ok, body}
   defp ensure_http_post_method(%{method: _}, _body, config), do: {:input_error, config.wrong_http_method_message}
-
-  @doc false
-  def prepare_queries(conn, body, config) do
-    raw_input = Map.get(conn.params, "query", body)
-
-    Logger.debug("""
-    GraphQL Document:
-    #{inspect(raw_input)}
-    """)
-
-    raw_input
-    |> case do
-      nil -> {:input_error, config.no_query_message}
-      "" -> {:input_error, config.no_query_message}
-      q -> {:ok, Enum.map(q, &prepare(conn, &1, config))}
-    end
-  end
-
-  def prepare(conn, query_input, config) do
-    variables = Map.get(query_input, "variables", %{})
-    query_string = Map.get(query_input, "query", "")
-    query_id = Map.get(query_input, "id", nil)
-
-    absinthe_opts = [
-      variables: variables,
-      context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
-      operation_name: nil, # doesn't matter -- the first one is set to current anyway
-      query_id: query_id,
-      jump_phases: false,
-    ]
-    %{query_string: query_string, opts: absinthe_opts}
-  end
-
-  defp validate_query_list(queries, no_query_message) do
-    all_queries_valid = queries
-      |> Enum.all?(fn q ->
-        String.valid?(q.query_string)
-        and q.query_string != ""
-        and not is_nil(Keyword.get(q.opts, :query_id, nil))
-      end)
-
-    if all_queries_valid, do: {:ok, queries}, else: {:input_error, no_query_message}
-  end
 
   def default_payload_formatter({result, query_id}) do
     %{payload: result, id: query_id}
