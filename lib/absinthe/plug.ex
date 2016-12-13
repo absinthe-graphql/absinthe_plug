@@ -160,6 +160,9 @@ defmodule Absinthe.Plug do
     end
   end
 
+  def load_body_and_params(%{body_params: %{"query" => _}}=conn) do
+    {fetch_query_params(conn), ""}
+  end
   def load_body_and_params(conn) do
     case get_req_header(conn, "content-type") do
       ["application/graphql"] ->
