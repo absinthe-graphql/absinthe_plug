@@ -15,6 +15,8 @@ defmodule Absinthe.Plug.TestSchema do
       resolve: fn %{id: item_id}, _ ->
         {:ok, @items[item_id]}
       end
+
+    field :field_on_root_value, :string
   end
 
   object :item do
