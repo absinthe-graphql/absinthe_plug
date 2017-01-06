@@ -7,8 +7,8 @@ defmodule Absinthe.Plug.Batch.PutQueryId do
 
   @spec run(Blueprint.t, Keyword.t) :: Phase.Blueprint.t
   def run(blueprint, options \\ []) do
-    bp_with_query_id = 
-      Absinthe.Blueprint.put_flag(blueprint, :query_id, Keyword.get(options, :query_id))
+    bp_with_query_id =
+      Absinthe.Blueprint.put_flag(blueprint, :query_id, {Keyword.get(options, :query_id), __MODULE__})
 
     {:ok, bp_with_query_id}
   end

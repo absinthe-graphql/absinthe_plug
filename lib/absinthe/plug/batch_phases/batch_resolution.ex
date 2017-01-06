@@ -10,79 +10,64 @@ defmodule Absinthe.Plug.Batch.BatchResolutionPhase do
   #
   # - Variables are renamed, from "varname" to "var_<id>_varname"
   # - Fragments are renamed, from "fragname" to "frag_<id>_fragname"
-  # - Aliases are added to 
+  # - Aliases are added to
   #
   # Note that no validation occurs in this phase.
 
   alias Absinthe.{Blueprint, Phase}
 
   alias Absinthe.Phase
-  use Absinthe.Phase
+  # use Absinthe.Phase
 
   @spec run([Blueprint.t], Keyword.t) :: Phase.result_t
   def run(blueprints, options \\ []) do
+    schema = options[:schema]
 
-    all_fields = blueprints
-      |> get_all_fields
+    fields_from_operations = get_and_mark_operation_fields(blueprints)
 
-    new_blueprint = %Absinthe.Blueprint{
-      schema: hd(blueprints).schema,
-      errors: Enum.reduce(blueprints, [], fn (bp, e) -> bp.errors ++ e end),
+    # put things together
+    grouped_blueprint = %Absinthe.Blueprint{
+      schema: schema,
       operations: [
         %Absinthe.Blueprint.Document.Operation{
           current: true,
-          fields: all_fields,
-          name: "__merged_batch_operation",
-          type: hd(hd(blueprints).operations).type,
-          schema_node: hd(hd(blueprints).operations).schema_node,
+          fields: fields_from_operations,
+          name: "__merged_batch_operation__",
+          type: :query,
+          schema_node: Absinthe.Schema.lookup_type(schema, :query),
         }
       ]
     }
 
-    {:ok, resolved} = Absinthe.Phase.Document.Execution.Resolution.run(new_blueprint, options)
-    result_data = resolved.resolution.result.fields
+    {:ok, resolved_grouped_blueprint} = Absinthe.Phase.Document.Execution.Resolution.run(grouped_blueprint, options)
+    grouped_result_fields = resolved_grouped_blueprint.resolution.result.fields
 
-    results = for blueprint <- blueprints do
-        query_id = blueprint.flags.query_id
-        this_operations_results = Enum.filter(result_data, fn data ->
-          data.emitter.flags.query_id == query_id
-        end)
+    # split them back apart
+    for blueprint <- blueprints do
+      {query_id, _} = blueprint.flags.query_id
 
-        result_object = %Absinthe.Blueprint.Document.Resolution.Object{
-          fields: this_operations_results,
-          emitter: get_emitter_from_results(this_operations_results),
-          root_value: Keyword.get(options, :root_value, %{})
-        }
-        put_in(blueprint.resolution.result, result_object)
-      end
+      this_operations_results = Enum.filter(grouped_result_fields, fn field ->
+        match?({^query_id, _}, field.emitter.flags.query_id)
+      end)
 
-    {:ok, results}
-  end
+      operation = Absinthe.Blueprint.current_operation(blueprint)
 
-  defp get_all_fields(blueprints) do
-    blueprints
-    |> Enum.map(&get_fields_with_query_id/1)
-    |> Enum.reduce([], fn (fields, all_fields) ->
-      fields ++ all_fields
-    end)
-  end
-
-  defp get_fields_with_query_id(%{flags: %{query_id: query_id}, operations: operations}) do
-    operation = operations
-      |> Enum.find(&(&1.current))
-
-    fields = for field <- operation.fields do
-      Absinthe.Blueprint.put_flag(field, :query_id, query_id)
+      result_object = %Absinthe.Blueprint.Document.Resolution.Object{
+        fields: this_operations_results,
+        emitter: operation,
+        root_value: Keyword.get(options, :root_value, %{}),
+      }
+      put_in(blueprint.resolution.result, result_object)
     end
-    fields
   end
 
-  defp get_emitter_from_results(results) do
-    first_result = List.first(results)
-    unless is_nil(first_result) do
-      Map.get(first_result, :emitter, nil)
-    else
-      nil
+  defp get_and_mark_operation_fields(blueprints) do
+    for blueprint <- blueprints,
+    operation = Absinthe.Blueprint.current_operation(blueprint),
+    field <- operation.fields do
+      {query_id, _} = blueprint.flags.query_id
+
+      Absinthe.Blueprint.put_flag(field, :query_id, {query_id, __MODULE__})
     end
   end
 end
