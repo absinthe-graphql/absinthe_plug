@@ -28,7 +28,7 @@ defmodule Absinthe.Plug do
   def init(opts) do
     adapter = Keyword.get(opts, :adapter)
     context = Keyword.get(opts, :context, %{})
-    
+
     no_query_message = Keyword.get(opts, :no_query_message, "No query document supplied")
 
     pipeline = Keyword.get(opts, :pipeline, {__MODULE__, :default_pipeline})
@@ -133,7 +133,8 @@ defmodule Absinthe.Plug do
         absinthe_opts = [
           variables: variables,
           context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
-          operation_name: operation_name
+          root_value: (conn.private[:absinthe][:root_value] || %{}),
+          operation_name: operation_name,
         ]
         {:ok, raw_input, absinthe_opts}
     end

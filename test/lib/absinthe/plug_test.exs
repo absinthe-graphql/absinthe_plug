@@ -203,6 +203,20 @@ defmodule Absinthe.PlugTest do
     assert resp_body == @bar_result
   end
 
+  test "it can use the root value" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    query = "{field_on_root_value}"
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Poison.encode!(%{query: query, operationName: ""}))
+    |> put_req_header("content-type", "application/json")
+    |> plug_parser
+    |> put_private(:absinthe, %{root_value: %{field_on_root_value: "foo"}})
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == "{\"data\":{\"field_on_root_value\":\"foo\"}}"
+  end
+
   defp plug_parser(conn) do
     opts = Plug.Parsers.init(
       parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
