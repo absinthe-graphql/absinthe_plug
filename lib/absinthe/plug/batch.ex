@@ -130,22 +130,18 @@ defmodule Absinthe.Plug.Batch do
       # Check if any of the prepared documents have errors. At this stage,
       # this could mean they have non-empty :error fields *OR* they are simply
       # an {:input_error, msg}.
-      {valid_prepared_documents_with_ids, invalid_documents_with_ids} = queries
-        |> Enum.map(& &1.opts[:query_id])
-        |> Enum.zip(prepared_documents)
+      {valid_prepared_documents, invalid_documents} =
+        prepared_documents
         |> Enum.partition(fn
-          {_query_id, %{errors: errors}} -> Enum.empty?(errors) # if true, this is valid
-          {_query_id, {:error, _}} -> false
+          %{errors: []} -> true
+          {:error, _} -> false
         end)
 
-      valid_prepared_documents = valid_prepared_documents_with_ids
-        |> Enum.map(fn {_, doc} -> doc end)
+      valid_resolved = resolve_documents(config, valid_prepared_documents)
 
-      resolved_documents = resolve_documents(config, valid_prepared_documents)
+      invalid_resolved = format_invalid_documents(conn, config, invalid_documents)
 
-      error_documents = format_invalid_documents(conn, config, invalid_documents_with_ids)
-
-      {conn, {:ok, resolved_documents ++ error_documents}}
+      {conn, {:ok, valid_resolved ++ invalid_resolved}}
     else
       {:input_error, msg} -> {conn, {:input_error, msg}}
       {:error, msg} -> {conn, {:error, msg}}
@@ -219,7 +215,6 @@ defmodule Absinthe.Plug.Batch do
     # TODO: clean this up
     |> Absinthe.Plug.Batch.BatchResolutionPhase.run(context: config.context, schema: config.schema_mod)
     |> Enum.map(fn doc ->
-      # TODO: consider error case
       {:ok, result, _} = Absinthe.Pipeline.run(doc, formatting_pipeline())
       {query_id, _} = doc.flags.query_id
 
@@ -231,12 +226,9 @@ defmodule Absinthe.Plug.Batch do
     {module, fun} = config.payload_formatter
 
     invalid_documents
-    |> Enum.map(fn
-      {query_id, %{errors: errors}} -> {%{error: inspect(errors)}, query_id}
-      {query_id, {:input_error, msg}} -> {%{error: msg}, query_id}
-      {query_id, {:error, msg}} -> {%{error: msg}, query_id}
-    end)
-    |> Enum.map(fn {result, query_id} ->
+    |> Enum.map(fn blueprint ->
+      {:ok, result, _} = Absinthe.Pipeline.run(blueprint, formatting_pipeline())
+      {query_id, _} = blueprint.flags.query_id
       apply(module, fun, [{result, query_id}])
     end)
   end
