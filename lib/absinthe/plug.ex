@@ -87,7 +87,7 @@ defmodule Absinthe.Plug do
   end
 
   @doc false
-  def execute(conn, config)do
+  def execute(conn, config) do
     {conn, body} = load_body_and_params(conn)
 
     result = with {:ok, input, opts} <- prepare(conn, body, config),
