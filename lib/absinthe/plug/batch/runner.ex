@@ -1,4 +1,4 @@
-defmodule Absinthe.Plug.Batch.BatchResolutionPhase do
+defmodule Absinthe.Plug.Batch.Runner do
   @moduledoc false
 
   # Merges a list of queries in the shape of [%{query_string, opts, id}, ...] into a

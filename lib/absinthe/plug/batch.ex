@@ -201,7 +201,7 @@ defmodule Absinthe.Plug.Batch do
     |> Absinthe.Pipeline.for_document(opts)
     |> Absinthe.Pipeline.upto(Absinthe.Phase.Document.Flatten)
     |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.Flatten,
-      {Absinthe.Plug.Batch.PutQueryId, opts})
+      {Absinthe.Plug.Batch.QueryLabelPhase, opts})
   end
 
   defp resolve_documents(config, prepared_documents) do
@@ -213,7 +213,7 @@ defmodule Absinthe.Plug.Batch do
 
     prepared_documents
     # TODO: clean this up
-    |> Absinthe.Plug.Batch.BatchResolutionPhase.run(context: config.context, schema: config.schema_mod)
+    |> Absinthe.Plug.Batch.Runner.run(context: config.context, schema: config.schema_mod)
     |> Enum.map(fn doc ->
       {:ok, result, _} = Absinthe.Pipeline.run(doc, formatting_pipeline())
       {query_id, _} = doc.flags.query_id

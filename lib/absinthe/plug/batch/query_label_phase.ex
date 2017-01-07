@@ -1,4 +1,4 @@
-defmodule Absinthe.Plug.Batch.PutQueryId do
+defmodule Absinthe.Plug.Batch.QueryLabelPhase do
   @moduledoc false
 
   alias Absinthe.{Blueprint, Phase}
