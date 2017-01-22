@@ -52,6 +52,26 @@ defmodule Absinthe.PlugTest do
     assert resp_body == @foo_result
   end
 
+  test "content-type application/graphql with encoding works" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @query)
+    |> put_req_header("content-type", "application/graphql; charset=UTF-8")
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == @foo_result
+  end
+
+  test "content-type application/graphql with encoding works with variables" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, ~s(/?variables={"id":"foo"}), @variable_query)
+    |> put_req_header("content-type", "application/graphql; charset=UTF-8")
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == @foo_result
+  end
+
   test "content-type application/x-www-form-urlencoded works" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 

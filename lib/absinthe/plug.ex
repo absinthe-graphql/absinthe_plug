@@ -169,6 +169,9 @@ defmodule Absinthe.Plug do
       ["application/graphql"] ->
         {:ok, body, conn} = read_body(conn)
         {fetch_query_params(conn), body}
+      [<<"application/graphql;", _ :: binary>>] ->
+        {:ok, body, conn} = read_body(conn)
+        {fetch_query_params(conn), body}
       _ ->
         {conn, ""}
     end
