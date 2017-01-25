@@ -8,6 +8,7 @@ add "&raw" to the end of the URL within a browser.
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="referrer" content="no-referrer" />
   <style>
     html, body {
       height: 100%;
