@@ -41,10 +41,10 @@ defmodule Absinthe.Plug do
 
   An example of using this with curl would look like:
   ```
-  curl -X POST \
-  -F query="{files(users: \"users_csv\", metadata: \"metadata_json\")}" \
-  -F users_csv=@users.csv \
-  -F metadata_json=@metadata.json \
+  curl -X POST \\
+  -F query="{files(users: \"users_csv\", metadata: \"metadata_json\")}" \\
+  -F users_csv=@users.csv \\
+  -F metadata_json=@metadata.json \\
   localhost:4000/graphql
   ```
 
@@ -53,8 +53,11 @@ defmodule Absinthe.Plug do
 
   The advantage of doing uploads this way instead of merely just putting them in
   the context is that if the file is simply in the context there isn't a way in
-  the schema to mark it as required. It also won't show up in the documentation
+  the schema to mark it as required. It also wouldn't show up in the documentation
   as an argument that is required for a field.
+
+  By treating uploads as regular arguments we get all the usual GraphQL argument
+  validation.
   """
 
   @behaviour Plug
