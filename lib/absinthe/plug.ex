@@ -18,11 +18,11 @@ defmodule Absinthe.Plug do
 
     mutation do
       field :upload_file, :string do
-        arg :users_csv, non_null(:upload)
+        arg :users, non_null(:upload)
         arg :metadata, :upload
 
         resolve fn args, _ ->
-          args.file_one # this is a `%Plug.Upload{}` struct.
+          args.users # this is a `%Plug.Upload{}` struct.
 
           {:ok, "success"}
         end
