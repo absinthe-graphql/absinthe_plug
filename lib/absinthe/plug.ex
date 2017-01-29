@@ -3,6 +3,58 @@ defmodule Absinthe.Plug do
   A plug for using Absinthe
 
   See [The Guides](http://absinthe-graphql.org/guides/plug-phoenix/) for usage details
+
+  ## Uploaded File Support
+
+  Absinthe.Plug can be used to support uploading of files. This is a schema that
+  has a mutation field supporting multiple files. Note that we have to import
+  types from Absinthe.Plug.Types in order to get this scalar type:
+
+  ```elixir
+  defmodule MyApp.Schema do
+    use Absinthe.Schema
+
+    import_types Absinthe.Plug.Types
+
+    mutation do
+      field :upload_file, :string do
+        arg :users_csv, non_null(:upload)
+        arg :metadata, :upload
+
+        resolve fn args, _ ->
+          args.file_one # this is a `%Plug.Upload{}` struct.
+
+          {:ok, "success"}
+        end
+      end
+    end
+  end
+  ```
+
+  Next it's best to look at how one submits such a query over HTTP. You need to
+  use the `multipart/form-data` content type. From there we need
+
+  1) a `query` parameter holding out GraphQL document
+  2) optional variables parameter for JSON encoded variables
+  3) optional operationName parameter to specify the operation
+  4) a query key for each file that will be uploaded.
+
+  An example of using this with curl would look like:
+  ```
+  curl -X POST \
+  -F query="{files(users: \"users_csv\", metadata: \"metadata_json\")}" \
+  -F users_csv=@users.csv \
+  -F metadata_json=@metadata.json \
+  localhost:4000/graphql
+  ```
+
+  Note how there is a correspondance between the value of the `:users` argument
+  and the `-F` form part of the associated file.
+
+  The advantage of doing uploads this way instead of merely just putting them in
+  the context is that if the file is simply in the context there isn't a way in
+  the schema to mark it as required. It also won't show up in the documentation
+  as an argument that is required for a field.
   """
 
   @behaviour Plug
