@@ -129,15 +129,34 @@ defmodule Absinthe.Plug do
     variables = Map.get(conn.params, "variables") || "{}"
     operation_name = conn.params["operationName"] |> decode_operation_name
 
+    context = build_context(conn, config)
+
     with {:ok, variables} <- decode_variables(variables, json_codec) do
         absinthe_opts = [
           variables: variables,
-          context: Map.merge(config.context, conn.private[:absinthe][:context] || %{}),
+          context: context,
           root_value: (conn.private[:absinthe][:root_value] || %{}),
           operation_name: operation_name,
         ]
         {:ok, raw_input, absinthe_opts}
     end
+  end
+
+  defp build_context(conn, config) do
+    config.context
+    |> Map.merge(conn.private[:absinthe][:context] || %{})
+    |> Map.merge(uploaded_files(conn))
+  end
+
+  defp uploaded_files(conn) do
+    files =
+      conn.params
+      |> Enum.filter(&match?({_, %Plug.Upload{}}, &1))
+      |> Map.new
+
+    %{
+      __absinthe_plug__: %{uploads: files}
+    }
   end
 
   defp validate_input(nil, no_query_message), do: {:input_error, no_query_message}
