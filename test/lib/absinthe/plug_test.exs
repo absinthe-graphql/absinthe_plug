@@ -217,6 +217,76 @@ defmodule Absinthe.PlugTest do
     assert resp_body == "{\"data\":{\"field_on_root_value\":\"foo\"}}"
   end
 
+  describe "file uploads" do
+    setup [:basic_opts]
+
+    test "work with a valid required upload", %{opts: opts} do
+      query = """
+      {uploadTest(fileA: "a")}
+      """
+
+      upload = %Plug.Upload{}
+
+      assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"query" => query, "a" => upload})
+      |> put_req_header("content-type", "multipart/form-data")
+      |> call(opts)
+
+      assert resp_body == %{"data" => %{"uploadTest" => "file_a"}}
+    end
+
+    test "work with multiple uploads", %{opts: opts} do
+      query = """
+      {uploadTest(fileA: "a", fileB: "b")}
+      """
+
+      upload = %Plug.Upload{}
+
+      assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"query" => query, "a" => upload, "b" => upload})
+      |> put_req_header("content-type", "multipart/form-data")
+      |> call(opts)
+
+      assert resp_body == %{"data" => %{"uploadTest" => "file_a, file_b"}}
+    end
+
+    test "error when no argument is given with a valid required upload", %{opts: opts} do
+      query = """
+      {uploadTest}
+      """
+
+      upload = %Plug.Upload{}
+
+      assert %{status: 400, resp_body: resp_body} = conn(:post, "/", %{"query" => query, "a" => upload})
+      |> put_req_header("content-type", "multipart/form-data")
+      |> call(opts)
+
+      assert resp_body == %{"errors" => [%{"locations" => [%{"column" => 0, "line" => 1}],
+                "message" => "In argument \"fileA\": Expected type \"Upload!\", found null."}]}
+    end
+
+    test "error properly when file name is given but it isn't uploaded as well", %{opts: opts} do
+      query = """
+      {uploadTest(fileA: "a")}
+      """
+
+      assert %{status: 400, resp_body: resp_body} = conn(:post, "/", %{"query" => query})
+      |> put_req_header("content-type", "multipart/form-data")
+      |> call(opts)
+
+      assert resp_body == %{"errors" => [%{"locations" => [%{"column" => 0, "line" => 1}], "message" => "Argument \"fileA\" has invalid value \"a\"."}]}
+    end
+  end
+
+  defp basic_opts(context) do
+    Map.put(context, :opts, Absinthe.Plug.init(schema: TestSchema))
+  end
+
+  defp call(conn, opts) do
+    conn
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+    |> Map.update!(:resp_body, &Poison.decode!/1)
+  end
+
   defp plug_parser(conn) do
     opts = Plug.Parsers.init(
       parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],

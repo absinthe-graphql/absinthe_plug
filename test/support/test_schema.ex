@@ -1,12 +1,23 @@
 defmodule Absinthe.Plug.TestSchema do
   use Absinthe.Schema
 
+  import_types Absinthe.Plug.Types
+
   @items %{
     "foo" => %{id: "foo", name: "Foo"},
     "bar" => %{id: "bar", name: "Bar"}
   }
 
   query do
+    field :upload_test, :string do
+      arg :file_a, non_null(:upload)
+      arg :file_b, :upload
+
+      resolve fn args, _ ->
+        arg_keys = Enum.map(args, fn {key, %Plug.Upload{}} -> key end)
+        {:ok, arg_keys |> Enum.join(", ")}
+      end
+    end
     field :item,
       type: :item,
       args: [
