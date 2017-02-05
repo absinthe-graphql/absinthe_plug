@@ -64,6 +64,8 @@ defmodule Absinthe.Plug do
   import Plug.Conn
   require Logger
 
+  @raw_options [:analyze_complexity, :max_complexity]
+
   @type function_name :: atom
 
   @type opts :: [
@@ -74,6 +76,8 @@ defmodule Absinthe.Plug do
     json_codec: atom | {atom, Keyword.t},
     pipeline: {Module.t, function_name},
     no_query_message: binary,
+    analyze_complexity: boolean,
+    max_complexity: non_neg_integer | :infinity
   ]
 
   @doc """
@@ -95,8 +99,11 @@ defmodule Absinthe.Plug do
 
     schema_mod = opts |> get_schema
 
+    raw_options = Keyword.take(opts, @raw_options)
+
     %{adapter: adapter, schema_mod: schema_mod, context: context, json_codec: json_codec,
-      pipeline: pipeline, no_query_message: no_query_message}
+      pipeline: pipeline, no_query_message: no_query_message,
+      raw_options: raw_options}
   end
 
   defp get_schema(opts) do
@@ -173,7 +180,7 @@ defmodule Absinthe.Plug do
   end
 
   @doc false
-  def prepare(conn, body, %{json_codec: json_codec} = config) do
+  def prepare(conn, body, %{json_codec: json_codec, raw_options: raw_options} = config) do
     raw_input = Map.get(conn.params, "query", body)
 
     Logger.debug("""
@@ -191,8 +198,8 @@ defmodule Absinthe.Plug do
           variables: variables,
           context: context,
           root_value: (conn.private[:absinthe][:root_value] || %{}),
-          operation_name: operation_name,
-        ]
+          operation_name: operation_name
+        ] ++ raw_options
         {:ok, raw_input, absinthe_opts}
     end
   end
