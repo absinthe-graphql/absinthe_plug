@@ -159,7 +159,7 @@ defmodule Absinthe.PlugTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert %{"errors" => [%{"message" => "complex is too complex" <> _} | _]} = resp_body |> Poison.decode!
+    assert %{"errors" => [%{"message" => "Field complex is too complex" <> _} | _]} = resp_body |> Poison.decode!
   end
 
   @fragment_query """
