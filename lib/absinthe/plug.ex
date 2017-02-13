@@ -193,6 +193,12 @@ defmodule Absinthe.Plug do
           root_value: (conn.private[:absinthe][:root_value] || %{}),
           operation_name: operation_name,
         ]
+        absinthe_opts =
+          if not(is_nil(config.adapter)) do
+            Keyword.put(absinthe_opts, :adapter, config.adapter)
+          else
+            absinthe_opts
+          end
         {:ok, raw_input, absinthe_opts}
     end
   end
