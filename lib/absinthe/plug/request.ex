@@ -4,6 +4,7 @@ defmodule Absinthe.Plug.Request do
   import Plug.Conn
 
   @enforce_keys [
+    :adapter,
     :context,
     :document,
     :operation_name,
@@ -13,6 +14,7 @@ defmodule Absinthe.Plug.Request do
   ]
 
   defstruct [
+    :adapter,
     :context,
     :document,
     :operation_name,
@@ -27,6 +29,7 @@ defmodule Absinthe.Plug.Request do
 
 
   @type t :: %__MODULE__{
+    adapter: Absinthe.Adapter.t,
     context: map,
     document: nil | String.t | Absinthe.Blueprint.t,
     params: map,
@@ -42,11 +45,13 @@ defmodule Absinthe.Plug.Request do
   def parse(conn, config) do
     with {conn, {body, params}} <- extract_body_and_params(conn),
                {:ok, variables} <- extract_variables(params, config),
+                        adapter <- config.adapter,
                    raw_document <- extract_raw_document(body, params),
                  operation_name <- extract_operation_name(params),
                         context <- extract_context(conn, config),
                      root_value <- extract_root_value(conn) do
       %__MODULE__{
+        adapter: adapter,
         document: raw_document,
         params: params,
         variables: variables,

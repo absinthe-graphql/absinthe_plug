@@ -81,7 +81,7 @@ defmodule Absinthe.Plug do
   """
   @spec init(opts :: opts) :: map
   def init(opts) do
-    adapter = Keyword.get(opts, :adapter)
+    adapter = Keyword.get(opts, :adapter, Absinthe.Adapter.LanguageConventions)
     context = Keyword.get(opts, :context, %{})
 
     no_query_message = Keyword.get(opts, :no_query_message, "No query document supplied")
