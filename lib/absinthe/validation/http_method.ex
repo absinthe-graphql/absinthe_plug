@@ -1,4 +1,6 @@
 defmodule Absinthe.Plug.Validation.HTTPMethod do
+  @moduledoc false
+
   use Absinthe.Phase
 
   alias Absinthe.Blueprint

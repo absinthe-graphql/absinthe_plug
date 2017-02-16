@@ -1,14 +1,28 @@
 defmodule Absinthe.Plug.GraphiQL do
   @moduledoc """
-  Enables GraphiQL
 
-  # Usage
+  Provides a GraphiQL interface.
 
-  ```elixir
-  if Absinthe.Plug.GraphiQL.serve? do
-    plug Absinthe.Plug.GraphiQL
-  end
-  ```
+  ## Examples Usage
+
+  Serve the GraphiQL "advanced" interface at `/graphiql`, but only in
+  development:
+
+      if Mix.env == :dev do
+        forward "/graphiql",
+          Absinthe.Plug.GraphiQL,
+          schema: MyApp.Schema
+      end
+
+  Use the "simple" interface (original GraphiQL) instead:
+
+      if Mix.env == :dev do
+        forward "/graphiql",
+          Absinthe.Plug.GraphiQL,
+          schema: MyApp.Schema,
+          interface: :simple
+      end
+
   """
 
   require EEx
@@ -23,7 +37,6 @@ defmodule Absinthe.Plug.GraphiQL do
   @behaviour Plug
 
   import Plug.Conn
-  import Absinthe.Plug, only: [prepare: 3, setup_pipeline: 3, load_body_and_params: 1]
 
   @type opts :: [
     schema: atom,
@@ -34,9 +47,7 @@ defmodule Absinthe.Plug.GraphiQL do
     interface: atom
   ]
 
-  @doc """
-  Sets up and validates the Absinthe schema
-  """
+  @doc false
   @spec init(opts :: opts) :: map
   def init(opts) do
     opts
@@ -44,6 +55,7 @@ defmodule Absinthe.Plug.GraphiQL do
     |> Map.put(:interface, Keyword.get(opts, :interface, :advanced))
   end
 
+  @doc false
   def call(conn, config) do
     case html?(conn) do
       true -> do_call(conn, config)
@@ -61,12 +73,10 @@ defmodule Absinthe.Plug.GraphiQL do
   end
 
   defp do_call(conn, %{json_codec: _, interface: interface} = config) do
-    {conn, body} = load_body_and_params(conn)
-
-    with {:ok, input, opts} <- prepare(conn, body, config),
-    pipeline <- setup_pipeline(conn, config, opts),
-    {:ok, result, _} <- Absinthe.Pipeline.run(input, pipeline) do
-      {:ok, result, opts[:variables], input}
+    with {:ok, request} <- Absinthe.Plug.Request.parse(conn, config),
+         pipeline <- Absinthe.Plug.DocumentProvider.pipeline(request),
+         {:ok, absinthe_result, _} <- Absinthe.Pipeline.run(request.document, pipeline) do
+      {:ok, absinthe_result, request.variables, request.document || ""}
     end
     |> case do
       {:ok, result, variables, query} ->

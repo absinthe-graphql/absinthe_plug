@@ -4,7 +4,7 @@
 "Build Status")](https://travis-ci.org/absinthe-graphql/absinthe_plug)
 
 [Plug](https://hex.pm/packages/plug) support for [Absinthe](https://hex.pm/packages/absinthe),
-an experimental GraphQL API toolkit.
+the GraphQL toolkit for Elixir.
 
 Please see the website at [http://absinthe-graphql.org](http://absinthe-graphql.org).
 
@@ -18,7 +18,8 @@ def deps do
 end
 ```
 
-Add it to your `applications` configuration in `mix.exs`:
+If using Elixir < 1.4 (or manually managing applications), make sure to add it
+to your `applications` configuration in `mix.exs`:
 
 ```elixir
 def application do
@@ -37,27 +38,54 @@ def deps do
 end
 ```
 
-## GraphIQL
+## Usage
 
-## Configuration
+Basic Usage:
 
-See the [Plug and Phoenix Guide](http://absinthe-graphql.org/guides/plug-phoenix)
-on the website for a detailed explanation of how to configure Plug/Phoenix for
-Absinthe.
+```elixir
+plug Plug.Parsers,
+  parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+  pass: ["*/*"],
+  json_decoder: Poison
 
-## Documentation
+plug Absinthe.Plug,
+  schema: MyApp.Schema
+
+If you want only `Absinthe.Plug` to serve a particular route, configure your
+router like:
+
+plug Plug.Parsers,
+  parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+  pass: ["*/*"],
+  json_decoder: Poison
+
+forward "/api", Absinthe.Plug,
+  schema: MyApp.Schema
+
+For more information, see the API documentation for `Absinthe.Plug`.
+
+## GraphiQL
+
+To add support for a GraphiQL interface, add a configuration for
+`Absinthe.Plug.GraphiQL`:
+
+```elixir
+forward "/graphiql",
+  Absinthe.Plug.GraphiQL,
+  schema: MyApp.Schema,
+```
+
+See the API documentation for `Absinthe.Plug.GraphiQL` for more information.
+
+## More Help
 
 - For the tutorial, guides, and general information about Absinthe-related
   projects, see [http://absinthe-graphql.org](http://absinthe-graphql.org).
-- Links to the API documentation are available in the [project list](http://absinthe-graphql.org/projects).
-
-### Roadmap
-
-See the Roadmap on [absinthe-graphql.org](http://absinthe-graphql.org/roadmap).
+- Join the [community](http://absinthe-graphql.org/community) of Absinthe users.
 
 ## Related Projects
 
-See the Project List on [absinthe-graphql.org](http://absinthe-graphql.org/projects).
+See the project list at <http://absinthe-graphql.org/projects>.
 
 ## License
 

@@ -1,6 +1,5 @@
 defmodule Absinthe.PlugTest do
-  use ExUnit.Case, async: true
-  use Plug.Test
+  use Absinthe.Plug.TestCase
   alias Absinthe.Plug.TestSchema
 
   @foo_result ~s({"data":{"item":{"name":"Foo"}}})
@@ -280,18 +279,4 @@ defmodule Absinthe.PlugTest do
     Map.put(context, :opts, Absinthe.Plug.init(schema: TestSchema))
   end
 
-  defp call(conn, opts) do
-    conn
-    |> plug_parser
-    |> Absinthe.Plug.call(opts)
-    |> Map.update!(:resp_body, &Poison.decode!/1)
-  end
-
-  defp plug_parser(conn) do
-    opts = Plug.Parsers.init(
-      parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
-      json_decoder: Poison
-    )
-    Plug.Parsers.call(conn, opts)
-  end
 end
