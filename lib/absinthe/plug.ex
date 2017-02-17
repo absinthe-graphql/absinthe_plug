@@ -69,7 +69,7 @@ defmodule Absinthe.Plug do
     json_codec: module | {module, Keyword.t},
     pipeline: {module, atom},
     no_query_message: String.t,
-    document_providers: [Absinthe.Plug.DocumentProvider.t]
+    document_providers: [Absinthe.Plug.DocumentProvider.t, ...] | Absinthe.Plug.DocumentProvider.t | {module, atom}
   ]
 
   @doc """
