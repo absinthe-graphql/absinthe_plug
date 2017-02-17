@@ -44,7 +44,7 @@ defmodule Absinthe.Plug.GraphiQL do
     path: binary,
     context: map,
     json_codec: atom | {atom, Keyword.t},
-    interface: atom
+    interface: nil | :advanced | :simple
   ]
 
   @doc false
@@ -52,7 +52,7 @@ defmodule Absinthe.Plug.GraphiQL do
   def init(opts) do
     opts
     |> Absinthe.Plug.init
-    |> Map.put(:interface, Keyword.get(opts, :interface, :advanced))
+    |> Map.put(:interface, Keyword.get(opts, :interface) || :advanced)
   end
 
   @doc false

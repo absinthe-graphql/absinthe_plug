@@ -174,15 +174,15 @@ defmodule Absinthe.Plug.Request do
   # DOCUMENT PROVIDERS
   #
 
-  @spec calculate_document_providers(map) :: [Absinthe.Plug.DocumentProvider.t]
-  defp calculate_document_providers(%{document_providers: {module, fun}} = config) do
+  @spec calculate_document_providers(map) :: [Absinthe.Plug.DocumentProvider.t, ...]
+  defp calculate_document_providers(%{document_providers: {module, fun}} = config) when is_atom(fun) do
     apply(module, fun, [config])
   end
   defp calculate_document_providers(%{document_providers: simple_value}) do
     List.wrap(simple_value)
   end
 
-  @spec ensure_document_providers!([Absinthe.Plug.DocumentProvider.t]) :: [Absinthe.Plug.DocumentProvider.t] | no_return
+  @spec ensure_document_providers!(providers) :: providers when providers: [Absinthe.Plug.DocumentProvider.t, ...]
   defp ensure_document_providers!([]) do
     raise "No document providers found to process request"
   end

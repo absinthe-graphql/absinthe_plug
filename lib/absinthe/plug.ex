@@ -184,11 +184,17 @@ defmodule Absinthe.Plug do
   # PIPELINE
   #
 
-  @doc false
+  @doc """
+  The default pipeline used to process GraphQL documents.
+
+  This consists of Absinthe's default pipeline (as returned by `Absinthe.Pipeline.for_document/1`),
+  with the `Absinthe.Plug.Validation.HTTPMethod` phase inserted to ensure that the correct
+  HTTP verb is being used for the GraphQL operation type.
+  """
   @spec default_pipeline(map, Keyword.t) :: Absinthe.Pipeline.t
-  def default_pipeline(config, input_for_pipeline) do
+  def default_pipeline(config, pipeline_opts) do
     config.schema_mod
-    |> Absinthe.Pipeline.for_document(input_for_pipeline)
+    |> Absinthe.Pipeline.for_document(pipeline_opts)
     |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
       {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
     )
@@ -198,7 +204,14 @@ defmodule Absinthe.Plug do
   # DOCUMENT PROVIDERS
   #
 
-  @doc false
+  @doc """
+  The default list of document providers that are enabled.
+
+  This consists of a single document provider, `Absinthe.Plug.DocumentProvider.Default`, which
+  supports ad hoc GraphQL documents provided directly within the request.
+
+  For more information about document providers, see `Absinthe.Plug.DocumentProvider`.
+  """
   @spec default_document_providers(map) :: [Absinthe.Plug.DocumentProvider.t]
   def default_document_providers(_) do
     [Absinthe.Plug.DocumentProvider.Default]

@@ -27,27 +27,16 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
 
   end
 
-  @foo_query """
+  @query """
   query FooQuery($id: ID!) {
     item(id: $id) {
       name
     }
   }
   """
-  @foo_result ~s({"data":{"item":{"name":"Foo"}}})
+  @result ~s({"data":{"item":{"name":"Foo"}}})
 
   test "works using documents provided as literals" do
-    opts = Absinthe.Plug.init(schema: TestSchema, document_providers: {__MODULE__, :literal})
-
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"id" => "1", "variables" => %{"id" => "foo"}})
-    |> put_req_header("content-type", "application/graphql")
-    |> plug_parser
-    |> Absinthe.Plug.call(opts)
-
-    assert resp_body == @foo_result
-  end
-
-  test "works setting document_providers directly" do
     opts = Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.LiteralDocuments])
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"id" => "1", "variables" => %{"id" => "foo"}})
@@ -55,18 +44,18 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == @foo_result
+    assert resp_body == @result
   end
 
   test "works using documents loaded from an extracted_queries.json" do
-    opts = Absinthe.Plug.init(schema: TestSchema, document_providers: {__MODULE__, :extracted})
+    opts = Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.ExtractedDocuments])
 
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"id" => "1", "variables" => %{"id" => "foo"}})
     |> put_req_header("content-type", "application/graphql")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == @foo_result
+    assert resp_body == @result
   end
 
   test ".get compiled" do
@@ -75,15 +64,7 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
   end
 
   test ".get source" do
-    assert @foo_query == Compiled.get(LiteralDocuments, "1", :source)
-  end
-
-  def literal(_) do
-    [__MODULE__.LiteralDocuments]
-  end
-
-  def extracted(_) do
-    [__MODULE__.ExtractedDocuments]
+    assert @query == Compiled.get(LiteralDocuments, "1", :source)
   end
 
 end
