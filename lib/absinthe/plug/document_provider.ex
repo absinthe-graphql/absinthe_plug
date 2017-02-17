@@ -24,17 +24,12 @@ defmodule Absinthe.Plug.DocumentProvider do
   """
 
   @typedoc """
-  The configuration for a document provider (when it needs options)
-  """
-  @type with_options :: {module, Keyword.t}
-
-  @typedoc """
   A configuration for a document provider, which can take two forms:
 
   - `module` when options do not need to be passed to the document provider.
   - `{module, Keyword.t}` when options are needed by the document provider.
   """
-  @type t :: module | with_options
+  @type t :: module | {module, Keyword.t}
 
   @typedoc """
   When the request is not handled by this document provider (so processing should
@@ -99,12 +94,12 @@ defmodule Absinthe.Plug.DocumentProvider do
 
   # Normalize plain module references to document providers to the fully declared
   # configuration that includes a keyword list.
-  @spec normalize([t]) :: [with_options]
+  @spec normalize([t]) :: [t]
   defp normalize(document_providers) do
     Enum.map(document_providers, &do_normalize/1)
   end
 
-  @spec do_normalize(t) :: with_options
+  @spec do_normalize(t) :: t
   defp do_normalize(config) when is_tuple(config), do: config
   defp do_normalize(config), do: {config, []}
 
