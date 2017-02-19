@@ -16,11 +16,11 @@ defmodule Absinthe.Plug.Mixfile do
   end
 
   defp package do
-    [description: "A plug for Absinthe, an experimental GraphQL toolkit",
+    [description: "Plug support for Absinthe, the GraphQL toolkit for Elixir",
      files: ["lib", "mix.exs", "README*"],
      maintainers: ["Ben Wilson", "Bruce Williams"],
      licenses: ["BSD"],
-     links: %{github: "https://github.com/CargoSense/absinthe_plug"}]
+     links: %{github: "https://github.com/absinthe-graphql/absinthe_plug"}]
   end
 
   def application do
