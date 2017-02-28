@@ -11,7 +11,7 @@ add "&raw" to the end of the URL within a browser.
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   
-  <title>GraphiQl Workspace</title>
+  <title>GraphiQL Workspace</title>
   
   <link rel="stylesheet" media="screen" href="//maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css">
   <link rel="stylesheet" media="screen" href="//cdnjs.cloudflare.com/ajax/libs/graphiql/0.9.3/graphiql.min.css">
