@@ -1,3 +1,7 @@
+v1.2.4
+
+- Fix issue with missing `fetch` version in CDN for GraphiQL `:simple` interface.
+
 v1.2.3
 
 - Plug dependency updated to address https://elixirforum.com/t/security-releases-for-plug/3913
