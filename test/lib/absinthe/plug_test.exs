@@ -1,6 +1,5 @@
 defmodule Absinthe.PlugTest do
-  use ExUnit.Case, async: true
-  use Plug.Test
+  use Absinthe.Plug.TestCase
   alias Absinthe.Plug.TestSchema
 
   @foo_result ~s({"data":{"item":{"name":"Foo"}}})
@@ -145,6 +144,22 @@ defmodule Absinthe.PlugTest do
     assert %{"errors" => [%{"message" => _}]} = resp_body |> Poison.decode!
   end
 
+  @complex_query """
+  query ComplexQuery {
+      complex
+  }
+  """
+
+  test "document with too much complexity returns analysis errors" do
+    opts = Absinthe.Plug.init(schema: TestSchema, analyze_complexity: true, max_complexity: 99)
+
+    assert %{status: 400, resp_body: resp_body} = conn(:get, "/", query: @complex_query)
+    |> put_req_header("content-type", "application/x-www-form-urlencoded")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert %{"errors" => [%{"message" => "Field complex is too complex" <> _} | _]} = resp_body |> Poison.decode!
+  end
 
   @fragment_query """
   query Q {
@@ -280,18 +295,4 @@ defmodule Absinthe.PlugTest do
     Map.put(context, :opts, Absinthe.Plug.init(schema: TestSchema))
   end
 
-  defp call(conn, opts) do
-    conn
-    |> plug_parser
-    |> Absinthe.Plug.call(opts)
-    |> Map.update!(:resp_body, &Poison.decode!/1)
-  end
-
-  defp plug_parser(conn) do
-    opts = Plug.Parsers.init(
-      parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
-      json_decoder: Poison
-    )
-    Plug.Parsers.call(conn, opts)
-  end
 end

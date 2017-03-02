@@ -1,92 +1,99 @@
 defmodule Absinthe.Plug do
   @moduledoc """
-  A plug for using Absinthe
+  A plug for using [Absinthe](https://hex.pm/packages/absinthe) (GraphQL).
 
-  See [The Guides](http://absinthe-graphql.org/guides/plug-phoenix/) for usage details
+  ## Usage
 
-  ## Uploaded File Support
+  In your router:
 
-  Absinthe.Plug can be used to support uploading of files. This is a schema that
-  has a mutation field supporting multiple files. Note that we have to import
-  types from Absinthe.Plug.Types in order to get this scalar type:
+      plug Plug.Parsers,
+        parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+        pass: ["*/*"],
+        json_decoder: Poison
 
-  ```elixir
-  defmodule MyApp.Schema do
-    use Absinthe.Schema
+      plug Absinthe.Plug,
+        schema: MyApp.Schema
 
-    import_types Absinthe.Plug.Types
+  If you want only `Absinthe.Plug` to serve a particular route, configure your
+  router like:
 
-    mutation do
-      field :upload_file, :string do
-        arg :users, non_null(:upload)
-        arg :metadata, :upload
+      plug Plug.Parsers,
+        parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+        pass: ["*/*"],
+        json_decoder: Poison
 
-        resolve fn args, _ ->
-          args.users # this is a `%Plug.Upload{}` struct.
+      forward "/api", Absinthe.Plug,
+        schema: MyApp.Schema
 
-          {:ok, "success"}
-        end
-      end
-    end
-  end
-  ```
+  See the documentation on `Absinthe.Plug.init/1` and the `Absinthe.Plug.opts`
+  type for information on the available options.
 
-  Next it's best to look at how one submits such a query over HTTP. You need to
-  use the `multipart/form-data` content type. From there we need
+  To add support for a GraphiQL interface, add a configuration for
+  `Absinthe.Plug.GraphiQL`:
 
-  1) a `query` parameter holding out GraphQL document
-  2) optional variables parameter for JSON encoded variables
-  3) optional operationName parameter to specify the operation
-  4) a query key for each file that will be uploaded.
+      forward "/graphiql",
+        Absinthe.Plug.GraphiQL,
+        schema: MyApp.Schema,
 
-  An example of using this with curl would look like:
-  ```
-  curl -X POST \\
-  -F query="{files(users: \"users_csv\", metadata: \"metadata_json\")}" \\
-  -F users_csv=@users.csv \\
-  -F metadata_json=@metadata.json \\
-  localhost:4000/graphql
-  ```
+  ## Included GraphQL Types
 
-  Note how there is a correspondance between the value of the `:users` argument
-  and the `-F` form part of the associated file.
+  This package includes additional types for use in Absinthe GraphQL schema and
+  type modules.
 
-  The advantage of doing uploads this way instead of merely just putting them in
-  the context is that if the file is simply in the context there isn't a way in
-  the schema to mark it as required. It also wouldn't show up in the documentation
-  as an argument that is required for a field.
+  See the documentation on `Absinthe.Plug.Types` for more information.
 
-  By treating uploads as regular arguments we get all the usual GraphQL argument
-  validation.
+  ## More Information
+
+  For more on configuring `Absinthe.Plug` and how GraphQL requests are made,
+  see [the guide](http://absinthe-graphql.org/guides/plug-phoenix/) at
+  <http://absinthe-graphql.org>.
   """
 
   @behaviour Plug
   import Plug.Conn
   require Logger
 
+  @raw_options [:analyze_complexity, :max_complexity]
+
   @type function_name :: atom
 
+  @typedoc """
+  - `:adapter` -- (Optional) Absinthe adapter to use (default: `Absinthe.Adapter.LanguageConventions`).
+  - `:context` -- (Optional) Initial value for the Absinthe context, available to resolvers. (default: `%{}`).
+  - `:no_query_message` -- (Optional) Message to return to the client if no query is provided (default: "No query document supplied").
+  - `:json_codec` -- (Optional) A `module` or `{module, Keyword.t}` dictating which JSON codec should be used (default: `Poison`). The codec module should implement `encode!/2` (e.g., `module.encode!(body, opts)`).
+  - `:pipeline` -- (Optional) `{module, atom}` reference to a 2-arity function that will be called to generate the processing pipeline. (default: `{Absinthe.Plug, :default_pipeline}`).
+  - `:document_providers` -- (Optional) A `{module, atom}` reference to a 1-arity function that will be called to determine the document providers that will be used to process the request. (default: `{Absinthe.Plug, :default_document_providers}`, which configures `Absinthe.Plug.DocumentProvider.Default` as the lone document provider). A simple list of document providers can also be given. See `Absinthe.Plug.DocumentProvider` for more information about document providers, their role in procesing requests, and how you can define and configure your own.
+  - `:schema` -- (Required, if not handled by Mix.Config) The Absinthe schema to use. If a module name is not provided, `Application.get_env(:absinthe, :schema)` will be attempt to find one.
+  """
   @type opts :: [
-    schema: atom,
-    adapter: atom,
-    path: binary,
+    schema: module,
+    adapter: module,
     context: map,
-    json_codec: atom | {atom, Keyword.t},
-    pipeline: {Module.t, function_name},
-    no_query_message: binary,
+    json_codec: module | {module, Keyword.t},
+    pipeline: {module, atom},
+    no_query_message: String.t,
+    document_providers: [Absinthe.Plug.DocumentProvider.t, ...] | Absinthe.Plug.DocumentProvider.t | {module, atom},
+    analyze_complexity: boolean,
+    max_complexity: non_neg_integer | :infinity,
   ]
 
   @doc """
-  Sets up and validates the Absinthe schema
+  Serve an Absinthe GraphQL schema with the specified options.
+
+  ## Options
+
+  See the documentation for the `Absinthe.Plug.opts` type for details on the available options.
   """
   @spec init(opts :: opts) :: map
   def init(opts) do
-    adapter = Keyword.get(opts, :adapter)
+    adapter = Keyword.get(opts, :adapter, Absinthe.Adapter.LanguageConventions)
     context = Keyword.get(opts, :context, %{})
 
     no_query_message = Keyword.get(opts, :no_query_message, "No query document supplied")
 
     pipeline = Keyword.get(opts, :pipeline, {__MODULE__, :default_pipeline})
+    document_providers = Keyword.get(opts, :document_providers, {__MODULE__, :default_document_providers})
 
     json_codec = case Keyword.get(opts, :json_codec, Poison) do
       module when is_atom(module) -> %{module: module, opts: []}
@@ -95,8 +102,18 @@ defmodule Absinthe.Plug do
 
     schema_mod = opts |> get_schema
 
-    %{adapter: adapter, schema_mod: schema_mod, context: context, json_codec: json_codec,
-      pipeline: pipeline, no_query_message: no_query_message}
+    raw_options = Keyword.take(opts, @raw_options)
+
+    %{
+      adapter: adapter,
+      context: context,
+      document_providers: document_providers,
+      json_codec: json_codec,
+      no_query_message: no_query_message,
+      pipeline: pipeline,
+      raw_options: raw_options,
+      schema_mod: schema_mod,
+    }
   end
 
   defp get_schema(opts) do
@@ -114,6 +131,7 @@ defmodule Absinthe.Plug do
   @doc """
   Parses, validates, resolves, and executes the given Graphql Document
   """
+  @spec call(Plug.Conn.t, map) :: Plug.Conn.t | no_return
   def call(conn, %{json_codec: json_codec} = config) do
     {conn, result} = conn |> execute(config)
 
@@ -142,113 +160,79 @@ defmodule Absinthe.Plug do
   end
 
   @doc false
-  def execute(conn, config)do
-    {conn, body} = load_body_and_params(conn)
-
-    result = with {:ok, input, opts} <- prepare(conn, body, config),
-    {:ok, input} <- validate_input(input, config.no_query_message),
-    pipeline <- setup_pipeline(conn, config, opts),
-    {:ok, absinthe_result, _} <- Absinthe.Pipeline.run(input, pipeline) do
-      {:ok, absinthe_result}
+  @spec execute(Plug.Conn.t, map) :: {Plug.Conn.t, any}
+  def execute(conn, config) do
+    with {:ok, request} <- Absinthe.Plug.Request.parse(conn, config),
+         {:ok, request} <- ensure_document(request, config) do
+      run_request(request, conn)
+    else
+      result ->
+        {conn, result}
     end
-
-    {conn, result}
   end
 
-  def setup_pipeline(conn, config, opts) do
-    private = conn.private[:absinthe] || %{}
-    private = Map.put(private, :http_method, conn.method)
-    config = Map.put(config, :conn_private, private)
-
-    {module, fun} = config.pipeline
-    apply(module, fun, [config, opts])
+  @spec ensure_document(Absinthe.Plug.Request.t, map) :: {:ok, Absinthe.Plug.Request.t} | {:input_error, String.t}
+  defp ensure_document(%{document: nil}, config) do
+    {:input_error, config.no_query_message}
+  end
+  defp ensure_document(request, _) do
+    {:ok, request}
   end
 
-  def default_pipeline(config, opts) do
+  @spec run_request(Absinthe.Plug.Request.t, Plug.Conn.t) :: {Plug.Conn.t, any}
+  defp run_request(request, conn) do
+    case Absinthe.Pipeline.run(request.document, Absinthe.Plug.DocumentProvider.pipeline(request)) do
+      {:ok, result, _} ->
+        {conn, {:ok, result}}
+      other ->
+        {conn, other}
+    end
+  end
+
+  #
+  # PIPELINE
+  #
+
+  @doc """
+  The default pipeline used to process GraphQL documents.
+
+  This consists of Absinthe's default pipeline (as returned by `Absinthe.Pipeline.for_document/1`),
+  with the `Absinthe.Plug.Validation.HTTPMethod` phase inserted to ensure that the correct
+  HTTP verb is being used for the GraphQL operation type.
+  """
+  @spec default_pipeline(map, Keyword.t) :: Absinthe.Pipeline.t
+  def default_pipeline(config, pipeline_opts) do
     config.schema_mod
-    |> Absinthe.Pipeline.for_document(opts)
+    |> Absinthe.Pipeline.for_document(pipeline_opts)
     |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
       {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
     )
   end
 
-  @doc false
-  def prepare(conn, body, %{json_codec: json_codec} = config) do
-    raw_input = Map.get(conn.params, "query", body)
+  #
+  # DOCUMENT PROVIDERS
+  #
 
-    Logger.debug("""
-    GraphQL Document:
-    #{raw_input}
-    """)
 
-    variables = Map.get(conn.params, "variables") || "{}"
-    operation_name = conn.params["operationName"] |> decode_operation_name
+  @doc """
+  The default list of document providers that are enabled.
 
-    context = build_context(conn, config)
+  This consists of a single document provider, `Absinthe.Plug.DocumentProvider.Default`, which
+  supports ad hoc GraphQL documents provided directly within the request.
 
-    with {:ok, variables} <- decode_variables(variables, json_codec) do
-        absinthe_opts = [
-          variables: variables,
-          context: context,
-          root_value: (conn.private[:absinthe][:root_value] || %{}),
-          operation_name: operation_name,
-        ]
-        {:ok, raw_input, absinthe_opts}
-    end
+  For more information about document providers, see `Absinthe.Plug.DocumentProvider`.
+  """
+  @spec default_document_providers(map) :: [Absinthe.Plug.DocumentProvider.t]
+  def default_document_providers(_) do
+    [Absinthe.Plug.DocumentProvider.Default]
   end
 
-  defp build_context(conn, config) do
-    config.context
-    |> Map.merge(conn.private[:absinthe][:context] || %{})
-    |> Map.merge(uploaded_files(conn))
-  end
-
-  defp uploaded_files(conn) do
-    files =
-      conn.params
-      |> Enum.filter(&match?({_, %Plug.Upload{}}, &1))
-      |> Map.new
-
-    %{
-      __absinthe_plug__: %{uploads: files}
-    }
-  end
-
-  defp validate_input(nil, no_query_message), do: {:input_error, no_query_message}
-  defp validate_input("", no_query_message), do: {:input_error, no_query_message}
-  defp validate_input(doc, _), do: {:ok, doc}
-
-  # GraphQL.js treats an empty operation name as no operation name.
-  defp decode_operation_name(""), do: nil
-  defp decode_operation_name(name), do: name
-
-  defp decode_variables(%{} = variables, _), do: {:ok, variables}
-  defp decode_variables("", _), do: {:ok, %{}}
-  defp decode_variables("null", _), do: {:ok, %{}}
-  defp decode_variables(nil, _), do: {:ok, %{}}
-  defp decode_variables(variables, codec) do
-    case codec.module.decode(variables) do
-      {:ok, results} ->
-        {:ok, results}
-      _ ->
-        {:input_error, "The variable values could not be decoded"}
-    end
-  end
-
-  def load_body_and_params(%{body_params: %{"query" => _}}=conn) do
-    {fetch_query_params(conn), ""}
-  end
-  def load_body_and_params(conn) do
-    case get_req_header(conn, "content-type") do
-      ["application/graphql"] ->
-        {:ok, body, conn} = read_body(conn)
-        {fetch_query_params(conn), body}
-      _ ->
-        {conn, ""}
-    end
-  end
+  #
+  # SERIALIZATION
+  #
 
   @doc false
+  @spec json(Plug.Conn.t, 200 | 400 | 405 | 500, String.t, map) :: Plug.Conn.t | no_return
   def json(conn, status, body, json_codec) do
     conn
     |> put_resp_content_type("application/json")

@@ -1,0 +1,1 @@
+{"query Item($id: ID!) {\n  item(id: $id) {\n    name\n  }\n}\n":1}

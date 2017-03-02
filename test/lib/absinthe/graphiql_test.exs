@@ -3,17 +3,6 @@ defmodule Absinthe.Plug.GraphiQLTest do
   use Plug.Test
   alias Absinthe.Plug.TestSchema
 
-  @foo_result ~s({"data":{"item":{"name":"Foo"}}})
-  @bar_result ~s({"data":{"item":{"name":"Bar"}}})
-
-  @variable_query """
-  query FooQuery($id: ID!){
-    item(id: $id) {
-      name
-    }
-  }
-  """
-
   @query """
   {
     item(id: "foo") {
