@@ -62,9 +62,8 @@ defmodule Absinthe.Plug.DocumentProvider do
   @callback process(Absinthe.Plug.Request.t, Keyword.t) :: result
 
   @doc false
-  @spec process([t], Absinthe.Plug.Request.t) :: {:ok, Absinthe.Plug.Request.t} | {:input_error, String.t}
-  # Process an request through the given list of valid document providers and return an
-  # error for the client if the request was unable to be processed.
+  @spec process([t], Absinthe.Plug.Request.t) :: Absinthe.Plug.Request.t
+  # Attempt to process an request through the given list of valid document providers
   def process(document_providers, request) do
     document_providers
     |> normalize
@@ -76,12 +75,6 @@ defmodule Absinthe.Plug.DocumentProvider do
           cont
       end
     end)
-    |> case do
-      nil ->
-        {:input_error, "No document provider could process the request"}
-      request ->
-        {:ok, request}
-    end
   end
 
   @doc false

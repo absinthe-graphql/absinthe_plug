@@ -76,13 +76,17 @@ defmodule Absinthe.Plug.GraphiQL do
     Plug.Conn.get_req_header(conn, "accept")
     |> List.first
     |> case do
-      string when is_binary(string) -> String.contains?(string, "text/html")
-      _ -> false
+      string when is_binary(string) ->
+        String.contains?(string, "text/html")
+      _ ->
+        false
     end
   end
 
   defp do_call(conn, %{json_codec: _, interface: interface} = config) do
     with {:ok, request} <- Absinthe.Plug.Request.parse(conn, config),
+         {:process, request} <- select_mode(request),
+         {:ok, request} <- Absinthe.Plug.ensure_processable(request, config),
          pipeline <- Absinthe.Plug.DocumentProvider.pipeline(request),
          {:ok, absinthe_result, _} <- Absinthe.Pipeline.run(request.document, pipeline) do
       {:ok, absinthe_result, request.variables, request.document || ""}
@@ -99,18 +103,16 @@ defmodule Absinthe.Plug.GraphiQL do
         |> Poison.encode!(pretty: true)
         |> js_escape
 
-        html = case interface do
-          :advanced -> graphiql_workspace_html(@graphiql_workspace_version, query, var_string)
-          :simple -> graphiql_html(@graphiql_version, query, var_string, result)
-        end
-
         conn
-        |> put_resp_content_type("text/html")
-        |> send_resp(200, html)
+        |> render_interface(interface, query: query, var_string: var_string, result: result)
 
       {:input_error, msg} ->
         conn
         |> send_resp(400, msg)
+
+      :start_interface ->
+         conn
+         |> render_interface(interface)
 
       {:error, {:http_method, text}, _} ->
         conn
@@ -121,6 +123,38 @@ defmodule Absinthe.Plug.GraphiQL do
         |> send_resp(500, error)
 
     end
+  end
+
+  @spec select_mode(request :: Absinthe.Plug.Request.t) :: :start_interface | {:process, Absinthe.Plug.Request.t}
+  defp select_mode(%{document: nil}), do: :start_interface
+  defp select_mode(request), do: {:process, request}
+
+  @render_defaults [query: "", var_string: "", results: ""]
+
+  @spec render_interface(conn :: Conn.t, interface :: :advanced | :simple, opts :: Keyword.t) :: Conn.t
+  defp render_interface(conn, interface, opts \\ [])
+  defp render_interface(conn, :simple, opts) do
+    opts = Keyword.merge(opts, @render_defaults)
+    graphiql_html(
+      @graphiql_version,
+      opts[:query], opts[:var_string], opts[:result]
+    )
+    |> rendered(conn)
+  end
+  defp render_interface(conn, :advanced, opts) do
+    opts = Keyword.merge(opts, @render_defaults)
+    graphiql_workspace_html(
+      @graphiql_workspace_version,
+      opts[:query], opts[:var_string]
+    )
+    |> rendered(conn)
+  end
+
+  @spec rendered(String.t, Plug.Conn.t) :: Conn.t
+  defp rendered(html, conn) do
+    conn
+    |> put_resp_content_type("text/html")
+    |> send_resp(200, html)
   end
 
   defp js_escape(string) do

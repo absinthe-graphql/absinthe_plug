@@ -194,11 +194,13 @@ defmodule Absinthe.Plug.Request do
     provided
   end
 
-  @spec provide_document(t, map) :: {:ok, t} | {:input_error, String.t}
+  @spec provide_document(t, map) :: t
   defp provide_document(request, config) do
-    calculate_document_providers(config)
-    |> ensure_document_providers!()
-    |> Absinthe.Plug.DocumentProvider.process(request)
+    request =
+      calculate_document_providers(config)
+      |> ensure_document_providers!()
+      |> Absinthe.Plug.DocumentProvider.process(request)
+    {:ok, request}
   end
 
   #

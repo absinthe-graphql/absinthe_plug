@@ -163,11 +163,19 @@ defmodule Absinthe.Plug do
   @spec execute(Plug.Conn.t, map) :: {Plug.Conn.t, any}
   def execute(conn, config) do
     with {:ok, request} <- Absinthe.Plug.Request.parse(conn, config),
-         {:ok, request} <- ensure_document(request, config) do
+         {:ok, request} <- ensure_processable(request, config) do
       run_request(request, conn)
     else
       result ->
         {conn, result}
+    end
+  end
+
+  @doc false
+  @spec ensure_processable(Absinthe.Plug.Request.t, map) :: {:ok, Absinthe.Plug.Request.t} | {:input_error, String.t}
+  def ensure_processable(request, config) do
+    with {:ok, request} <- ensure_document_provider(request) do
+      ensure_document(request, config)
     end
   end
 
@@ -176,6 +184,14 @@ defmodule Absinthe.Plug do
     {:input_error, config.no_query_message}
   end
   defp ensure_document(request, _) do
+    {:ok, request}
+  end
+
+  @spec ensure_document_provider(Absinthe.Plug.Request.t) :: {:ok, Absinthe.Plug.Request.t} | {:input_error, String.t}
+  defp ensure_document_provider(%{document_provider: nil}) do
+    {:input_error, "No document provider found to handle this request"}
+  end
+  defp ensure_document_provider(request) do
     {:ok, request}
   end
 
