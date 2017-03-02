@@ -16,9 +16,9 @@ defmodule Absinthe.Plug.GraphiQL do
   EEx.function_from_file :defp, :graphiql_html, Path.join(__DIR__, "graphiql.html.eex"),
     [:graphiql_version, :query_string, :variables_string, :result_string]
 
-  @graphql_toolbox_version "1.0.1"
-  EEx.function_from_file :defp, :graphql_toolbox_html, Path.join(__DIR__, "graphql_toolbox.html.eex"),
-    [:graphql_toolbox_version, :query_string, :variables_string]
+  @graphiql_workspace_version "1.0.4"
+  EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(__DIR__, "graphiql_workspace.html.eex"),
+    [:graphiql_workspace_version, :query_string, :variables_string]
 
   @behaviour Plug
 
@@ -81,7 +81,7 @@ defmodule Absinthe.Plug.GraphiQL do
         |> js_escape
 
         html = case interface do
-          :advanced -> graphql_toolbox_html(@graphql_toolbox_version, query, var_string)
+          :advanced -> graphiql_workspace_html(@graphiql_workspace_version, query, var_string)
           :simple -> graphiql_html(@graphiql_version, query, var_string, result)
         end
 
