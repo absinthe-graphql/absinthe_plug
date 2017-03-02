@@ -2,13 +2,22 @@ defmodule Absinthe.Plug.GraphiQL do
   @moduledoc """
   Enables GraphiQL
 
-  # Usage
+  ## Usage
 
   ```elixir
-  if Absinthe.Plug.GraphiQL.serve? do
+  if Mix.env == :dev do
     plug Absinthe.Plug.GraphiQL
   end
   ```
+
+  ## Interface Selection
+
+  The GraphiQL interface can be switched using the `:interface` option.
+
+  - `:advanced` (default) will serve the [GraphiQL Workspace](https://github.com/OlegIlyenko/graphiql-workspace) interface from Oleg Ilyenko.
+  - `:simple` will serve the original [GraphiQL](https://github.com/graphql/graphiql) interface from Facebook.
+
+  See `Absinthe.Plug` for the other  options.
   """
 
   require EEx
@@ -31,7 +40,7 @@ defmodule Absinthe.Plug.GraphiQL do
     path: binary,
     context: map,
     json_codec: atom | {atom, Keyword.t},
-    interface: atom
+    interface: :advanced | :simple
   ]
 
   @doc """
