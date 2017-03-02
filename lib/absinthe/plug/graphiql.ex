@@ -44,7 +44,7 @@ defmodule Absinthe.Plug.GraphiQL do
     path: binary,
     context: map,
     json_codec: atom | {atom, Keyword.t},
-    interface: nil | :advanced | :simple
+    interface: :advanced | :simple
   ]
 
   @doc false

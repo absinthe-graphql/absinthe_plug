@@ -25,7 +25,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled.Check do
   end
 
   # Collect the validation errors from nodes
-  @spec handle_node(Blueprint.node_t, [Phase.Error.t]) :: {Blueprint.node_t, [Phase.Error.t]}
+  @spec handle_node(Blueprint.node_t, [Phase.Error.t]) :: {Blueprint.node_t, [Phase.Error.t | String.t]}
   defp handle_node(%{errors: errs} = node, acc) do
     {node, acc ++ errs}
   end
