@@ -1,9 +1,10 @@
 defmodule Absinthe.Plug.GraphiQL do
   @moduledoc """
 
+<<<<<<< HEAD
   Provides a GraphiQL interface.
 
-  ## Examples Usage
+  ## Examples
 
   Serve the GraphiQL "advanced" interface at `/graphiql`, but only in
   development:
@@ -23,16 +24,24 @@ defmodule Absinthe.Plug.GraphiQL do
           interface: :simple
       end
 
+  ## Interface Selection
+
+  The GraphiQL interface can be switched using the `:interface` option.
+
+  - `:advanced` (default) will serve the [GraphiQL Workspace](https://github.com/OlegIlyenko/graphiql-workspace) interface from Oleg Ilyenko.
+  - `:simple` will serve the original [GraphiQL](https://github.com/graphql/graphiql) interface from Facebook.
+
+  See `Absinthe.Plug` for the other  options.
   """
 
   require EEx
-  @graphiql_version "0.7.8"
+  @graphiql_version "0.9.3"
   EEx.function_from_file :defp, :graphiql_html, Path.join(__DIR__, "graphiql.html.eex"),
     [:graphiql_version, :query_string, :variables_string, :result_string]
 
-  @graphql_toolbox_version "1.0.1"
-  EEx.function_from_file :defp, :graphql_toolbox_html, Path.join(__DIR__, "graphql_toolbox.html.eex"),
-    [:graphql_toolbox_version, :query_string, :variables_string]
+  @graphiql_workspace_version "1.0.4"
+  EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(__DIR__, "graphiql_workspace.html.eex"),
+    [:graphiql_workspace_version, :query_string, :variables_string]
 
   @behaviour Plug
 
@@ -91,7 +100,7 @@ defmodule Absinthe.Plug.GraphiQL do
         |> js_escape
 
         html = case interface do
-          :advanced -> graphql_toolbox_html(@graphql_toolbox_version, query, var_string)
+          :advanced -> graphiql_workspace_html(@graphiql_workspace_version, query, var_string)
           :simple -> graphiql_html(@graphiql_version, query, var_string, result)
         end
 

@@ -28,6 +28,13 @@ defmodule Absinthe.Plug.TestSchema do
       end
 
     field :field_on_root_value, :string
+
+    field :complex, :string do
+      complexity 100
+      resolve fn _, _ ->
+        raise "complex string must not be resolved"
+      end
+    end
   end
 
   object :item do

@@ -53,6 +53,10 @@ defmodule Absinthe.Plug do
   import Plug.Conn
   require Logger
 
+  @raw_options [:analyze_complexity, :max_complexity]
+
+  @type function_name :: atom
+
   @typedoc """
   - `:adapter` -- (Optional) Absinthe adapter to use (default: `Absinthe.Adapter.LanguageConventions`).
   - `:context` -- (Optional) Initial value for the Absinthe context, available to resolvers. (default: `%{}`).
@@ -69,7 +73,9 @@ defmodule Absinthe.Plug do
     json_codec: module | {module, Keyword.t},
     pipeline: {module, atom},
     no_query_message: String.t,
-    document_providers: [Absinthe.Plug.DocumentProvider.t, ...] | Absinthe.Plug.DocumentProvider.t | {module, atom}
+    document_providers: [Absinthe.Plug.DocumentProvider.t, ...] | Absinthe.Plug.DocumentProvider.t | {module, atom},
+    analyze_complexity: boolean,
+    max_complexity: non_neg_integer | :infinity,
   ]
 
   @doc """
@@ -96,6 +102,8 @@ defmodule Absinthe.Plug do
 
     schema_mod = opts |> get_schema
 
+    raw_options = Keyword.take(opts, @raw_options)
+
     %{
       adapter: adapter,
       context: context,
@@ -103,6 +111,7 @@ defmodule Absinthe.Plug do
       json_codec: json_codec,
       no_query_message: no_query_message,
       pipeline: pipeline,
+      raw_options: raw_options,
       schema_mod: schema_mod,
     }
   end
@@ -203,6 +212,7 @@ defmodule Absinthe.Plug do
   #
   # DOCUMENT PROVIDERS
   #
+
 
   @doc """
   The default list of document providers that are enabled.

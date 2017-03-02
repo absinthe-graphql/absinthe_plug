@@ -144,6 +144,22 @@ defmodule Absinthe.PlugTest do
     assert %{"errors" => [%{"message" => _}]} = resp_body |> Poison.decode!
   end
 
+  @complex_query """
+  query ComplexQuery {
+      complex
+  }
+  """
+
+  test "document with too much complexity returns analysis errors" do
+    opts = Absinthe.Plug.init(schema: TestSchema, analyze_complexity: true, max_complexity: 99)
+
+    assert %{status: 400, resp_body: resp_body} = conn(:get, "/", query: @complex_query)
+    |> put_req_header("content-type", "application/x-www-form-urlencoded")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert %{"errors" => [%{"message" => "Field complex is too complex" <> _} | _]} = resp_body |> Poison.decode!
+  end
 
   @fragment_query """
   query Q {

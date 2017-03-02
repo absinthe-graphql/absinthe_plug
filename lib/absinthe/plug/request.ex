@@ -11,6 +11,7 @@ defmodule Absinthe.Plug.Request do
     :params,
     :root_value,
     :variables,
+    :raw_options,
   ]
 
   defstruct [
@@ -21,6 +22,7 @@ defmodule Absinthe.Plug.Request do
     :params,
     :root_value,
     :variables,
+    :raw_options,
     pipeline: [],
     document: nil,
     document_provider: nil,
@@ -39,6 +41,7 @@ defmodule Absinthe.Plug.Request do
     document_provider: nil | Absinthe.Plug.DocumentProvider.t,
     document_provider_key: any,
     pipeline: Absinthe.Pipeline.t,
+    raw_options: Keyword.t,
   }
 
   @spec parse(Plug.Conn.t, map) :: {:ok, t} | {:input_error, String.t}
@@ -52,12 +55,13 @@ defmodule Absinthe.Plug.Request do
                      root_value <- extract_root_value(conn) do
       %__MODULE__{
         adapter: adapter,
-        document: raw_document,
-        params: params,
-        variables: variables,
-        operation_name: operation_name,
         context: context,
-        root_value: root_value
+        document: raw_document,
+        operation_name: operation_name,
+        params: params,
+        raw_options: config.raw_options,
+        root_value: root_value,
+        variables: variables,
       }
       |> add_pipeline(conn, config)
       |> provide_document(config)
@@ -207,11 +211,21 @@ defmodule Absinthe.Plug.Request do
     private = Map.put(private, :http_method, conn.method)
     config = Map.put(config, :conn_private, private)
 
-    simplified_input = request |> Map.from_struct |> Keyword.new
+    opts = request |> to_pipeline_opts
 
     {module, fun} = config.pipeline
-    pipeline = apply(module, fun, [config, simplified_input])
+    pipeline = apply(module, fun, [config, opts])
     %{request | pipeline: pipeline}
+  end
+
+  @spec to_pipeline_opts(t) :: Keyword.t
+  defp to_pipeline_opts(request) do
+    {with_raw_options, opts} =
+      request
+      |> Map.from_struct
+      |> Keyword.new
+      |> Keyword.split([:raw_options])
+    Keyword.merge(opts, with_raw_options[:raw_options])
   end
 
 end
