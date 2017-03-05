@@ -197,6 +197,7 @@ defmodule Absinthe.Plug do
 
   @spec run_request(Absinthe.Plug.Request.t, Plug.Conn.t) :: {Plug.Conn.t, any}
   defp run_request(request, conn) do
+    Absinthe.Plug.Request.log(request)
     case Absinthe.Pipeline.run(request.document, Absinthe.Plug.DocumentProvider.pipeline(request)) do
       {:ok, result, _} ->
         {conn, {:ok, result}}

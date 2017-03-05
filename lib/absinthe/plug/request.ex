@@ -12,6 +12,7 @@ defmodule Absinthe.Plug.Request do
     :root_value,
     :variables,
     :raw_options,
+    :schema,
   ]
 
   defstruct [
@@ -23,6 +24,7 @@ defmodule Absinthe.Plug.Request do
     :root_value,
     :variables,
     :raw_options,
+    :schema,
     pipeline: [],
     document: nil,
     document_provider: nil,
@@ -42,6 +44,7 @@ defmodule Absinthe.Plug.Request do
     document_provider_key: any,
     pipeline: Absinthe.Pipeline.t,
     raw_options: Keyword.t,
+    schema: Absinthe.Schema.t,
   }
 
   @spec parse(Plug.Conn.t, map) :: {:ok, t} | {:input_error, String.t}
@@ -61,6 +64,7 @@ defmodule Absinthe.Plug.Request do
         params: params,
         raw_options: config.raw_options,
         root_value: root_value,
+        schema: config.schema_mod,
         variables: variables,
       }
       |> add_pipeline(conn, config)
@@ -228,6 +232,21 @@ defmodule Absinthe.Plug.Request do
       |> Keyword.new
       |> Keyword.split([:raw_options])
     Keyword.merge(opts, with_raw_options[:raw_options])
+  end
+
+  #
+  # LOGGING
+  #
+
+  @doc false
+  @spec log(t, Logger.level) :: :ok
+  def log(request, level \\ :debug) do
+    Absinthe.Logger.log_run(:debug, {
+      request.document,
+      request.schema,
+      request.pipeline,
+      to_pipeline_opts(request),
+    })
   end
 
 end
