@@ -88,6 +88,7 @@ defmodule Absinthe.Plug.GraphiQL do
          {:process, request} <- select_mode(request),
          {:ok, request} <- Absinthe.Plug.ensure_processable(request, config),
          pipeline <- Absinthe.Plug.DocumentProvider.pipeline(request),
+         :ok <- Absinthe.Plug.Request.log(request),
          {:ok, absinthe_result, _} <- Absinthe.Pipeline.run(request.document, pipeline) do
       {:ok, absinthe_result, request.variables, request.document || ""}
     end
