@@ -77,7 +77,8 @@ defmodule Absinthe.Plug do
     pipeline: {Module.t, function_name},
     no_query_message: binary,
     analyze_complexity: boolean,
-    max_complexity: non_neg_integer | :infinity
+    max_complexity: non_neg_integer | :infinity,
+    log: boolean
   ]
 
   @doc """
@@ -98,11 +99,14 @@ defmodule Absinthe.Plug do
     end
 
     schema_mod = opts |> get_schema
+    adapter = Keyword.get(opts, :adapter)
+
+    log = Keyword.get(opts, :log, true)
 
     raw_options = Keyword.take(opts, @raw_options)
 
     %{adapter: adapter, schema_mod: schema_mod, context: context, json_codec: json_codec,
-      pipeline: pipeline, no_query_message: no_query_message,
+      pipeline: pipeline, no_query_message: no_query_message, log: log,
       raw_options: raw_options}
   end
 
@@ -180,13 +184,15 @@ defmodule Absinthe.Plug do
   end
 
   @doc false
-  def prepare(conn, body, %{json_codec: json_codec, raw_options: raw_options} = config) do
+  def prepare(conn, body, %{json_codec: json_codec, raw_options: raw_options, log: log} = config) do
     raw_input = Map.get(conn.params, "query", body)
 
-    Logger.debug("""
-    GraphQL Document:
-    #{raw_input}
-    """)
+    if log do
+      Logger.debug("""
+      GraphQL Document:
+      #{raw_input}
+      """)
+    end
 
     variables = Map.get(conn.params, "variables") || "{}"
     operation_name = conn.params["operationName"] |> decode_operation_name
