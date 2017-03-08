@@ -1,3 +1,11 @@
+v1.3.0-beta0
+
+- Use configurable logging provided by `Absinthe.Logger` (which supports variable
+  logging/filtering).
+  - Add Document Providers with support for "compiled," partially pre-processed
+  GraphQL documents. Read the documentation for `Absinthe.Plug.DocumentProvider`
+  and `Absinthe.Plug.DocumentProvider.Compiled` for more information.
+
 v1.2.4
 
 - Fix issue with missing `fetch` version in CDN for GraphiQL `:simple` interface.

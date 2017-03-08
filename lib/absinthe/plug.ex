@@ -17,7 +17,7 @@ defmodule Absinthe.Plug do
     import_types Absinthe.Plug.Types
 
     mutation do
-      field :upload_file, :string do
+      field :files, :string do
         arg :users, non_null(:upload)
         arg :metadata, :upload
 
@@ -32,17 +32,12 @@ defmodule Absinthe.Plug do
   ```
 
   Next it's best to look at how one submits such a query over HTTP. You need to
-  use the `multipart/form-data` content type. From there we need
-
-  1) a `query` parameter holding out GraphQL document
-  2) optional variables parameter for JSON encoded variables
-  3) optional operationName parameter to specify the operation
-  4) a query key for each file that will be uploaded.
+  use the `multipart/form-data` content type.
 
   An example of using this with curl would look like:
   ```
   curl -X POST \\
-  -F query="{files(users: \"users_csv\", metadata: \"metadata_json\")}" \\
+  -F query="{files(users: \\"users_csv\\", metadata: \\"metadata_json\\")}" \\
   -F users_csv=@users.csv \\
   -F metadata_json=@metadata.json \\
   localhost:4000/graphql
