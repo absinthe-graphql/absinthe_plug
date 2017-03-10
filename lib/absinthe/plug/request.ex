@@ -241,7 +241,7 @@ defmodule Absinthe.Plug.Request do
   @doc false
   @spec log(t, Logger.level) :: :ok
   def log(request, level \\ :debug) do
-    Absinthe.Logger.log_run(:debug, {
+    Absinthe.Logger.log_run(level, {
       request.document,
       request.schema,
       request.pipeline,
