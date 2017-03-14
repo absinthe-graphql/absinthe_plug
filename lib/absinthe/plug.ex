@@ -174,8 +174,8 @@ defmodule Absinthe.Plug do
   @doc false
   @spec ensure_processable(Absinthe.Plug.Request.t, map) :: {:ok, Absinthe.Plug.Request.t} | {:input_error, String.t}
   def ensure_processable(request, config) do
-    with {:ok, request} <- ensure_document_provider(request) do
-      ensure_document(request, config)
+    with {:ok, request} <- ensure_document(request, config) do
+      ensure_document_provider(request)
     end
   end
 
