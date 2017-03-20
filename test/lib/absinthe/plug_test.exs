@@ -133,6 +133,17 @@ defmodule Absinthe.PlugTest do
   }
   """
 
+  test "empty document returns :no_query_message" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 400, resp_body: resp_body} = conn(:get, "/", query: "")
+    |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == opts[:no_query_message]
+  end
+
   test "document with error returns validation errors" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
