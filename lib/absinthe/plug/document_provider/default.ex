@@ -35,8 +35,8 @@ defmodule Absinthe.Plug.DocumentProvider.Default do
   def pipeline(%{pipeline: as_configured}), do: as_configured
 
   @doc false
-  @spec process(Absinthe.Plug.Request.t, Keyword.t) :: Absinthe.DocumentProvider.result
-  def process(%{document: nil} = request, _), do: {:cont, request}
-  def process(%{document: _} = request, _), do: {:halt, request}
+  @spec process(Absinthe.Plug.Request.Query.t, Keyword.t) :: Absinthe.DocumentProvider.result
+  def process(%{document: nil} = query, _), do: {:cont, query}
+  def process(%{document: _} = query, _), do: {:halt, query}
 
 end
