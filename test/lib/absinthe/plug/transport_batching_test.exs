@@ -196,6 +196,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     "variables": {"idx": "foo"}
   }]
   """
+
   @fragment_query_with_undefined_variable_result ~s([{"payload":{"id":"1","data":{"item":{"name":"Foo"}}}},{"payload":{"id":"2","errors":[{"message":"In argument \\\"id\\\": Expected type \\\"ID!\\\", found null.","locations":[{"line":2,"column":0}]}]}}])
 
   test "can include fragments with undefined variable" do
