@@ -1,7 +1,5 @@
 defmodule Absinthe.Plug.GraphiQL do
   @moduledoc """
-
-<<<<<<< HEAD
   Provides a GraphiQL interface.
 
   ## Examples
@@ -87,10 +85,18 @@ defmodule Absinthe.Plug.GraphiQL do
     with {:ok, request} <- Absinthe.Plug.Request.parse(conn, config),
          {:process, request} <- select_mode(request),
          {:ok, request} <- Absinthe.Plug.ensure_processable(request, config),
-         pipeline <- Absinthe.Plug.DocumentProvider.pipeline(request),
-         :ok <- Absinthe.Plug.Request.log(request),
-         {:ok, absinthe_result, _} <- Absinthe.Pipeline.run(request.document, pipeline) do
-      {:ok, absinthe_result, request.variables, request.document || ""}
+         :ok <- Absinthe.Plug.Request.log(request) do
+
+      # TODO @benwilson512:
+      # Can we use Absinthe.Plug.run_request here safely?
+
+      {_conn, absinthe_result} = Absinthe.Plug.run_request(request, conn)
+      case absinthe_result do
+        {:ok, result} -> 
+          query = hd(request.queries) # GraphiQL doesn't batch requests, so the first query is the only one
+          {:ok, result, query.variables, query.document || ""}
+        other -> other
+      end
     end
     |> case do
       {:ok, result, variables, query} ->

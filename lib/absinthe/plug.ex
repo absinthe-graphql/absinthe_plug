@@ -47,6 +47,13 @@ defmodule Absinthe.Plug do
   For more on configuring `Absinthe.Plug` and how GraphQL requests are made,
   see [the guide](http://absinthe-graphql.org/guides/plug-phoenix/) at
   <http://absinthe-graphql.org>.
+
+
+TODO:
+prepared_docs
+prepared_docs |> Batch.Runner.resolve(%{root_value: root_value, schema: schema, context: context})
+
+
   """
 
   @behaviour Plug
@@ -148,6 +155,10 @@ defmodule Absinthe.Plug do
         conn
         |> json(400, result, json_codec)
 
+      {:ok, result} when is_list(result) ->
+        conn
+        |> json(200, result, json_codec)
+
       {:error, {:http_method, text}, _} ->
         conn
         |> send_resp(405, text)
@@ -174,35 +185,82 @@ defmodule Absinthe.Plug do
   @doc false
   @spec ensure_processable(Absinthe.Plug.Request.t, map) :: {:ok, Absinthe.Plug.Request.t} | {:input_error, String.t}
   def ensure_processable(request, config) do
-    with {:ok, request} <- ensure_document(request, config) do
+    with {:ok, request} <- ensure_documents(request, config) do
       ensure_document_provider(request)
     end
+  end
+
+  @spec ensure_documents(Absinthe.Plug.Request.t, map) :: {:ok, Absinthe.Plug.Request.t} | {:input_error, String.t}
+  defp ensure_documents(%{queries: []}, config) do
+    {:input_error, config.no_query_message}
+  end
+  defp ensure_documents(%{queries: queries} = request, config) do
+    Enum.reduce_while(queries, {:ok, request}, fn query, _acc ->
+      query_status = case query do
+        {:input_error, error_msg} -> {:input_error, error_msg}
+        query -> ensure_document(query, config)
+      end
+
+      case query_status do
+        {:ok, _query} -> {:cont, {:ok, request}}
+        {:input_error, error_msg} -> {:halt, {:input_error, error_msg}}
+      end
+    end)
   end
 
   @spec ensure_document(Absinthe.Plug.Request.t, map) :: {:ok, Absinthe.Plug.Request.t} | {:input_error, String.t}
   defp ensure_document(%{document: nil}, config) do
     {:input_error, config.no_query_message}
   end
-  defp ensure_document(request, _) do
-    {:ok, request}
+  defp ensure_document(%{document: _} = query, _) do
+    {:ok, query}
   end
 
   @spec ensure_document_provider(Absinthe.Plug.Request.t) :: {:ok, Absinthe.Plug.Request.t} | {:input_error, String.t}
-  defp ensure_document_provider(%{document_provider: nil}) do
-    {:input_error, "No document provider found to handle this request"}
-  end
-  defp ensure_document_provider(request) do
-    {:ok, request}
+  defp ensure_document_provider(%{queries: queries} = request) do
+    if Enum.all?(queries, &Map.has_key?(&1, :document_provider)) do
+      {:ok, request}
+    else
+      {:input_error, "No document provider found to handle this request"}
+    end
   end
 
   @spec run_request(Absinthe.Plug.Request.t, Plug.Conn.t) :: {Plug.Conn.t, any}
-  defp run_request(request, conn) do
+  def run_request(%{batched: true} = request, conn) do
     Absinthe.Plug.Request.log(request)
-    case Absinthe.Pipeline.run(request.document, Absinthe.Plug.DocumentProvider.pipeline(request)) do
-      {:ok, result, _} ->
-        {conn, {:ok, result}}
-      other ->
-        {conn, other}
+
+
+    # TODO @benwilson512:
+    # Instead of calling run_query on every single query below,
+    # call the magic batch resolver
+
+    payloads =
+      request.queries
+      |> Enum.zip(request.extra_keys)
+      |> Enum.reverse # we'll be prepending results during reduce, so have to reverse now
+      |> Enum.reduce_while({:ok, []}, fn ({query, extra_keys}, {:ok, payloads}) ->
+        case run_query(query) do
+          {:ok, result} ->
+            payload = Map.merge(result, extra_keys)
+            {:cont, {:ok, [%{payload: payload} | payloads]}}
+          error ->
+            {:halt, error}
+        end
+      end)
+
+    {conn, payloads}
+  end
+  def run_request(%{batched: false} = request, conn) do
+    Absinthe.Plug.Request.log(request)
+    query = hd(request.queries)
+    {conn, run_query(query)}
+  end
+
+  @spec run_query(Absinthe.Plug.Request.Query.t) :: {Plug.Conn.t, any}
+  defp run_query(query) do
+    case Absinthe.Pipeline.run(query.document, Absinthe.Plug.DocumentProvider.pipeline(query)) do
+      {:ok, result, _} -> {:ok, result}
+      other -> other
     end
   end
 

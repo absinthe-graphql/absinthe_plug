@@ -3,7 +3,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
   use Absinthe.Plug.TestCase
   alias Absinthe.Plug.TestSchema
 
-  @relay_foo_result ~s([{"payload":{"data":{"item":{"name":"Foo"}}},"id":"1"},{"payload":{"data":{"item":{"name":"Bar"}}},"id":"2"}])
+  @relay_foo_result ~s([{"payload":{"id":"1","data":{"item":{"name":"Foo"}}}},{"payload":{"id":"2","data":{"item":{"name":"Bar"}}}}])
 
   @relay_variable_query """
   [{
@@ -24,12 +24,12 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     "variables": {}
   }, {
     "id": "2",
-    "query": "query Index { item(id: \\"foo\\") { name } }",
+    "query": "query Index { item(id: \\"bar\\") { name } }",
     "variables": {}
   }]
   """
 
-  @apollo_foo_result ~s([{"payload":{"data":{"item":{"name":"Foo"}}}},{"payload":{"data":{"item":{"name":"bar"}}}}])
+  @apollo_foo_result ~s([{"payload":{"data":{"item":{"name":"Foo"}}}},{"payload":{"data":{"item":{"name":"Bar"}}}}])
 
   @apollo_variable_query """
   [{
@@ -96,26 +96,6 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert resp_body == @apollo_foo_result
   end
 
-  # MUTATIONS
-  @mutation """
-  [{
-    "id": "1",
-    "query": "mutation AddItem { addItem(name: \\"Baz\\") { name } }",
-    "variables": {}
-  }]
-  """
-
-  test "mutation with get fails" do
-    opts = Absinthe.Plug.init(schema: TestSchema)
-
-    assert %{status: 400, resp_body: resp_body} = conn(:get, "/", @mutation)
-    |> put_req_header("content-type", "application/json")
-    |> plug_parser
-    |> Absinthe.Plug.call(opts)
-
-    assert resp_body == "Can only perform batch queries from a POST request"
-  end
-
   @fragment_query """
   [{
     "id": "1",
@@ -131,7 +111,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
   }, {
     "id": "2",
     "query": "query P {
-        item(id: \\"foo\\") {
+        item(id: \\"bar\\") {
           ...Named
         }
       }
@@ -178,7 +158,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     "variables": {}
   }]
   """
-  @fragment_query_with_undefined_field_result "[{\"payload\":{\"data\":{\"item\":{\"name\":\"Foo\"}}},\"id\":\"1\"},{\"payload\":{\"errors\":[{\"message\":\"Cannot query field \\\"namep\\\" on type \\\"Item\\\". Did you mean \\\"name\\\"?\",\"locations\":[{\"line\":7,\"column\":0}]}]},\"id\":\"2\"}]"
+  @fragment_query_with_undefined_field_result ~s([{"payload":{"id":"1","data":{"item":{"name":"Foo"}}}},{"payload":{"id":"2","errors":[{"message":"Cannot query field \\\"namep\\\" on type \\\"Item\\\". Did you mean \\\"name\\\"?","locations":[{"line":7,"column":0}]}]}}])
 
   test "can include fragments with undefined fields" do
     opts = Absinthe.Plug.init(schema: TestSchema)
@@ -216,7 +196,8 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     "variables": {"idx": "foo"}
   }]
   """
-  @fragment_query_with_undefined_variable_result "[{\"payload\":{\"data\":{\"item\":{\"name\":\"Foo\"}}},\"id\":\"1\"},{\"payload\":{\"errors\":[{\"message\":\"In argument \\\"id\\\": Expected type \\\"ID!\\\", found null.\",\"locations\":[{\"line\":2,\"column\":0}]}]},\"id\":\"2\"}]"
+
+  @fragment_query_with_undefined_variable_result ~s([{"payload":{"id":"1","data":{"item":{"name":"Foo"}}}},{"payload":{"id":"2","errors":[{"message":"In argument \\\"id\\\": Expected type \\\"ID!\\\", found null.","locations":[{"line":2,"column":0}]}]}}])
 
   test "can include fragments with undefined variable" do
     opts = Absinthe.Plug.init(schema: TestSchema)
