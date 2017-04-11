@@ -87,12 +87,8 @@ defmodule Absinthe.Plug.GraphiQL do
          {:ok, request} <- Absinthe.Plug.ensure_processable(request, config),
          :ok <- Absinthe.Plug.Request.log(request) do
 
-      # TODO @benwilson512:
-      # Can we use Absinthe.Plug.run_request here safely?
-
-      {_conn, absinthe_result} = Absinthe.Plug.run_request(request, conn)
-      case absinthe_result do
-        {:ok, result} -> 
+      case Absinthe.Plug.run_request(request, conn, config) do
+        {:ok, result} ->
           query = hd(request.queries) # GraphiQL doesn't batch requests, so the first query is the only one
           {:ok, result, query.variables, query.document || ""}
         other -> other

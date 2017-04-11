@@ -1,5 +1,6 @@
 defmodule Absinthe.Plug.Request.Query do
   @moduledoc false
+
   # A struct containing, among a bunch of config params,
   # the raw GraphQL document and variables that make up the meat
   # of a GraphQL request. A GraphQL request can contain multiple Queries.
@@ -61,9 +62,25 @@ defmodule Absinthe.Plug.Request.Query do
         root_value: config.root_value,
         params: params,
       }
-      |> add_pipeline(conn, config)
       |> provide_document(config)
     end
+  end
+
+  def add_pipeline(query, conn, config) do
+    private = conn.private[:absinthe] || %{}
+    private = Map.put(private, :http_method, conn.method)
+    config = Map.put(config, :conn_private, private)
+
+    opts = query |> to_pipeline_opts
+
+    {module, fun} = config.pipeline
+    pipeline = apply(module, fun, [config, opts])
+
+    pipeline =
+      %{query | pipeline: pipeline}
+      |> Absinthe.Plug.DocumentProvider.pipeline
+
+    %{query | pipeline: pipeline}
   end
 
   #
@@ -149,25 +166,8 @@ defmodule Absinthe.Plug.Request.Query do
     |> Absinthe.Plug.DocumentProvider.process(query)
   end
 
-  #
-  # PIPELINE
-  #
-
-  @spec add_pipeline(t, Plug.Conn.t, map) :: t
-  defp add_pipeline(query, conn, config) do
-    private = conn.private[:absinthe] || %{}
-    private = Map.put(private, :http_method, conn.method)
-    config = Map.put(config, :conn_private, private)
-
-    opts = query |> to_pipeline_opts
-
-    {module, fun} = config.pipeline
-    pipeline = apply(module, fun, [config, opts])
-    %{query | pipeline: pipeline}
-  end
-
   @spec to_pipeline_opts(t) :: Keyword.t
-  defp to_pipeline_opts(query) do
+  def to_pipeline_opts(query) do
     {with_raw_options, opts} =
       query
       |> Map.from_struct

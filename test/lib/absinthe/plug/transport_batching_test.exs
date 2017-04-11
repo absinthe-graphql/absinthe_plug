@@ -209,4 +209,28 @@ defmodule Absinthe.Plug.TransportBatchingTest do
 
     assert resp_body == @fragment_query_with_undefined_variable_result
   end
+
+  test "it can use resolution batching across documents" do
+    {:ok, pid} = Counter.start_link(0)
+    opts = Absinthe.Plug.init(schema: TestSchema, context: %{counter: pid})
+
+    payload = """
+      [{
+        "id": "1",
+        "query": "{ foo: pingCounter }",
+        "variables": {}
+      }, {
+        "id": "2",
+        "query": "{ pingCounter }",
+        "variables": {"id": "bar"}
+      }]
+      """
+
+    assert %{status: 200, resp_body: _} = conn(:post, "/", payload)
+    |> put_req_header("content-type", "application/json")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert 1 == Counter.read(pid)
+  end
 end

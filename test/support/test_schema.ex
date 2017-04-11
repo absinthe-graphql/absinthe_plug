@@ -8,7 +8,19 @@ defmodule Absinthe.Plug.TestSchema do
     "bar" => %{id: "bar", name: "Bar"}
   }
 
+  def batch_ping_counter(pid, _) do
+    Counter.ping(pid)
+  end
+
   query do
+    field :ping_counter, :integer do
+      resolve fn _, %{context: %{counter: pid}} ->
+        batch({__MODULE__, :batch_ping_counter, pid}, :unused, fn _unused ->
+          {:ok, Counter.read(pid)}
+        end)
+      end
+    end
+
     field :upload_test, :string do
       arg :file_a, non_null(:upload)
       arg :file_b, :upload
