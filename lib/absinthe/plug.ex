@@ -226,9 +226,8 @@ prepared_docs |> Batch.Runner.resolve(%{root_value: root_value, schema: schema, 
   end
 
   @spec run_request(Absinthe.Plug.Request.t, Plug.Conn.t) :: {Plug.Conn.t, any}
-  def run_request(%{batched: true} = request, conn) do
+  def run_request(%{batch: true} = request, conn) do
     Absinthe.Plug.Request.log(request)
-
 
     # TODO @benwilson512:
     # Instead of calling run_query on every single query below,
@@ -250,9 +249,8 @@ prepared_docs |> Batch.Runner.resolve(%{root_value: root_value, schema: schema, 
 
     {conn, payloads}
   end
-  def run_request(%{batched: false} = request, conn) do
+  def run_request(%{batch: false, queries: [query]} = request, conn) do
     Absinthe.Plug.Request.log(request)
-    query = hd(request.queries)
     {conn, run_query(query)}
   end
 

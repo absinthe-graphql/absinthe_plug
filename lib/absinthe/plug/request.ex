@@ -1,61 +1,58 @@
 defmodule Absinthe.Plug.Request do
-  @moduledoc """
-  This struct is the default return type of Request.parse.
-  It contains parsed Request structs -- typically just one,
-  but when `batched` is set to true, it can be multiple.
-  
-  extra_keys: e.g. %{"id": ...} sent by react-relay-network-layer,
-              which need to be merged back into the list of final results
-              before sending it to the client
-  """
+  @moduledoc false
+
+  # This struct is the default return type of Request.parse.
+  # It contains parsed Request structs -- typically just one,
+  # but when `batched` is set to true, it can be multiple.
+  #
+  # extra_keys: e.g. %{"id": ...} sent by react-relay-network-layer,
+  #             which need to be merged back into the list of final results
+  #             before sending it to the client
 
   import Plug.Conn
   alias Absinthe.Plug.Request.Query
 
-  @enforce_keys [
-    :adapter,
-    :context,
-    :schema,
-  ]
-
   defstruct [
-    :adapter,
-    :context,
-    :schema,
     queries: [],
-    batched: false,
+    batch: false,
     extra_keys: [],
   ]
 
   @type t :: %__MODULE__{
     queries: list(Absinthe.Plug.Request.Query.t),
-    batched: boolean(),
+    batch: boolean(),
     extra_keys: list(map()),
-    adapter: Absinthe.Adapter.t,
-    context: map,
-    schema: Absinthe.Schema.t,
   }
 
   @spec parse(Plug.Conn.t, map) :: {:ok, t} | {:input_error, String.t}
   def parse(conn, config) do
-    request_params = %{
-      conn: conn,
-      root_value: extract_root_value(conn),
-    }
+    root_value =
+      config
+      |> Map.get(:root_value, %{})
+      |> Map.merge(extract_root_value(conn))
+
+    context =
+      config
+      |> Map.get(:context, %{})
+      |> Map.merge(extract_context(conn, config))
+
+    config = Map.merge(config, %{
+      context: context,
+      root_value: root_value,
+    })
 
     with {conn, {body, params}} <- extract_body_and_params(conn) do
       # Phoenix puts parsed params under the "_json" key when the
       # structure is an array; otherwise it's just the keys themselves,
       # and they may sit in the body or in the params
-      is_batched = Map.has_key?(params, "_json")
-      make_request({body, params}, request_params, conn, config, is_batched)
+      batch? = Map.has_key?(params, "_json")
+      build_request(conn, body, params, config, batch?: batch?)
     end
   end
 
-  @spec make_request({String.t, map}, map, map, map, boolean) :: %__MODULE__{}
-  def make_request({_body, params}, request_params, conn, config, _is_batched = true) do
+  defp build_request(conn, _body, params, config, batch?: true) do
     queries = Enum.map(params["_json"], fn query ->
-      Query.parse({"", query}, request_params, conn, config)
+      Query.parse(conn, "", query, config)
     end)
 
     extra_keys = Enum.map(params["_json"], fn query ->
@@ -64,26 +61,20 @@ defmodule Absinthe.Plug.Request do
 
     request = %__MODULE__{
       queries: queries,
-      batched: true,
+      batch: true,
       extra_keys: extra_keys,
-      context: extract_context(conn, config),
-      schema: config.schema_mod,
-      adapter: config.adapter,
     }
     {:ok, request}
   end
-  def make_request({body, params}, request_params, conn, config, _is_batched = false) do
+  defp build_request(conn, body, params, config, batch?: false) do
     queries =
-      {body, params}
-      |> Query.parse(request_params, conn, config)
+      conn
+      |> Query.parse(body, params, config)
       |> List.wrap
 
     request = %__MODULE__{
       queries: queries,
-      batched: false,
-      context: extract_context(conn, config),
-      schema: config.schema_mod,
-      adapter: config.adapter,
+      batch: false,
     }
 
     {:ok, request}
@@ -146,7 +137,7 @@ defmodule Absinthe.Plug.Request do
 
   @spec log(t) :: :ok
   def log(request, level \\ :debug) do
-    Enum.each(request.queries, &Query.log(&1, request, level))
+    Enum.each(request.queries, &Query.log(&1, level))
     :ok
   end
 end

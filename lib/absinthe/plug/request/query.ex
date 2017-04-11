@@ -1,13 +1,10 @@
 defmodule Absinthe.Plug.Request.Query do
-  @moduledoc """
-  A struct containing, among a bunch of config params,
-  the raw GraphQL document and variables that make up the meat
-  of a GraphQL request. A GraphQL request can contain multiple Queries.
-  Queries are fed through a DocumentProvider, and then passed into
-  the pipeline(s) for processing.
-  """
-
-  import Plug.Conn
+  @moduledoc false
+  # A struct containing, among a bunch of config params,
+  # the raw GraphQL document and variables that make up the meat
+  # of a GraphQL request. A GraphQL request can contain multiple Queries.
+  # Queries are fed through a DocumentProvider, and then passed into
+  # the pipeline(s) for processing.
 
   @enforce_keys [
     :document,
@@ -25,6 +22,9 @@ defmodule Absinthe.Plug.Request.Query do
     :variables,
     :raw_options,
     :params,
+    :adapter,
+    :context,
+    :schema,
     document: nil,
     document_provider_key: nil,
     pipeline: [],
@@ -41,11 +41,13 @@ defmodule Absinthe.Plug.Request.Query do
     pipeline: Absinthe.Pipeline.t,
     document_provider: nil | Absinthe.Plug.DocumentProvider.t,
     params: map,
+    adapter: Absinthe.Adapter.t,
+    context: map,
+    schema: Absinthe.Schema.t,
   }
 
-  @spec parse({String.t, map}, map, map, map) :: {:ok, t} | {:input_error, String.t}
-  def parse({body, params}, request_params, conn, config) do
-    with raw_document <- extract_raw_document(body, params), # either from 
+  def parse(conn, body, params, config) do
+    with raw_document <- extract_raw_document(body, params), # either from
      {:ok, variables} <- extract_variables(params, config),
        operation_name <- extract_operation_name(params) do
 
@@ -54,7 +56,9 @@ defmodule Absinthe.Plug.Request.Query do
         operation_name: operation_name,
         raw_options: config.raw_options,
         variables: variables,
-        root_value: request_params.root_value,
+        context: config.context,
+        adapter: config.adapter,
+        root_value: config.root_value,
         params: params,
       }
       |> add_pipeline(conn, config)
@@ -178,10 +182,10 @@ defmodule Absinthe.Plug.Request.Query do
 
   @doc false
   @spec log(t, Logger.level) :: :ok
-  def log(query, request, level \\ :debug) do
+  def log(query, level \\ :debug) do
     Absinthe.Logger.log_run(level, {
       query.document,
-      request.schema,
+      query.schema,
       query.pipeline,
       to_pipeline_opts(query),
     })
