@@ -169,9 +169,13 @@ defmodule Absinthe.Plug do
   @doc false
   @spec execute(Plug.Conn.t, map) :: {Plug.Conn.t, any}
   def execute(conn, config) do
-    with {:ok, request} <- Request.parse(conn, config),
+    conn_info = %{
+      conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
+    }
+
+    with {:ok, conn, request} <- Request.parse(conn, config),
          {:ok, request} <- ensure_processable(request, config) do
-      {conn, run_request(request, conn, config)}
+      {conn, run_request(request, conn_info, config)}
     else
       result ->
         {conn, result}
@@ -235,13 +239,13 @@ defmodule Absinthe.Plug do
 
     {:ok, results}
   end
-  def run_request(%{batch: false, queries: [query]} = request, conn, config) do
+  def run_request(%{batch: false, queries: [query]} = request, conn_info, config) do
     Request.log(request)
-    run_query(query, conn, config)
+    run_query(query, conn_info, config)
   end
 
-  def run_query(query, conn, config) do
-    %{document: document, pipeline: pipeline} = Request.Query.add_pipeline(query, conn, config)
+  def run_query(query, conn_info, config) do
+    %{document: document, pipeline: pipeline} = Request.Query.add_pipeline(query, conn_info, config)
 
     with {:ok, %{result: result}, _} <- Absinthe.Pipeline.run(document, pipeline) do
       {:ok, result}

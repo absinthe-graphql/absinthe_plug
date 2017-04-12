@@ -41,12 +41,12 @@ defmodule Absinthe.Plug.Request do
       root_value: root_value,
     })
 
-    with {_conn, {body, params}} <- extract_body_and_params(conn) do
+    with {:ok, conn, body, params} <- extract_body_and_params(conn) do
       # Phoenix puts parsed params under the "_json" key when the
       # structure is an array; otherwise it's just the keys themselves,
       # and they may sit in the body or in the params
       batch? = Map.has_key?(params, "_json")
-      build_request(body, params, config, batch?: batch?)
+      {:ok, conn, build_request(body, params, config, batch?: batch?)}
     end
   end
 
@@ -59,12 +59,11 @@ defmodule Absinthe.Plug.Request do
       Map.drop(query, ["query", "variables"])
     end)
 
-    request = %__MODULE__{
+    %__MODULE__{
       queries: queries,
       batch: true,
       extra_keys: extra_keys,
     }
-    {:ok, request}
   end
   defp build_request(body, params, config, batch?: false) do
     queries =
@@ -72,12 +71,10 @@ defmodule Absinthe.Plug.Request do
       |> Query.parse(params, config)
       |> List.wrap
 
-    request = %__MODULE__{
+    %__MODULE__{
       queries: queries,
       batch: false,
     }
-
-    {:ok, request}
   end
 
 
@@ -88,12 +85,13 @@ defmodule Absinthe.Plug.Request do
   @spec extract_body_and_params(Plug.Conn.t) :: {Plug.Conn.t, {String.t, map}}
   defp extract_body_and_params(%{body_params: %{"query" => _}} = conn) do
     conn = fetch_query_params(conn)
-    {conn, {"", conn.params}}
+    {:ok, conn, "", conn.params}
   end
   defp extract_body_and_params(conn) do
-    {:ok, body, conn} = read_body(conn)
-    conn = fetch_query_params(conn)
-    {conn, {body, conn.params}}
+    with {:ok, body, conn} <- read_body(conn) do
+      conn = fetch_query_params(conn)
+      {:ok, conn, body, conn.params}
+    end
   end
 
   #

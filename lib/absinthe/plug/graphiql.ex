@@ -82,20 +82,24 @@ defmodule Absinthe.Plug.GraphiQL do
   end
 
   defp do_call(conn, %{json_codec: _, interface: interface} = config) do
-    with {:ok, request} <- Absinthe.Plug.Request.parse(conn, config),
+    with {:ok, conn, request} <- Absinthe.Plug.Request.parse(conn, config),
          {:process, request} <- select_mode(request),
          {:ok, request} <- Absinthe.Plug.ensure_processable(request, config),
          :ok <- Absinthe.Plug.Request.log(request) do
 
-      case Absinthe.Plug.run_request(request, conn, config) do
+      conn_info = %{
+        conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
+      }
+
+      case Absinthe.Plug.run_request(request, conn_info, config) do
         {:ok, result} ->
           query = hd(request.queries) # GraphiQL doesn't batch requests, so the first query is the only one
-          {:ok, result, query.variables, query.document || ""}
+          {:ok, conn, result, query.variables, query.document || ""}
         other -> other
       end
     end
     |> case do
-      {:ok, result, variables, query} ->
+      {:ok, conn, result, variables, query} ->
         query = query |> js_escape
 
         var_string = variables

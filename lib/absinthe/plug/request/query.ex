@@ -66,11 +66,8 @@ defmodule Absinthe.Plug.Request.Query do
     end
   end
 
-  def add_pipeline(query, conn, config) do
-    private = conn.private[:absinthe] || %{}
-    private = Map.put(private, :http_method, conn.method)
-    config = Map.put(config, :conn_private, private)
-
+  def add_pipeline(query, conn_info, config) do
+    config = Map.merge(config, conn_info)
     opts = query |> to_pipeline_opts
 
     {module, fun} = config.pipeline
