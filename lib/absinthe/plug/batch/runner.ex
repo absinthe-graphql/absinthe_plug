@@ -28,9 +28,7 @@ defmodule Absinthe.Plug.Batch.Runner do
 
   defp build_valid_results(valid_queries, schema) do
     blueprints = Enum.map(valid_queries, fn
-      {:ok, bp, query, _index} ->
-        {:ok, bp, _} = Absinthe.Pipeline.run(bp, prep_pipeline(query))
-        bp
+      {:ok, bp, _query, _index} -> bp
     end)
 
     querys_and_indices = Enum.map(valid_queries, fn
@@ -41,21 +39,23 @@ defmodule Absinthe.Plug.Batch.Runner do
     |> Absinthe.Plug.Batch.Resolver.resolve(schema: schema)
     |> Enum.zip(querys_and_indices)
     |> Enum.map(fn {bp, {query, i}} ->
-      # if it doesn't return this I'm not sure what to do.
-      {:ok, %{result: result}, _} = Absinthe.Pipeline.run(bp, result_pipeline(query))
-
-      {i, result}
+      {i, get_result(bp, query)}
     end)
   end
 
   defp build_invalid_results(invalid_queries) do
     Enum.map(invalid_queries, fn {:error, bp, query, i} ->
-      # if it doesn't return this I'm not sure what to do.
-      {:ok, %{result: result}, _} = Absinthe.Pipeline.run(bp, result_pipeline(query))
-
-      {i, result}
-
+      {i, get_result(bp, query)}
     end)
+  end
+
+  defp get_result(bp, query) do
+    case Absinthe.Pipeline.run(bp, result_pipeline(query)) do
+      {:ok, %{result: result}, _} ->
+        result
+      _ ->
+        %{errors: ["could not produce a valid JSON result"]}
+    end
   end
 
   defp prepare(queries) do
@@ -68,8 +68,8 @@ defmodule Absinthe.Plug.Batch.Runner do
             _ ->
               {:error, bp, query, i}
           end
-        other ->
-          raise "#{inspect other}"
+        {:error, bp, _} ->
+          {:error, bp, query, i}
       end
     end
   end
@@ -84,14 +84,7 @@ defmodule Absinthe.Plug.Batch.Runner do
 
   defp validation_pipeline(%{pipeline: pipeline}) do
     pipeline
-    |> Absinthe.Pipeline.upto(Absinthe.Phase.Document.Validation.Result)
-  end
-
-  defp prep_pipeline(%{pipeline: pipeline}) do
-    pipeline
-    |> Absinthe.Pipeline.from(Absinthe.Phase.Document.Validation.Result)
     |> Absinthe.Pipeline.before(Absinthe.Phase.Document.Execution.Resolution)
-    |> Enum.drop(1)
   end
 
   defp result_pipeline(%{pipeline: pipeline}) do

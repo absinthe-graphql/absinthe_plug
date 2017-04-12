@@ -14,6 +14,11 @@ defmodule Absinthe.Plug.TestSchema do
   end
 
   query do
+    field :expensive, :integer do
+      complexity 1000
+      resolve fn _, _ -> raise "this shouldn't be run" end
+    end
+
     field :ping_counter, :integer do
       resolve fn _, %{context: %{counter: pid}} ->
         batch({__MODULE__, :batch_ping_counter, pid}, :unused, fn _unused ->

@@ -3,7 +3,10 @@ defmodule Absinthe.Plug.TransportBatchingTest do
   use Absinthe.Plug.TestCase
   alias Absinthe.Plug.TestSchema
 
-  @relay_foo_result ~s([{"id":"1","payload":{"data":{"item":{"name":"Foo"}}}},{"id":"2","payload":{"data":{"item":{"name":"Bar"}}}}])
+  @relay_foo_result [
+    %{"id" => "1", "payload" => %{"data" => %{"item" => %{"name" => "Foo"}}}},
+    %{"id" => "2", "payload" => %{"data" => %{"item" => %{"name" => "Bar"}}}}
+  ]
 
   @relay_variable_query """
   [{
@@ -29,7 +32,10 @@ defmodule Absinthe.Plug.TransportBatchingTest do
   }]
   """
 
-  @apollo_foo_result ~s([{"payload":{"data":{"item":{"name":"Foo"}}}},{"payload":{"data":{"item":{"name":"Bar"}}}}])
+  @apollo_foo_result [
+    %{"payload" => %{"data" => %{"item" => %{"name" => "Foo"}}}},
+    %{"payload" => %{"data" => %{"item" => %{"name" => "Bar"}}}}
+  ]
 
   @apollo_variable_query """
   [{
@@ -58,7 +64,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @relay_query)
     |> put_req_header("content-type", "application/json")
     |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    |> absinthe_plug(opts)
 
     assert @relay_foo_result == resp_body
   end
@@ -69,7 +75,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @relay_variable_query)
     |> put_req_header("content-type", "application/json")
     |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    |> absinthe_plug(opts)
 
     assert @relay_foo_result == resp_body
   end
@@ -80,7 +86,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @apollo_query)
     |> put_req_header("content-type", "application/json")
     |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    |> absinthe_plug(opts)
 
     assert @apollo_foo_result == resp_body
   end
@@ -91,7 +97,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @apollo_variable_query)
     |> put_req_header("content-type", "application/json")
     |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    |> absinthe_plug(opts)
 
     assert @apollo_foo_result == resp_body
   end
@@ -128,7 +134,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @fragment_query)
     |> put_req_header("content-type", "application/json")
     |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    |> absinthe_plug(opts)
 
     assert @relay_foo_result == resp_body
   end
@@ -158,7 +164,15 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     "variables": {}
   }]
   """
-  @fragment_query_with_undefined_field_result ~s([{"id":"1","payload":{"data":{"item":{"name":"Foo"}}}},{"id":"2","payload":{"errors":[{"message":"Cannot query field \\\"namep\\\" on type \\\"Item\\\". Did you mean \\\"name\\\"?","locations":[{"line":7,"column":0}]}]}}])
+  @fragment_query_with_undefined_field_result [
+    %{"id" => "1", "payload" => %{"data" => %{"item" => %{"name" => "Foo"}}}},
+    %{"id" => "2", "payload" => %{"errors" => [
+      %{
+        "locations" => [%{"column" => 0, "line" => 7}],
+        "message" => "Cannot query field \"namep\" on type \"Item\". Did you mean \"name\"?"
+      }
+    ]}}
+  ]
 
   test "can include fragments with undefined fields" do
     opts = Absinthe.Plug.init(schema: TestSchema)
@@ -166,7 +180,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @fragment_query_with_undefined_field)
     |> put_req_header("content-type", "application/json")
     |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    |> absinthe_plug(opts)
 
     assert @fragment_query_with_undefined_field_result == resp_body
   end
@@ -197,7 +211,12 @@ defmodule Absinthe.Plug.TransportBatchingTest do
   }]
   """
 
-  @fragment_query_with_undefined_variable_result ~s([{"id":"1","payload":{"data":{"item":{"name":"Foo"}}}},{"id":"2","payload":{"errors":[{"message":"In argument \\\"id\\\": Expected type \\\"ID!\\\", found null.","locations":[{"line":2,"column":0}]}]}}])
+  @fragment_query_with_undefined_variable_result [%{"id" => "1",
+     "payload" => %{"data" => %{"item" => %{"name" => "Foo"}}}},
+   %{"id" => "2",
+     "payload" => %{"errors" => [%{"locations" => [%{"column" => 0,
+             "line" => 2}],
+          "message" => "In argument \"id\": Expected type \"ID!\", found null."}]}}]
 
   test "can include fragments with undefined variable" do
     opts = Absinthe.Plug.init(schema: TestSchema)
@@ -205,7 +224,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", @fragment_query_with_undefined_variable)
     |> put_req_header("content-type", "application/json")
     |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    |> absinthe_plug(opts)
 
     assert @fragment_query_with_undefined_variable_result == resp_body
   end
@@ -229,9 +248,12 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", payload)
     |> put_req_header("content-type", "application/json")
     |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    |> absinthe_plug(opts)
 
-    expected = ~S([{"id":"1","payload":{"data":{"pingCounter":1}}},{"id":"2","payload":{"data":{"pingCounter":1}}}])
+    expected = [
+      %{"id" => "1", "payload" => %{"data" => %{"pingCounter" => 1}}},
+      %{"id" => "2", "payload" => %{"data" => %{"pingCounter" => 1}}}
+    ]
 
     assert expected == resp_body
 
@@ -257,12 +279,61 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", payload)
     |> put_req_header("content-type", "application/json")
     |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    |> absinthe_plug(opts)
 
-    expected = ~S([{"id":"1","payload":{"errors":[{"message":"Cannot query field \"asdf\" on type \"RootQueryType\".","locations":[{"line":1,"column":0}]}]}},{"id":"2","payload":{"data":{"pingCounter":1}}}])
+    expected = [
+      %{"id" => "1","payload" => %{"errors" => [%{"locations" => [%{"column" => 0, "line" => 1}],
+        "message" => "Cannot query field \"asdf\" on type \"RootQueryType\"."}]}},
+      %{"id" => "2", "payload" => %{"data" => %{"pingCounter" => 1}}}
+    ]
 
     assert expected == resp_body
 
     assert 1 == Counter.read(pid)
+  end
+
+  test "it handles complexity errors" do
+    opts = Absinthe.Plug.init(schema: TestSchema, max_complexity: 100, analyze_complexity: true)
+
+    payload = """
+      [{
+        "id": "1",
+        "query": "{ expensive }",
+        "variables": {}
+      }, {
+        "id": "2",
+        "query": "{ expensive }",
+        "variables": {"id": "bar"}
+      }]
+      """
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", payload)
+    |> put_req_header("content-type", "application/json")
+    |> plug_parser
+    |> absinthe_plug(opts)
+
+    expected = [%{"id" => "1",
+               "payload" => %{"errors" => [%{"locations" => [%{"column" => 0,
+                       "line" => 1}],
+                    "message" => "Field expensive is too complex: complexity is 1000 and maximum is 100"},
+                  %{"locations" => [%{"column" => 0, "line" => 1}],
+                    "message" => "Operation is too complex: complexity is 1000 and maximum is 100"}]}},
+             %{"id" => "2",
+               "payload" => %{"errors" => [%{"locations" => [%{"column" => 0,
+                       "line" => 1}],
+                    "message" => "Field expensive is too complex: complexity is 1000 and maximum is 100"},
+                  %{"locations" => [%{"column" => 0, "line" => 1}],
+                    "message" => "Operation is too complex: complexity is 1000 and maximum is 100"}]}}]
+
+    assert expected == resp_body
+  end
+
+  defp absinthe_plug(conn, opts) do
+    %{resp_body: body} = conn = Absinthe.Plug.call(conn, opts)
+
+    case Poison.decode(body) do
+      {:ok, parsed} -> %{conn | resp_body: parsed}
+      _ -> conn
+    end
   end
 end
