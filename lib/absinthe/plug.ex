@@ -223,16 +223,17 @@ defmodule Absinthe.Plug do
 
   def run_request(%{batch: true, queries: queries} = request, conn, config) do
     Request.log(request)
-    payloads =
+    results =
       queries
       |> Absinthe.Plug.Batch.Runner.run(conn, config)
       |> Enum.zip(request.extra_keys)
       |> Enum.map(fn {result, extra_keys} ->
-        payload = Map.merge(result, extra_keys)
-        %{payload: payload}
+        Map.merge(extra_keys, %{
+          payload: result
+        })
       end)
 
-    {:ok, payloads}
+    {:ok, results}
   end
   def run_request(%{batch: false, queries: [query]} = request, conn, config) do
     Request.log(request)

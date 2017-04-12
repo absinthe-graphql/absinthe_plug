@@ -3,7 +3,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
   use Absinthe.Plug.TestCase
   alias Absinthe.Plug.TestSchema
 
-  @relay_foo_result ~s([{"payload":{"id":"1","data":{"item":{"name":"Foo"}}}},{"payload":{"id":"2","data":{"item":{"name":"Bar"}}}}])
+  @relay_foo_result ~s([{"id":"1","payload":{"data":{"item":{"name":"Foo"}}}},{"id":"2","payload":{"data":{"item":{"name":"Bar"}}}}])
 
   @relay_variable_query """
   [{
@@ -60,7 +60,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == @relay_foo_result
+    assert @relay_foo_result == resp_body
   end
 
   test "single batched query in relay-network-layer format works with variables" do
@@ -71,7 +71,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == @relay_foo_result
+    assert @relay_foo_result == resp_body
   end
 
   test "single batched query in apollo format works" do
@@ -82,7 +82,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == @apollo_foo_result
+    assert @apollo_foo_result == resp_body
   end
 
   test "single batched query in apollo format works with variables" do
@@ -93,7 +93,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == @apollo_foo_result
+    assert @apollo_foo_result == resp_body
   end
 
   @fragment_query """
@@ -130,7 +130,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == @relay_foo_result
+    assert @relay_foo_result == resp_body
   end
 
   @fragment_query_with_undefined_field """
@@ -158,7 +158,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     "variables": {}
   }]
   """
-  @fragment_query_with_undefined_field_result ~s([{"payload":{"id":"1","data":{"item":{"name":"Foo"}}}},{"payload":{"id":"2","errors":[{"message":"Cannot query field \\\"namep\\\" on type \\\"Item\\\". Did you mean \\\"name\\\"?","locations":[{"line":7,"column":0}]}]}}])
+  @fragment_query_with_undefined_field_result ~s([{"id":"1","payload":{"data":{"item":{"name":"Foo"}}}},{"id":"2","payload":{"errors":[{"message":"Cannot query field \\\"namep\\\" on type \\\"Item\\\". Did you mean \\\"name\\\"?","locations":[{"line":7,"column":0}]}]}}])
 
   test "can include fragments with undefined fields" do
     opts = Absinthe.Plug.init(schema: TestSchema)
@@ -168,7 +168,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == @fragment_query_with_undefined_field_result
+    assert @fragment_query_with_undefined_field_result == resp_body
   end
 
   @fragment_query_with_undefined_variable """
@@ -197,7 +197,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
   }]
   """
 
-  @fragment_query_with_undefined_variable_result ~s([{"payload":{"id":"1","data":{"item":{"name":"Foo"}}}},{"payload":{"id":"2","errors":[{"message":"In argument \\\"id\\\": Expected type \\\"ID!\\\", found null.","locations":[{"line":2,"column":0}]}]}}])
+  @fragment_query_with_undefined_variable_result ~s([{"id":"1","payload":{"data":{"item":{"name":"Foo"}}}},{"id":"2","payload":{"errors":[{"message":"In argument \\\"id\\\": Expected type \\\"ID!\\\", found null.","locations":[{"line":2,"column":0}]}]}}])
 
   test "can include fragments with undefined variable" do
     opts = Absinthe.Plug.init(schema: TestSchema)
@@ -207,7 +207,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == @fragment_query_with_undefined_variable_result
+    assert @fragment_query_with_undefined_variable_result == resp_body
   end
 
   test "it can use resolution batching across documents" do
@@ -231,7 +231,9 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == ~S([{"payload":{"id":"1","data":{"pingCounter":1}}},{"payload":{"id":"2","data":{"pingCounter":1}}}])
+    expected = ~S([{"id":"1","payload":{"data":{"pingCounter":1}}},{"id":"2","payload":{"data":{"pingCounter":1}}}])
+
+    assert expected == resp_body
 
     assert 1 == Counter.read(pid)
   end
@@ -257,7 +259,9 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == ~S([{"payload":{"id":"1","errors":[{"message":"Cannot query field \"asdf\" on type \"RootQueryType\".","locations":[{"line":1,"column":0}]}]}},{"payload":{"id":"2","data":{"pingCounter":1}}}])
+    expected = ~S([{"id":"1","payload":{"errors":[{"message":"Cannot query field \"asdf\" on type \"RootQueryType\".","locations":[{"line":1,"column":0}]}]}},{"id":"2","payload":{"data":{"pingCounter":1}}}])
+
+    assert expected == resp_body
 
     assert 1 == Counter.read(pid)
   end
