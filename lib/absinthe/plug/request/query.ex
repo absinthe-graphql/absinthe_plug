@@ -47,7 +47,7 @@ defmodule Absinthe.Plug.Request.Query do
     schema: Absinthe.Schema.t,
   }
 
-  def parse(conn, body, params, config) do
+  def parse(body, params, config) do
     with raw_document <- extract_raw_document(body, params), # either from
      {:ok, variables} <- extract_variables(params, config),
        operation_name <- extract_operation_name(params) do
@@ -171,7 +171,7 @@ defmodule Absinthe.Plug.Request.Query do
     {with_raw_options, opts} =
       query
       |> Map.from_struct
-      |> Keyword.new
+      |> Map.to_list
       |> Keyword.split([:raw_options])
     Keyword.merge(opts, with_raw_options[:raw_options])
   end

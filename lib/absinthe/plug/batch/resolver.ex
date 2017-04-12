@@ -8,10 +8,10 @@ defmodule Absinthe.Plug.Batch.Resolver do
     acc = init_acc(blueprints)
     resolution_phase = {Execution.Resolution, [plugin_callbacks: false] ++ options}
 
-    do_resolve(blueprints, [resolution_phase], acc, plugins)
+    do_resolve(blueprints, [resolution_phase], acc, plugins, resolution_phase)
   end
 
-  defp do_resolve(blueprints, phases, acc, plugins) do
+  defp do_resolve(blueprints, phases, acc, plugins, resolution_phase_template) do
     acc = Enum.reduce(plugins, acc, fn plugin, acc ->
       plugin.before_resolution(acc)
     end)
@@ -28,7 +28,8 @@ defmodule Absinthe.Plug.Batch.Resolver do
       [] ->
         blueprints
       pipeline ->
-        do_resolve(blueprints, pipeline, acc, plugins)
+        pipeline = Absinthe.Pipeline.replace(pipeline, Execution.Resolution, resolution_phase_template)
+        do_resolve(blueprints, pipeline, acc, plugins, resolution_phase_template)
     end
   end
 

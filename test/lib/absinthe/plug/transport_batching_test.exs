@@ -217,7 +217,33 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     payload = """
       [{
         "id": "1",
-        "query": "{ foo: pingCounter }",
+        "query": "{ pingCounter }",
+        "variables": {}
+      }, {
+        "id": "2",
+        "query": "{ pingCounter }",
+        "variables": {}
+      }]
+      """
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", payload)
+    |> put_req_header("content-type", "application/json")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == ~S([{"payload":{"id":"1","data":{"pingCounter":1}}},{"payload":{"id":"2","data":{"pingCounter":1}}}])
+
+    assert 1 == Counter.read(pid)
+  end
+
+  test "it can handle batches where some docs have errors" do
+    {:ok, pid} = Counter.start_link(0)
+    opts = Absinthe.Plug.init(schema: TestSchema, context: %{counter: pid})
+
+    payload = """
+      [{
+        "id": "1",
+        "query": "{asdf }",
         "variables": {}
       }, {
         "id": "2",
@@ -226,10 +252,12 @@ defmodule Absinthe.Plug.TransportBatchingTest do
       }]
       """
 
-    assert %{status: 200, resp_body: _} = conn(:post, "/", payload)
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", payload)
     |> put_req_header("content-type", "application/json")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
+
+    assert resp_body == ~S([{"payload":{"id":"1","errors":[{"message":"Cannot query field \"asdf\" on type \"RootQueryType\".","locations":[{"line":1,"column":0}]}]}},{"payload":{"id":"2","data":{"pingCounter":1}}}])
 
     assert 1 == Counter.read(pid)
   end

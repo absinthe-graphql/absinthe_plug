@@ -227,7 +227,7 @@ defmodule Absinthe.Plug do
       queries
       |> Absinthe.Plug.Batch.Runner.run(conn, config)
       |> Enum.zip(request.extra_keys)
-      |> Enum.map(fn {{:ok, result}, extra_keys} ->
+      |> Enum.map(fn {result, extra_keys} ->
         payload = Map.merge(result, extra_keys)
         %{payload: payload}
       end)
@@ -242,7 +242,7 @@ defmodule Absinthe.Plug do
   def run_query(query, conn, config) do
     %{document: document, pipeline: pipeline} = Request.Query.add_pipeline(query, conn, config)
 
-    with {:ok, result, _} <- Absinthe.Pipeline.run(document, pipeline) do
+    with {:ok, %{result: result}, _} <- Absinthe.Pipeline.run(document, pipeline) do
       {:ok, result}
     end
   end

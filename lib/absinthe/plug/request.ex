@@ -41,18 +41,18 @@ defmodule Absinthe.Plug.Request do
       root_value: root_value,
     })
 
-    with {conn, {body, params}} <- extract_body_and_params(conn) do
+    with {_conn, {body, params}} <- extract_body_and_params(conn) do
       # Phoenix puts parsed params under the "_json" key when the
       # structure is an array; otherwise it's just the keys themselves,
       # and they may sit in the body or in the params
       batch? = Map.has_key?(params, "_json")
-      build_request(conn, body, params, config, batch?: batch?)
+      build_request(body, params, config, batch?: batch?)
     end
   end
 
-  defp build_request(conn, _body, params, config, batch?: true) do
+  defp build_request(_body, params, config, batch?: true) do
     queries = Enum.map(params["_json"], fn query ->
-      Query.parse(conn, "", query, config)
+      Query.parse("", query, config)
     end)
 
     extra_keys = Enum.map(params["_json"], fn query ->
@@ -66,10 +66,10 @@ defmodule Absinthe.Plug.Request do
     }
     {:ok, request}
   end
-  defp build_request(conn, body, params, config, batch?: false) do
+  defp build_request(body, params, config, batch?: false) do
     queries =
-      conn
-      |> Query.parse(body, params, config)
+      body
+      |> Query.parse(params, config)
       |> List.wrap
 
     request = %__MODULE__{

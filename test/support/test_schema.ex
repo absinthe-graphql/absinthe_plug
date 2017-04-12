@@ -1,5 +1,6 @@
 defmodule Absinthe.Plug.TestSchema do
   use Absinthe.Schema
+  import Absinthe.Resolution.Helpers
 
   import_types Absinthe.Plug.Types
 

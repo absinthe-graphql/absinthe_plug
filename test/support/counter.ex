@@ -2,7 +2,7 @@ defmodule Counter do
   use GenServer
 
   def start_link(n, opts \\ []) do
-    GenServer.start_link(__MODULE__, n, [])
+    GenServer.start_link(__MODULE__, n, opts)
   end
 
   def ping(pid) do
