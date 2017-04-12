@@ -1,6 +1,6 @@
 defmodule Absinthe.Plug.DocumentProvider do
   @moduledoc """
-  A document provider is a module that, given a GraphQL request, determines
+  A document provider is a module that, given a GraphQL query, determines
   what document should be executed and how the configured pipeline should be
   applied to that document.
 
@@ -59,15 +59,15 @@ defmodule Absinthe.Plug.DocumentProvider do
 
   See the documentation for the `Absinthe.Plug.DocumentProvider.result` type.
   """
-  @callback process(Absinthe.Plug.Request.t, Keyword.t) :: result
+  @callback process(Absinthe.Plug.Request.Query.t, Keyword.t) :: result
 
   @doc false
-  @spec process([t], Absinthe.Plug.Request.t) :: Absinthe.Plug.Request.t
+  @spec process([t], Absinthe.Plug.Request.Query.t) :: Absinthe.Plug.Request.Query.t
   # Attempt to process an request through the given list of valid document providers
-  def process(document_providers, request) do
+  def process(document_providers, query) do
     document_providers
     |> normalize
-    |> Enum.reduce_while(request, fn {mod, opts} = provider, acc ->
+    |> Enum.reduce_while(query, fn {mod, opts} = provider, acc ->
       case mod.process(acc, opts) do
         {:halt, result} ->
           {:halt, %{result | document_provider: provider}}
