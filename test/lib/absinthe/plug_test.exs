@@ -1,6 +1,5 @@
 defmodule Absinthe.PlugTest do
-  use ExUnit.Case, async: true
-  use Plug.Test
+  use Absinthe.Plug.TestCase
   alias Absinthe.Plug.TestSchema
 
   @foo_result ~s({"data":{"item":{"name":"Foo"}}})
@@ -133,6 +132,17 @@ defmodule Absinthe.PlugTest do
     }
   }
   """
+
+  test "empty document returns :no_query_message" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 400, resp_body: resp_body} = conn(:get, "/", query: "")
+    |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == opts[:no_query_message]
+  end
 
   test "document with error returns validation errors" do
     opts = Absinthe.Plug.init(schema: TestSchema)
@@ -292,22 +302,25 @@ defmodule Absinthe.PlugTest do
     end
   end
 
+  test "it works with basic documents and complexity limits" do
+    opts = Absinthe.Plug.init(schema: TestSchema, max_complexity: 100, analyze_complexity: true)
+
+    query = "{expensive}"
+
+    assert %{status: 400, resp_body: resp_body} = conn(:post, "/", %{"query" => query})
+    |> put_req_header("content-type", "multipart/form-data")
+    |> call(opts)
+
+    expected = %{"errors" => [%{"locations" => [%{"column" => 0, "line" => 1}],
+                 "message" => "Field expensive is too complex: complexity is 1000 and maximum is 100"},
+               %{"locations" => [%{"column" => 0, "line" => 1}],
+                 "message" => "Operation is too complex: complexity is 1000 and maximum is 100"}]}
+
+    assert expected == resp_body
+  end
+
   defp basic_opts(context) do
     Map.put(context, :opts, Absinthe.Plug.init(schema: TestSchema))
   end
 
-  defp call(conn, opts) do
-    conn
-    |> plug_parser
-    |> Absinthe.Plug.call(opts)
-    |> Map.update!(:resp_body, &Poison.decode!/1)
-  end
-
-  defp plug_parser(conn) do
-    opts = Plug.Parsers.init(
-      parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
-      json_decoder: Poison
-    )
-    Plug.Parsers.call(conn, opts)
-  end
 end

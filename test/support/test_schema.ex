@@ -1,5 +1,6 @@
 defmodule Absinthe.Plug.TestSchema do
   use Absinthe.Schema
+  import Absinthe.Resolution.Helpers
 
   import_types Absinthe.Plug.Types
 
@@ -8,7 +9,24 @@ defmodule Absinthe.Plug.TestSchema do
     "bar" => %{id: "bar", name: "Bar"}
   }
 
+  def batch_ping_counter(pid, _) do
+    Counter.ping(pid)
+  end
+
   query do
+    field :expensive, :integer do
+      complexity 1000
+      resolve fn _, _ -> raise "this shouldn't be run" end
+    end
+
+    field :ping_counter, :integer do
+      resolve fn _, %{context: %{counter: pid}} ->
+        batch({__MODULE__, :batch_ping_counter, pid}, :unused, fn _unused ->
+          {:ok, Counter.read(pid)}
+        end)
+      end
+    end
+
     field :upload_test, :string do
       arg :file_a, non_null(:upload)
       arg :file_b, :upload
