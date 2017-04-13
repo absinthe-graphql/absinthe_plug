@@ -132,7 +132,7 @@ defmodule Absinthe.Plug.GraphiQL do
   end
 
   @spec select_mode(request :: Absinthe.Plug.Request.t) :: :start_interface | {:process, Absinthe.Plug.Request.t}
-  defp select_mode(%{document: nil}), do: :start_interface
+  defp select_mode(%{queries: [%Absinthe.Plug.Request.Query{document: nil}]}), do: :start_interface
   defp select_mode(request), do: {:process, request}
 
   @render_defaults [query: "", var_string: "", results: ""]
