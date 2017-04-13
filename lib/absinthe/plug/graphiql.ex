@@ -140,7 +140,7 @@ defmodule Absinthe.Plug.GraphiQL do
   @spec render_interface(conn :: Conn.t, interface :: :advanced | :simple, opts :: Keyword.t) :: Conn.t
   defp render_interface(conn, interface, opts \\ [])
   defp render_interface(conn, :simple, opts) do
-    opts = Keyword.merge(opts, @render_defaults)
+    opts = Keyword.merge(@render_defaults, opts)
     graphiql_html(
       @graphiql_version,
       opts[:query], opts[:var_string], opts[:result]
@@ -148,7 +148,7 @@ defmodule Absinthe.Plug.GraphiQL do
     |> rendered(conn)
   end
   defp render_interface(conn, :advanced, opts) do
-    opts = Keyword.merge(opts, @render_defaults)
+    opts = Keyword.merge(@render_defaults, opts)
     graphiql_workspace_html(
       @graphiql_workspace_version,
       opts[:query], opts[:var_string]
