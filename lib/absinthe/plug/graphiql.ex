@@ -20,7 +20,6 @@ defmodule Absinthe.Plug.GraphiQL do
           Absinthe.Plug.GraphiQL,
           schema: MyApp.Schema,
           interface: :simple
-      end
 
   ## Interface Selection
 
