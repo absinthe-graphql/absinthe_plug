@@ -32,11 +32,8 @@ end
 ```elixir
 def deps do
   [
-<<<<<<< HEAD
     ...,
-=======
     {:absinthe_plug, "~> 1.2.3"},
->>>>>>> master
     {:poison, "~> 1.3.0"}
   ]
 end

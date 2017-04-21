@@ -22,6 +22,24 @@ defmodule Absinthe.Plug.GraphiQLTest do
     assert 200 == status
   end
 
+  test "default_headers option works" do
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema, default_headers: {__MODULE__, :graphiql_default_headers})
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+
+    header_json = [
+      %{"name" => "Authorization", "value" => "Basic Zm9vOmJhcg=="},
+      %{"name" => "X-CSRF-Token", "value" => "foobarbaz"}
+    ] |> Poison.encode!(pretty: true)
+
+    assert body |> String.contains?("defaultHeaders: " <> header_json)
+  end
+
   defp plug_parser(conn) do
     opts = Plug.Parsers.init(
       parsers: [:urlencoded, :multipart, :json],
@@ -31,4 +49,10 @@ defmodule Absinthe.Plug.GraphiQLTest do
     Plug.Parsers.call(conn, opts)
   end
 
+  def graphiql_default_headers do
+    %{
+      "Authorization" => "Basic Zm9vOmJhcg==",
+      "X-CSRF-Token" => "foobarbaz"
+    }
+  end
 end
