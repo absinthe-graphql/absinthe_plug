@@ -1,3 +1,9 @@
+v1.3.0
+
+- Major rework of the Absinthe.Plug internals, although API stays essentially the same.
+- Feature: Supports transport level batching!
+- Feature: Document Providers: These enable persisted documents, see the DocumentProvider docs
+
 v1.2.4
 
 - Fix issue with missing `fetch` version in CDN for GraphiQL `:simple` interface.
