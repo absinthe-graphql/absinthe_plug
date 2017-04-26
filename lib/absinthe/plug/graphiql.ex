@@ -29,6 +29,23 @@ defmodule Absinthe.Plug.GraphiQL do
   - `:simple` will serve the original [GraphiQL](https://github.com/graphql/graphiql) interface from Facebook.
 
   See `Absinthe.Plug` for the other  options.
+
+  ## Default Headers
+
+  You can optionally provide default headers if the advanced interface (GraphiQL Workspace) is selected.
+  Note that you may have to clean up your existing workspace by clicking the trashcan icon in order to see the newly set default headers.
+
+      forward "/graphiql",
+        Absinthe.Plug.GraphiQL,
+        schema: MyApp.Schema,
+        default_headers: {__MODULE__, :graphiql_headers}
+
+      def graphiql_headers do
+        %{
+          "X-CSRF-Token" => Plug.CSRFProtection.get_csrf_token(),
+          "X-Foo" => "Bar"
+        }
+      end
   """
 
   require EEx
@@ -38,7 +55,7 @@ defmodule Absinthe.Plug.GraphiQL do
 
   @graphiql_workspace_version "1.0.4"
   EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(__DIR__, "graphiql_workspace.html.eex"),
-    [:graphiql_workspace_version, :query_string, :variables_string]
+    [:graphiql_workspace_version, :query_string, :variables_string, :default_headers]
 
   @behaviour Plug
 
@@ -50,7 +67,8 @@ defmodule Absinthe.Plug.GraphiQL do
     path: binary,
     context: map,
     json_codec: atom | {atom, Keyword.t},
-    interface: :advanced | :simple
+    interface: :advanced | :simple,
+    default_headers: {module, atom}
   ]
 
   @doc false
@@ -59,6 +77,7 @@ defmodule Absinthe.Plug.GraphiQL do
     opts
     |> Absinthe.Plug.init
     |> Map.put(:interface, Keyword.get(opts, :interface) || :advanced)
+    |> Map.put(:default_headers, Keyword.get(opts, :default_headers))
   end
 
   @doc false
@@ -81,6 +100,13 @@ defmodule Absinthe.Plug.GraphiQL do
   end
 
   defp do_call(conn, %{json_codec: _, interface: interface} = config) do
+    default_headers = case config[:default_headers] do
+      nil -> %{}
+      {module, fun} when is_atom(fun) -> apply(module, fun, [])
+    end
+    |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
+    |> Poison.encode!(pretty: true)
+
     with {:ok, conn, request} <- Absinthe.Plug.Request.parse(conn, config),
          {:process, request} <- select_mode(request),
          {:ok, request} <- Absinthe.Plug.ensure_processable(request, config),
@@ -105,12 +131,13 @@ defmodule Absinthe.Plug.GraphiQL do
         |> Poison.encode!(pretty: true)
         |> js_escape
 
+
         result = result
         |> Poison.encode!(pretty: true)
         |> js_escape
 
         conn
-        |> render_interface(interface, query: query, var_string: var_string, result: result)
+        |> render_interface(interface, query: query, var_string: var_string, default_headers: default_headers, result: result)
 
       {:input_error, msg} ->
         conn
@@ -118,7 +145,7 @@ defmodule Absinthe.Plug.GraphiQL do
 
       :start_interface ->
          conn
-         |> render_interface(interface)
+         |> render_interface(interface, default_headers: default_headers)
 
       {:error, {:http_method, text}, _} ->
         conn
@@ -138,7 +165,7 @@ defmodule Absinthe.Plug.GraphiQL do
   @render_defaults [query: "", var_string: "", results: ""]
 
   @spec render_interface(conn :: Conn.t, interface :: :advanced | :simple, opts :: Keyword.t) :: Conn.t
-  defp render_interface(conn, interface, opts \\ [])
+  defp render_interface(conn, interface, opts)
   defp render_interface(conn, :simple, opts) do
     opts = Keyword.merge(@render_defaults, opts)
     graphiql_html(
@@ -151,7 +178,7 @@ defmodule Absinthe.Plug.GraphiQL do
     opts = Keyword.merge(@render_defaults, opts)
     graphiql_workspace_html(
       @graphiql_workspace_version,
-      opts[:query], opts[:var_string]
+      opts[:query], opts[:var_string], opts[:default_headers]
     )
     |> rendered(conn)
   end
