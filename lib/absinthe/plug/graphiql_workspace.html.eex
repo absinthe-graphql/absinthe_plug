@@ -10,9 +10,9 @@ add "&raw" to the end of the URL within a browser.
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  
+
   <title>GraphiQL Workspace</title>
-  
+
   <link rel="stylesheet" media="screen" href="//maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css">
   <link rel="stylesheet" media="screen" href="//cdnjs.cloudflare.com/ajax/libs/graphiql/0.9.3/graphiql.min.css">
   <link rel="stylesheet" media="screen" href="//unpkg.com/graphiql-workspace@<%= graphiql_workspace_version %>/graphiql-workspace.css">
@@ -23,10 +23,10 @@ add "&raw" to the end of the URL within a browser.
 </head>
 <body>
   <div id="workspace" class="graphiql-workspace"></div>
-  
+
   <script type="text/javascript">
     var config = new graphiqlWorkspace.AppConfig("graphiql", {
-      defaultUrl: window.location.origin + window.location.pathname,
+      defaultUrl: <%= default_url %>,
       defaultQuery: '<%= query_string %>',
       defaultVariables: '<%= variables_string %>',
       defaultHeaders: <%= default_headers %>

@@ -46,6 +46,15 @@ defmodule Absinthe.Plug.GraphiQL do
           "X-Foo" => "Bar"
         }
       end
+
+  ## Default URL
+
+  You can also optionally set the default URL to be used for sending the queries to. This only applies to the advanced interface (GraphiQL Workspace).
+
+      forward "/graphiql",
+        Absinthe.Plug.GraphiQL,
+        schema: MyApp.Schema,
+        default_url: "https://api.mydomain.com/graphql"
   """
 
   require EEx
@@ -55,7 +64,7 @@ defmodule Absinthe.Plug.GraphiQL do
 
   @graphiql_workspace_version "1.0.4"
   EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(__DIR__, "graphiql_workspace.html.eex"),
-    [:graphiql_workspace_version, :query_string, :variables_string, :default_headers]
+    [:graphiql_workspace_version, :query_string, :variables_string, :default_headers, :default_url]
 
   @behaviour Plug
 
@@ -68,7 +77,8 @@ defmodule Absinthe.Plug.GraphiQL do
     context: map,
     json_codec: atom | {atom, Keyword.t},
     interface: :advanced | :simple,
-    default_headers: {module, atom}
+    default_headers: {module, atom},
+    default_url: binary,
   ]
 
   @doc false
@@ -78,6 +88,7 @@ defmodule Absinthe.Plug.GraphiQL do
     |> Absinthe.Plug.init
     |> Map.put(:interface, Keyword.get(opts, :interface) || :advanced)
     |> Map.put(:default_headers, Keyword.get(opts, :default_headers))
+    |> Map.put(:default_url, Keyword.get(opts, :default_url))
   end
 
   @doc false
@@ -106,6 +117,8 @@ defmodule Absinthe.Plug.GraphiQL do
     end
     |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
     |> Poison.encode!(pretty: true)
+
+    default_url = config[:default_url]
 
     with {:ok, conn, request} <- Absinthe.Plug.Request.parse(conn, config),
          {:process, request} <- select_mode(request),
@@ -137,7 +150,9 @@ defmodule Absinthe.Plug.GraphiQL do
         |> js_escape
 
         conn
-        |> render_interface(interface, query: query, var_string: var_string, default_headers: default_headers, result: result)
+        |> render_interface(interface, query: query, var_string: var_string,
+                                       default_headers: default_headers,
+                                       result: result, default_url: default_url)
 
       {:input_error, msg} ->
         conn
@@ -145,7 +160,8 @@ defmodule Absinthe.Plug.GraphiQL do
 
       :start_interface ->
          conn
-         |> render_interface(interface, default_headers: default_headers)
+         |> render_interface(interface, default_headers: default_headers,
+                                        default_url: default_url)
 
       {:error, {:http_method, text}, _} ->
         conn
@@ -178,10 +194,14 @@ defmodule Absinthe.Plug.GraphiQL do
     opts = Keyword.merge(@render_defaults, opts)
     graphiql_workspace_html(
       @graphiql_workspace_version,
-      opts[:query], opts[:var_string], opts[:default_headers]
+      opts[:query], opts[:var_string], opts[:default_headers],
+      default_url(opts[:default_url])
     )
     |> rendered(conn)
   end
+
+  defp default_url(nil), do: "window.location.origin + window.location.pathname"
+  defp default_url(url), do: "'#{url}'"
 
   @spec rendered(String.t, Plug.Conn.t) :: Conn.t
   defp rendered(html, conn) do
