@@ -51,10 +51,12 @@ plug Plug.Parsers,
 
 plug Absinthe.Plug,
   schema: MyApp.Schema
+```
 
 If you want only `Absinthe.Plug` to serve a particular route, configure your
 router like:
 
+```elixir
 plug Plug.Parsers,
   parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
   pass: ["*/*"],
@@ -62,6 +64,7 @@ plug Plug.Parsers,
 
 forward "/api", Absinthe.Plug,
   schema: MyApp.Schema
+```
 
 For more information, see the API documentation for `Absinthe.Plug`.
 
