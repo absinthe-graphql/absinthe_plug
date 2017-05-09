@@ -40,6 +40,32 @@ defmodule Absinthe.Plug.GraphiQLTest do
     assert body |> String.contains?("defaultHeaders: " <> header_json)
   end
 
+  test "default_url option works" do
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema,
+      default_url: graphiql_default_url())
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body, "defaultUrl: '#{graphiql_default_url()}'")
+  end
+
+  test "default_url unspecified" do
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema)
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body,
+      "defaultUrl: window.location.origin + window.location.pathname")
+  end
+
   defp plug_parser(conn) do
     opts = Plug.Parsers.init(
       parsers: [:urlencoded, :multipart, :json],
@@ -54,5 +80,9 @@ defmodule Absinthe.Plug.GraphiQLTest do
       "Authorization" => "Basic Zm9vOmJhcg==",
       "X-CSRF-Token" => "foobarbaz"
     }
+  end
+
+  def graphiql_default_url do
+    "https://api.foobarbaz.test"
   end
 end
