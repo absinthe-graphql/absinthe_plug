@@ -41,7 +41,7 @@ defmodule Absinthe.Plug.Request do
       root_value: root_value,
     })
 
-    with {:ok, conn, body, params} <- extract_body_and_params(conn) do
+    with {:ok, conn, body, params} <- extract_body_and_params(conn, config) do
       # Phoenix puts parsed params under the "_json" key when the
       # structure is an array; otherwise it's just the keys themselves,
       # and they may sit in the body or in the params
@@ -82,12 +82,24 @@ defmodule Absinthe.Plug.Request do
   # BODY / PARAMS
   #
 
-  @spec extract_body_and_params(Plug.Conn.t) :: {Plug.Conn.t, {String.t, map}}
-  defp extract_body_and_params(%{body_params: %{"query" => _}} = conn) do
+  @spec extract_body_and_params(Plug.Conn.t, %{}) :: {Plug.Conn.t, {String.t, map}}
+  defp extract_body_and_params(%{body_params: %{"query" => _}} = conn, _config) do
     conn = fetch_query_params(conn)
     {:ok, conn, "", conn.params}
   end
-  defp extract_body_and_params(conn) do
+  defp extract_body_and_params(%{body_params: %{"_json" => _}} = conn, config) do
+    conn = fetch_query_params(conn)
+    with %{"_json" => string} = params when is_binary(string) <- conn.params,
+    {:ok, decoded} <- config.json_codec.module.decode(string) do
+      {:ok, conn, "", %{params | "_json" => decoded}}
+    else
+      {:error, {:invalid, token, pos}} ->
+        {:input_error, "Could not parse JSON. Invalid token `#{token}` at position #{pos}"}
+      %{} ->
+        {:ok, conn, "", conn.params}
+    end
+  end
+  defp extract_body_and_params(conn, _config) do
     with {:ok, body, conn} <- read_body(conn) do
       conn = fetch_query_params(conn)
       {:ok, conn, body, conn.params}

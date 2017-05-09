@@ -328,6 +328,32 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert expected == resp_body
   end
 
+  @upload_relay_variable_query [
+    %{
+      id: "1",
+      query: "{uploadTest(fileA: \"a\")}",
+      variables: %{},
+    },
+    %{
+      id: "2",
+      query: "query Upload($file: Upload) {uploadTest(fileA: $file)}",
+      variables: %{"file" => "a"},
+    },
+  ] |> Poison.encode!
+
+  test "single batched query in relay-network-layer format works with variables and uploads" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    upload = %Plug.Upload{}
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"_json" => @upload_relay_variable_query, "a" => upload})
+    |> put_req_header("content-type", "multipart/form-data")
+    |> plug_parser
+    |> absinthe_plug(opts)
+
+    assert [%{"id" => "1", "payload" => %{"data" => %{"uploadTest" => "file_a"}}}, %{"id" => "2", "payload" => %{"data" => %{"uploadTest" => "file_a"}}}] == resp_body
+  end
+
   defp absinthe_plug(conn, opts) do
     %{resp_body: body} = conn = Absinthe.Plug.call(conn, opts)
 
