@@ -122,6 +122,7 @@ defmodule Absinthe.Plug do
     %{
       adapter: adapter,
       context: context,
+      json_codec: json_codec,
       document_providers: document_providers,
       no_query_message: no_query_message,
       pipeline: pipeline,
