@@ -109,7 +109,7 @@ defmodule Absinthe.Plug do
 
     serializer = case Keyword.get(opts, :serializer, json_codec) do
       module when is_atom(module) -> %{module: module, opts: []}
-      other -> other
+      {mod, opts} -> %{module: mod, opts: opts}
     end
 
     content_type = Keyword.get(opts, :content_type, "application/json")
