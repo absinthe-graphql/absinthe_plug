@@ -13,13 +13,13 @@ add "&raw" to the end of the URL within a browser.
 
   <title>GraphiQL Workspace</title>
 
-  <link rel="stylesheet" media="screen" href="//maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css">
-  <link rel="stylesheet" media="screen" href="//cdnjs.cloudflare.com/ajax/libs/graphiql/0.9.3/graphiql.min.css">
-  <link rel="stylesheet" media="screen" href="//cdn.jsdelivr.net/npm/graphiql-workspace@<%= graphiql_workspace_version %>/graphiql-workspace.min.css">
+  <link rel="stylesheet" media="screen" href="<%= assets["bootstrap.css"] %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["graphiql.css"] %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["graphiql-workspace.css"] %>">
 
-  <script src="//cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
-  <script src="//cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/graphiql-workspace@<%= graphiql_workspace_version %>/graphiql-workspace.min.js"></script>
+  <script src="<%= assets["react.js"] %>"></script>
+  <script src="<%= assets["react-dom.js"] %>"></script>
+  <script src="<%= assets["graphiql-workspace.js"] %>"></script>
 </head>
 <body>
   <div id="workspace" class="graphiql-workspace"></div>

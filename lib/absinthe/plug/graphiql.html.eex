@@ -17,11 +17,11 @@ add "&raw" to the end of the URL within a browser.
       width: 100%;
     }
   </style>
-  <link href="//cdn.jsdelivr.net/graphiql/<%= graphiql_version %>/graphiql.css" rel="stylesheet" />
-  <script src="//cdn.jsdelivr.net/fetch/2.0.1/fetch.min.js"></script>
-  <script src="//cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
-  <script src="//cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
-  <script src="//cdn.jsdelivr.net/graphiql/<%= graphiql_version %>/graphiql.min.js"></script>
+  <link href="<%= assets["graphiql.css"] %>" rel="stylesheet" />
+  <script src="<%= assets["fetch.js"] %>"></script>
+  <script src="<%= assets["react.js"] %>"></script>
+  <script src="<%= assets["react-dom.js"] %>"></script>
+  <script src="<%= assets["graphiql.js"] %>"></script>
 </head>
 <body>
   <script>

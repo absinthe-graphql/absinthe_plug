@@ -55,16 +55,29 @@ defmodule Absinthe.Plug.GraphiQL do
         Absinthe.Plug.GraphiQL,
         schema: MyApp.Schema,
         default_url: "https://api.mydomain.com/graphql"
+
+  ## Assets Configuration
+
+  You can configure the offline assets directory lookup and URL path.
+
+  - `url_path` the URL path of the GraphiQL directory location on the static files
+  - `directory` where the assets are located. It should be under the static folder.
+
+      forward "/graphiql",
+        Absinthe.Plug.GraphiQL,
+        schema: MyApp.Schema,
+        assets: [
+          url_path: "/absinthe_graphiql",
+          directory: "./priv/static/absinthe_graphiql"
+        ]
   """
 
   require EEx
-  @graphiql_version "0.9.3"
   EEx.function_from_file :defp, :graphiql_html, Path.join(__DIR__, "graphiql.html.eex"),
-    [:graphiql_version, :query_string, :variables_string, :result_string]
+    [:query_string, :variables_string, :result_string, :assets]
 
-  @graphiql_workspace_version "1.0.4"
   EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(__DIR__, "graphiql_workspace.html.eex"),
-    [:graphiql_workspace_version, :query_string, :variables_string, :default_headers, :default_url]
+    [:query_string, :variables_string, :default_headers, :default_url, :assets]
 
   @behaviour Plug
 
@@ -79,16 +92,23 @@ defmodule Absinthe.Plug.GraphiQL do
     interface: :advanced | :simple,
     default_headers: {module, atom},
     default_url: binary,
+    assets: Keyword.t,
   ]
 
   @doc false
   @spec init(opts :: opts) :: map
   def init(opts) do
+    assets =
+      opts
+      |> Keyword.get(:assets, [])
+      |> Absinthe.Plug.GraphiQL.Assets.assets()
+
     opts
     |> Absinthe.Plug.init
     |> Map.put(:interface, Keyword.get(opts, :interface) || :advanced)
     |> Map.put(:default_headers, Keyword.get(opts, :default_headers))
     |> Map.put(:default_url, Keyword.get(opts, :default_url))
+    |> Map.put(:assets, assets)
   end
 
   @doc false
@@ -152,7 +172,8 @@ defmodule Absinthe.Plug.GraphiQL do
         conn
         |> render_interface(interface, query: query, var_string: var_string,
                                        default_headers: default_headers,
-                                       result: result, default_url: default_url)
+                                       result: result, default_url: default_url,
+                                       assets: config[:assets])
 
       {:input_error, msg} ->
         conn
@@ -161,7 +182,8 @@ defmodule Absinthe.Plug.GraphiQL do
       :start_interface ->
          conn
          |> render_interface(interface, default_headers: default_headers,
-                                        default_url: default_url)
+                                        default_url: default_url,
+                                        assets: config[:assets])
 
       {:error, {:http_method, text}, _} ->
         conn
@@ -185,17 +207,15 @@ defmodule Absinthe.Plug.GraphiQL do
   defp render_interface(conn, :simple, opts) do
     opts = Keyword.merge(@render_defaults, opts)
     graphiql_html(
-      @graphiql_version,
-      opts[:query], opts[:var_string], opts[:result]
+      opts[:query], opts[:var_string], opts[:result], opts[:assets]
     )
     |> rendered(conn)
   end
   defp render_interface(conn, :advanced, opts) do
     opts = Keyword.merge(@render_defaults, opts)
     graphiql_workspace_html(
-      @graphiql_workspace_version,
       opts[:query], opts[:var_string], opts[:default_headers],
-      default_url(opts[:default_url])
+      default_url(opts[:default_url]), opts[:assets]
     )
     |> rendered(conn)
   end
