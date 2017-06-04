@@ -122,7 +122,6 @@ defmodule Absinthe.Plug do
       adapter: adapter,
       context: context,
       document_providers: document_providers,
-      json_codec: json_codec,
       no_query_message: no_query_message,
       pipeline: pipeline,
       raw_options: raw_options,
@@ -148,7 +147,7 @@ defmodule Absinthe.Plug do
   Parses, validates, resolves, and executes the given Graphql Document
   """
   @spec call(Plug.Conn.t, map) :: Plug.Conn.t | no_return
-  def call(conn, %{serializer: serializer, content_type: content_type} = config) do
+  def call(conn, config) do
     {conn, result} = conn |> execute(config)
 
     case result do
@@ -158,15 +157,15 @@ defmodule Absinthe.Plug do
 
       {:ok, %{data: _} = result} ->
         conn
-        |> encode(200, result, serializer, content_type)
+        |> encode(200, result, config)
 
       {:ok, %{errors: _} = result} ->
         conn
-        |> encode(400, result, serializer, content_type)
+        |> encode(400, result, config)
 
       {:ok, result} when is_list(result) ->
         conn
-        |> encode(200, result, serializer, content_type)
+        |> encode(200, result, config)
 
       {:error, {:http_method, text}, _} ->
         conn
@@ -308,8 +307,8 @@ defmodule Absinthe.Plug do
   #
 
   @doc false
-  @spec encode(Plug.Conn.t, 200 | 400 | 405 | 500, String.t, map, String.t) :: Plug.Conn.t | no_return
-  def encode(conn, status, body, %{module: mod, opts: opts}, content_type) do
+  @spec encode(Plug.Conn.t, 200 | 400 | 405 | 500, String.t, map) :: Plug.Conn.t | no_return
+  def encode(conn, status, body, %{serializer: %{module: mod, opts: opts}, content_type: content_type}) do
     conn
     |> put_resp_content_type(content_type)
     |> send_resp(status, mod.encode!(body, opts))
