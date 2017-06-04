@@ -68,6 +68,7 @@ defmodule Absinthe.Plug do
   - `:pipeline` -- (Optional) `{module, atom}` reference to a 2-arity function that will be called to generate the processing pipeline. (default: `{Absinthe.Plug, :default_pipeline}`).
   - `:document_providers` -- (Optional) A `{module, atom}` reference to a 1-arity function that will be called to determine the document providers that will be used to process the request. (default: `{Absinthe.Plug, :default_document_providers}`, which configures `Absinthe.Plug.DocumentProvider.Default` as the lone document provider). A simple list of document providers can also be given. See `Absinthe.Plug.DocumentProvider` for more information about document providers, their role in procesing requests, and how you can define and configure your own.
   - `:schema` -- (Required, if not handled by Mix.Config) The Absinthe schema to use. If a module name is not provided, `Application.get_env(:absinthe, :schema)` will be attempt to find one.
+  - `:serializer` -- (Optional) Similar to `:json_codec` but allows to use custom serializers like `MsgPax.encode/1` or `:erlang.term_to_binary/1`.
   """
   @type opts :: [
     schema: module,
@@ -79,6 +80,7 @@ defmodule Absinthe.Plug do
     document_providers: [Absinthe.Plug.DocumentProvider.t, ...] | Absinthe.Plug.DocumentProvider.t | {module, atom},
     analyze_complexity: boolean,
     max_complexity: non_neg_integer | :infinity,
+    serializer: module | {module, Keyword.t},
   ]
 
   @doc """
@@ -103,6 +105,11 @@ defmodule Absinthe.Plug do
       other -> other
     end
 
+    serializer = case Keyword.get(opts, :serializer, json_codec) do
+      module when is_atom(module) -> %{module: module, opts: []}
+      other -> other
+    end
+
     schema_mod = opts |> get_schema
 
     raw_options = Keyword.take(opts, @raw_options)
@@ -116,6 +123,7 @@ defmodule Absinthe.Plug do
       pipeline: pipeline,
       raw_options: raw_options,
       schema_mod: schema_mod,
+      serializer: serializer,
     }
   end
 
@@ -135,7 +143,7 @@ defmodule Absinthe.Plug do
   Parses, validates, resolves, and executes the given Graphql Document
   """
   @spec call(Plug.Conn.t, map) :: Plug.Conn.t | no_return
-  def call(conn, %{json_codec: json_codec} = config) do
+  def call(conn, %{serializer: serializer} = config) do
     {conn, result} = conn |> execute(config)
 
     case result do
@@ -145,15 +153,15 @@ defmodule Absinthe.Plug do
 
       {:ok, %{data: _} = result} ->
         conn
-        |> json(200, result, json_codec)
+        |> encode(200, result, serializer)
 
       {:ok, %{errors: _} = result} ->
         conn
-        |> json(400, result, json_codec)
+        |> encode(400, result, serializer)
 
       {:ok, result} when is_list(result) ->
         conn
-        |> json(200, result, json_codec)
+        |> encode(200, result, serializer)
 
       {:error, {:http_method, text}, _} ->
         conn
@@ -295,11 +303,11 @@ defmodule Absinthe.Plug do
   #
 
   @doc false
-  @spec json(Plug.Conn.t, 200 | 400 | 405 | 500, String.t, map) :: Plug.Conn.t | no_return
-  def json(conn, status, body, json_codec) do
+  @spec encode(Plug.Conn.t, 200 | 400 | 405 | 500, String.t, map) :: Plug.Conn.t | no_return
+  def encode(conn, status, body, %{module: mod, opts: opts}) do
     conn
     |> put_resp_content_type("application/json")
-    |> send_resp(status, json_codec.module.encode!(body, json_codec.opts))
+    |> send_resp(status, mod.encode!(body, opts))
   end
 
 end
