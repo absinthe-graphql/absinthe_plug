@@ -50,12 +50,18 @@ defmodule Absinthe.Plug.Request do
     end
   end
 
+  defp parse_json_params(json) when is_list(json), do: json
+  
+  defp parse_json_params(json), do: Poison.decode!(json)
+
   defp build_request(_body, params, config, batch?: true) do
-    queries = Enum.map(params["_json"], fn query ->
+    json_params = parse_json_params(params["_json"])
+
+    queries = Enum.map(json_params, fn query ->
       Query.parse("", query, config)
     end)
 
-    extra_keys = Enum.map(params["_json"], fn query ->
+    extra_keys = Enum.map(json_params, fn query ->
       Map.drop(query, ["query", "variables"])
     end)
 
