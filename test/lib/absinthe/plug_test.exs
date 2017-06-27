@@ -274,6 +274,20 @@ defmodule Absinthe.PlugTest do
       assert resp_body == %{"data" => %{"uploadTest" => "file_a, file_b"}}
     end
 
+    test "work with variables", %{opts: opts} do
+      query = """
+      query ($auth: String){uploadTest(fileA: "a", fileB: "b", auth: $auth)}
+      """
+
+      upload = %Plug.Upload{}
+      variables = Poison.encode!(%{auth: "foo"})
+      assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"query" => query, "a" => upload, "b" => upload, "variables" => variables})
+      |> put_req_header("content-type", "multipart/form-data")
+      |> call(opts)
+
+      assert resp_body == %{"data" => %{"uploadTest" => "auth, file_a, file_b"}}
+    end
+
     test "error when no argument is given with a valid required upload", %{opts: opts} do
       query = """
       {uploadTest}
