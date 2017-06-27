@@ -1,13 +1,7 @@
 defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.Download do
   use Mix.Task
 
-  @shortdoc """
-  Download GraphiQL assets
-
-  ## Options
-
-  • --directory - the directory where the assets will be save
-  """
+  @shortdoc "Download GraphiQL assets"
 
   def run(args) do
     opts = Mix.Absinthe.Plug.GraphiQL.AssetsTask.run(args)
@@ -15,7 +9,7 @@ defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.Download do
     Application.ensure_all_started(:inets)
     Mix.Generator.create_directory(opts[:directory])
 
-    Absinthe.Plug.GraphiQL.Assets.assets()
+    Absinthe.Plug.GraphiQL.Assets.get_assets(:remote)
     |> Enum.map(fn asset -> download_file(opts[:directory], asset) end)
   end
 

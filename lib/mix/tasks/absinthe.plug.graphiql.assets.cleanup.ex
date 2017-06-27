@@ -1,13 +1,7 @@
 defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.CleanUp do
   use Mix.Task
 
-  @shortdoc """
-  Removes GraphiQL assets
-
-  ## Options
-
-  --directory - the directory where the assets were downloaded. Be careful using this command because it uses File.rm_rf! for removing the directory.
-  """
+  @shortdoc "Removes GraphiQL assets"
 
   def run(args) do
     opts = Mix.Absinthe.Plug.GraphiQL.AssetsTask.run(args)

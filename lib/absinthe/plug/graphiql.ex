@@ -55,21 +55,6 @@ defmodule Absinthe.Plug.GraphiQL do
         Absinthe.Plug.GraphiQL,
         schema: MyApp.Schema,
         default_url: "https://api.mydomain.com/graphql"
-
-  ## Assets Configuration
-
-  You can configure the offline assets directory lookup and URL path.
-
-  - `url_path` the URL path of the GraphiQL directory location on the static files
-  - `directory` where the assets are located. It should be under the static folder.
-
-      forward "/graphiql",
-        Absinthe.Plug.GraphiQL,
-        schema: MyApp.Schema,
-        assets: [
-          url_path: "/absinthe_graphiql",
-          directory: "./priv/static/absinthe_graphiql"
-        ]
   """
 
   require EEx
@@ -98,10 +83,7 @@ defmodule Absinthe.Plug.GraphiQL do
   @doc false
   @spec init(opts :: opts) :: map
   def init(opts) do
-    assets =
-      opts
-      |> Keyword.get(:assets, [])
-      |> Absinthe.Plug.GraphiQL.Assets.assets()
+    assets = Absinthe.Plug.GraphiQL.Assets.get_assets(:local)
 
     opts
     |> Absinthe.Plug.init

@@ -2,13 +2,14 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
   @moduledoc """
   """
 
+  @config Application.get_env(:absinthe_plug, Absinthe.Plug.GraphiQL)
+  @default_config [
+    url_path: "/absinthe_graphiql",
+    directory: "priv/static/absinthe_graphiql"
+  ]
+
   @graphiql_workspace_version "1.0.4"
   @graphiql_version "0.9.3"
-
-  @default_assets_config [
-    url_path: "/absinthe_graphiql",
-    directory: "./priv/static/absinthe_graphiql"
-  ]
 
   @assets %{
     "fetch.js" => "//cdn.jsdelivr.net/fetch/2.0.1/fetch.min.js",
@@ -21,14 +22,21 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     "graphiql-workspace.js" => "//cdn.jsdelivr.net/npm/graphiql-workspace@#{@graphiql_workspace_version}/graphiql-workspace.min.js"
   }
 
-  def default_assets_config, do: @default_assets_config
+  def assets_config do
+    config =
+      case @config do
+        nil -> []
+        config -> Keyword.get(config, :local_assets, [])
+      end
 
-  def assets(opts \\ nil)
-  def assets(nil), do: @assets
-  def assets(opts) do
-    assets_config = @default_assets_config |> Keyword.merge(opts)
+    Keyword.merge(@default_config, config)
+  end
 
-    Enum.reduce(@assets, %{}, fn asset, acc -> put_asset_path(assets_config, asset, acc) end)
+  def get_assets(:remote), do: @assets
+  def get_assets(:local) do
+    Enum.reduce @assets, %{}, fn asset, acc ->
+      assets_config() |> put_asset_path(asset, acc)
+    end
   end
 
   defp put_asset_path(assets_config, {asset_name, asset_external_url} = _asset, acc) do
