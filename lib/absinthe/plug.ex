@@ -106,6 +106,7 @@ defmodule Absinthe.Plug do
     schema_mod = opts |> get_schema
 
     raw_options = Keyword.take(opts, @raw_options)
+    log_level = Keyword.get(opts, :log_level, :debug)
 
     %{
       adapter: adapter,
@@ -116,6 +117,7 @@ defmodule Absinthe.Plug do
       pipeline: pipeline,
       raw_options: raw_options,
       schema_mod: schema_mod,
+      log_level: log_level,
     }
   end
 
@@ -226,7 +228,7 @@ defmodule Absinthe.Plug do
   end
 
   def run_request(%{batch: true, queries: queries} = request, conn, config) do
-    Request.log(request)
+    Request.log(request, config.log_level)
     results =
       queries
       |> Absinthe.Plug.Batch.Runner.run(conn, config)
@@ -240,7 +242,7 @@ defmodule Absinthe.Plug do
     {:ok, results}
   end
   def run_request(%{batch: false, queries: [query]} = request, conn_info, config) do
-    Request.log(request)
+    Request.log(request, config.log_level)
     run_query(query, conn_info, config)
   end
 

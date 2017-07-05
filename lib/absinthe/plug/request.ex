@@ -148,8 +148,8 @@ defmodule Absinthe.Plug.Request do
     conn.private[:absinthe][:root_value] || %{}
   end
 
-  @spec log(t) :: :ok
-  def log(request, level \\ :debug) do
+  @spec log(t, atom) :: :ok
+  def log(request, level) do
     Enum.each(request.queries, &Query.log(&1, level))
     :ok
   end

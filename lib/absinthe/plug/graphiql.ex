@@ -123,7 +123,7 @@ defmodule Absinthe.Plug.GraphiQL do
     with {:ok, conn, request} <- Absinthe.Plug.Request.parse(conn, config),
          {:process, request} <- select_mode(request),
          {:ok, request} <- Absinthe.Plug.ensure_processable(request, config),
-         :ok <- Absinthe.Plug.Request.log(request) do
+         :ok <- Absinthe.Plug.Request.log(request, config.log_level) do
 
       conn_info = %{
         conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
