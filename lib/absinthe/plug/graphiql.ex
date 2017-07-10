@@ -47,6 +47,20 @@ defmodule Absinthe.Plug.GraphiQL do
         }
       end
 
+  You can also provide a function that takes a conn argument if you need to access connection data
+  (e.g. if you need to set an Authorization header based on the currently logged-in user).
+
+      forward "/graphiql",
+        Absinthe.Plug.GraphiQL,
+        schema: MyApp.Schema,
+        default_headers: &__MODULE__.graphiql_headers/1
+
+      def graphiql_headers(conn) do
+        %{
+          "Authorization" => "Bearer " <> conn.assigns[:token]
+        }
+      end
+
   ## Default URL
 
   You can also optionally set the default URL to be used for sending the queries to. This only applies to the advanced interface (GraphiQL Workspace).
@@ -55,6 +69,17 @@ defmodule Absinthe.Plug.GraphiQL do
         Absinthe.Plug.GraphiQL,
         schema: MyApp.Schema,
         default_url: "https://api.mydomain.com/graphql"
+
+  This option also accepts a function that takes a conn argument:
+
+      forward "/graphiql",
+        Absinthe.Plug.GraphiQL,
+        schema: MyApp.Schema,
+        default_url: &__MODULE__.graphiql_default_url/1
+
+      def graphiql_default_url(conn) do
+        conn.assigns[:graphql_url]
+      end
   """
 
   require EEx
@@ -114,11 +139,16 @@ defmodule Absinthe.Plug.GraphiQL do
     default_headers = case config[:default_headers] do
       nil -> %{}
       {module, fun} when is_atom(fun) -> apply(module, fun, [])
+      fun when is_function(fun, 1) -> apply(fun, [conn])
+      fun when is_function(fun, 0) -> apply(fun, [])
     end
     |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
     |> Poison.encode!(pretty: true)
 
-    default_url = config[:default_url]
+    default_url = case config[:default_url] do
+      fun when is_function(fun, 1) -> apply(fun, [conn])
+      val -> val
+    end
 
     with {:ok, conn, request} <- Absinthe.Plug.Request.parse(conn, config),
          {:process, request} <- select_mode(request),
