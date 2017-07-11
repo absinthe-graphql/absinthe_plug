@@ -88,21 +88,24 @@ defmodule Absinthe.Plug.Request do
     {:ok, conn, "", conn.params}
   end
   defp extract_body_and_params(%{body_params: %{"_json" => _}} = conn, config) do
+    extract_body_and_params_batched(conn, "", config)
+  end
+  defp extract_body_and_params(conn, config) do
+    with {:ok, body, conn} <- read_body(conn) do
+      extract_body_and_params_batched(conn, body, config)
+    end
+  end
+
+  defp extract_body_and_params_batched(conn, body, config) do
     conn = fetch_query_params(conn)
     with %{"_json" => string} = params when is_binary(string) <- conn.params,
     {:ok, decoded} <- config.json_codec.module.decode(string) do
-      {:ok, conn, "", %{params | "_json" => decoded}}
+      {:ok, conn, body, %{params | "_json" => decoded}}
     else
       {:error, {:invalid, token, pos}} ->
         {:input_error, "Could not parse JSON. Invalid token `#{token}` at position #{pos}"}
       %{} ->
-        {:ok, conn, "", conn.params}
-    end
-  end
-  defp extract_body_and_params(conn, _config) do
-    with {:ok, body, conn} <- read_body(conn) do
-      conn = fetch_query_params(conn)
-      {:ok, conn, body, conn.params}
+        {:ok, conn, body, conn.params}
     end
   end
 
@@ -145,8 +148,8 @@ defmodule Absinthe.Plug.Request do
     conn.private[:absinthe][:root_value] || %{}
   end
 
-  @spec log(t) :: :ok
-  def log(request, level \\ :debug) do
+  @spec log(t, atom) :: :ok
+  def log(request, level) do
     Enum.each(request.queries, &Query.log(&1, level))
     :ok
   end

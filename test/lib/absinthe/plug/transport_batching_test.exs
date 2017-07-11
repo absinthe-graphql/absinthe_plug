@@ -102,6 +102,17 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert @apollo_foo_result == resp_body
   end
 
+  test "single batched query in apollo format works with variables, content-type application/x-www-form-urlencoded" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"_json": @apollo_variable_query})
+    |> put_req_header("content-type", "application/x-www-form-urlencoded")
+    |> plug_parser
+    |> absinthe_plug(opts)
+
+    assert @apollo_foo_result == resp_body
+  end
+
   @fragment_query """
   [{
     "id": "1",
