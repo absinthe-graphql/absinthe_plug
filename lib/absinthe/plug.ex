@@ -304,4 +304,8 @@ defmodule Absinthe.Plug do
     |> send_resp(status, json_codec.module.encode!(body, json_codec.opts))
   end
 
+  def encode_json!(value, %{json_codec: json_codec}) do
+    json_codec.module.encode!(value, json_codec.opts)
+  end
+
 end

@@ -22,8 +22,99 @@ add "&raw" to the end of the URL within a browser.
   <script src="//cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
   <script src="//cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
   <script src="//cdn.jsdelivr.net/graphiql/<%= graphiql_version %>/graphiql.min.js"></script>
+  <%= if socket_url do %>
+    <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
+    <script src="//unpkg.com/phoenix@1.2.1/priv/static/phoenix.js"></script>
+  <%= end %>
 </head>
 <body>
+  <script>
+    // Customized Absinthe JS client.
+    var phoenix_1 = window.Phoenix;
+    var CHANNEL = '__absinthe__:control';
+    var Client = (function () {
+        function Client(url, options) {
+            this.url = url;
+            this.options = options || {};
+            this.subscriptionRegistry = {};
+        }
+        Client.prototype.connect = function () {
+            var _this = this;
+            this.socket = new phoenix_1.Socket(this.url, this.options);
+            return new Promise(function (resolve, reject) {
+                _this.socket.onClose(function (event) {
+                    reject(event);
+                });
+                _this.socket.onOpen(function (event) {
+                    _this.socket.onMessage(function (_a) {
+                        var event = _a.event, payload = _a.payload, ref = _a.ref;
+                        if (event === "subscription:data") {
+                            _this.dispatchSubscriptionCallback(payload);
+                        }
+                    });
+                    _this.channel = _this.socket.channel(CHANNEL);
+                    _this.channel
+                        .join()
+                        .receive("ok", function () { return resolve(_this); })
+                        .receive("error", function (e) { return reject(e); })
+                        .receive("timeout", function () { return reject("timeout"); });
+                });
+                _this.socket.connect();
+            });
+        };
+        Client.prototype.dispatchSubscriptionCallback = function (data) {
+            var callback = this.subscriptionRegistry[data.subscriptionId];
+            if (callback) {
+                console.log(data.result);
+                callback(JSON.stringify(data.result, null, 2));
+                return true;
+            }
+            else {
+                return false;
+            }
+        };
+        Client.prototype.registerSubscription = function (subscriptionId, callback) {
+            console.log(subscriptionId);
+            this.subscriptionRegistry[subscriptionId] = callback;
+        };
+        Client.prototype.unsubscribe = function(subscriptionId) {
+            this.subscriptionRegistry = {};
+        }
+        Client.prototype.subscribe = function (request, callback) {
+            var _this = this;
+            return new Promise(function (resolve, reject) {
+                var normalizedQuery = _this.normalizeQuery(request.query);
+                _this.channel.push("doc", Object.assign({}, request, { query: normalizedQuery }))
+                    .receive("ok", function (resp) {
+                    if (resp.errors) {
+                        reject(resp);
+                    }
+                    else {
+                        _this.registerSubscription(resp.subscriptionId, callback);
+                        resolve(resp);
+                    }
+                })
+                    .receive("error", function (e) { return reject(e); })
+                    .receive("timeout", function () { return reject("timeout"); });
+            });
+        };
+        Client.prototype.normalizeQuery = function (query) {
+            if (typeof (query) === "string") {
+                return query;
+            }
+            else if (typeof (query) === "object" && query.loc) {
+                // Supports graphql-tag/loader
+                return query.loc.source.body;
+            }
+            else {
+                throw "Unknown query input: " + typeof (query);
+            }
+        };
+        return Client;
+    }());
+    window.Client = Client;
+  </script>
+
   <script>
     // Collect the URL parameters
     var parameters = {};
@@ -74,6 +165,23 @@ add "&raw" to the end of the URL within a browser.
         }
       });
     }
+
+    <%= if socket_url do %>
+
+    var protocol;
+    if (window.location.protocol === "https:") {
+      protocol = "wss:"
+    } else {
+      protocol = "ws:"
+    }
+
+    var client = new Client(<%= socket_url %>);
+
+    client.connect()
+      .then(function () { console.log('Connected.'); })
+      .catch(function (e) { console.error(`Couldn't connect`, e) });
+    var graphQLFetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(client, graphQLFetcher);
+    <%= end %>
     // When the query and variables string is edited, update the URL bar so
     // that it can be easily shared.
     function onEditQuery(newQuery) {
