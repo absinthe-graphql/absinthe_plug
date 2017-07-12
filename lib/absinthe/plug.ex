@@ -270,7 +270,10 @@ defmodule Absinthe.Plug do
     config.schema_mod
     |> Absinthe.Pipeline.for_document(pipeline_opts)
     |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
-      {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
+      [
+        Absinthe.Plug.Validation.NoSubscriptionOnHTTP,
+        {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method},
+      ]
     )
   end
 

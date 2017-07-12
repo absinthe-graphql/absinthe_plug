@@ -333,6 +333,21 @@ defmodule Absinthe.PlugTest do
     assert expected == resp_body
   end
 
+  test "subscriptions over HTTP return an error" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    query = "subscription {update}"
+
+    assert %{status: 405, resp_body: resp_body} = conn(:post, "/", query: query)
+    |> put_req_header("content-type", "application/json")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    expected = "Subscriptions cannot be run over HTTP."
+
+    assert expected == resp_body
+  end
+
   defp basic_opts(context) do
     Map.put(context, :opts, Absinthe.Plug.init(schema: TestSchema))
   end
