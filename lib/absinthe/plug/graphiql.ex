@@ -183,19 +183,7 @@ defmodule Absinthe.Plug.GraphiQL do
   @spec render_interface(conn :: Conn.t, interface :: :advanced | :simple, opts :: Keyword.t) :: Conn.t
   defp render_interface(conn, interface, opts)
   defp render_interface(conn, :simple, opts) do
-    opts = Map.merge(@render_defaults, opts)
-
-    opts = with \
-      {:ok, socket} <- Map.fetch(opts, :socket),
-      %{private: %{phoenix_endpoint: endpoint}} <- conn ,
-      {:ok, socket_path} <- find_socket_path(endpoint, socket) do
-        socket_url = "`${protocol}//${window.location.host}#{socket_path}`"
-        Map.put(opts, :socket_url, socket_url)
-      else
-        _ ->
-          opts
-      end
-
+    opts = Keyword.merge(@render_defaults, opts)
     graphiql_html(
       @graphiql_version,
       opts[:query], opts[:var_string], opts[:result]
