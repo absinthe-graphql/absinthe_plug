@@ -92,7 +92,6 @@ add "&raw" to the end of the URL within a browser.
 
       var client = new AbsinthePhoenix.default(<%= socket_url %>);
       client.dispatchSubscriptionCallback = function(data, cb) {
-        console.log('dispatching');
         // GraphiQL wants the data as a string
         cb(JSON.stringify(data, null, 2));
       }

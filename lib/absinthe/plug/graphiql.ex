@@ -230,8 +230,8 @@ defmodule Absinthe.Plug.GraphiQL do
         socket_url = "`${protocol}//${window.location.host}#{socket_path}`"
         Map.put(opts, :socket_url, socket_url)
       else
-        blah ->
-          opts
+        other ->
+          other
       end
 
     graphiql_html(
