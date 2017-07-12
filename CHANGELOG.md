@@ -1,3 +1,7 @@
+v1.4.0
+
+- Feature: Subscriptions! See the Absinthe.Phoenix project doc for details.
+
 v1.3.0
 
 - Major rework of the Absinthe.Plug internals, although API stays essentially the same.
