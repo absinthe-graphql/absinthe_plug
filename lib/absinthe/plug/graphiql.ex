@@ -225,13 +225,13 @@ defmodule Absinthe.Plug.GraphiQL do
 
     opts = with \
       {:ok, socket} <- Map.fetch(opts, :socket),
-      %{private: %{phoenix_endpoint: endpoint}} <- conn ,
+      %{private: %{phoenix_endpoint: endpoint}} <- conn,
       {:ok, socket_path} <- find_socket_path(endpoint, socket) do
         socket_url = "`${protocol}//${window.location.host}#{socket_path}`"
         Map.put(opts, :socket_url, socket_url)
       else
-        other ->
-          other
+        _ ->
+          opts
       end
 
     graphiql_html(

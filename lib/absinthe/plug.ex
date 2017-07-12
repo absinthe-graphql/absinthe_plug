@@ -189,6 +189,14 @@ defmodule Absinthe.Plug do
       conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
     }
 
+    config = with nil <- config[:context][:pubsub],
+      %{private: %{phoenix_endpoint: endpoint}} <- conn do
+        context = Map.put(config.context, :pubsub, endpoint)
+        %{config | context: context}
+      else
+        _ -> config
+      end
+
     with {:ok, conn, request} <- Request.parse(conn, config),
          {:ok, request} <- ensure_processable(request, config) do
       {conn, run_request(request, conn_info, config)}
