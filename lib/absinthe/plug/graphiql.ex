@@ -116,7 +116,7 @@ defmodule Absinthe.Plug.GraphiQL do
 
   defp do_call(conn, %{json_codec: json_codec, interface: interface} = config) do
     config = case config[:default_headers] do
-        nil -> config
+        nil -> Map.put(config, :default_headers, "[]")
         {module, fun} when is_atom(fun) ->
           header_string =
             apply(module, fun, [])
