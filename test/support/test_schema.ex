@@ -56,6 +56,10 @@ defmodule Absinthe.Plug.TestSchema do
     end
   end
 
+  subscription do
+    field :update, :string
+  end
+
   object :item do
     description "A Basic Type"
 

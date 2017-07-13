@@ -22,8 +22,14 @@ add "&raw" to the end of the URL within a browser.
   <script src="//cdn.jsdelivr.net/react/15.4.2/react.min.js"></script>
   <script src="//cdn.jsdelivr.net/react/15.4.2/react-dom.min.js"></script>
   <script src="//cdn.jsdelivr.net/graphiql/<%= graphiql_version %>/graphiql.min.js"></script>
+  <%= if socket_url do %>
+    <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
+    <script src="//unpkg.com/phoenix@1.2.1/priv/static/phoenix.js"></script>
+    <script src="//unpkg.com/absinthe-phoenix@0.1.0"></script>
+  <%= end %>
 </head>
 <body>
+
   <script>
     // Collect the URL parameters
     var parameters = {};
@@ -74,6 +80,28 @@ add "&raw" to the end of the URL within a browser.
         }
       });
     }
+
+    <%= if socket_url do %>
+
+      var protocol;
+      if (window.location.protocol === "https:") {
+        protocol = "wss:"
+      } else {
+        protocol = "ws:"
+      }
+
+      var client = new AbsinthePhoenix.default(<%= socket_url %>);
+      client.dispatchSubscriptionCallback = function(resp, cb) {
+        // GraphiQL wants the data as a string
+        cb(JSON.stringify(resp.result, null, 2));
+      }
+
+      client.connect()
+        .then(function () { console.log('Connected.'); })
+        .catch(function (e) { console.error(`Couldn't connect`, e) });
+      var graphQLFetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(client, graphQLFetcher);
+
+    <%= end %>
     // When the query and variables string is edited, update the URL bar so
     // that it can be easily shared.
     function onEditQuery(newQuery) {

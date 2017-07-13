@@ -189,6 +189,14 @@ defmodule Absinthe.Plug do
       conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
     }
 
+    config = with nil <- config[:context][:pubsub],
+      %{private: %{phoenix_endpoint: endpoint}} <- conn do
+        context = Map.put(config.context, :pubsub, endpoint)
+        %{config | context: context}
+      else
+        _ -> config
+      end
+
     with {:ok, conn, request} <- Request.parse(conn, config),
          {:ok, request} <- ensure_processable(request, config) do
       {conn, run_request(request, conn_info, config)}
@@ -284,7 +292,10 @@ defmodule Absinthe.Plug do
     config.schema_mod
     |> Absinthe.Pipeline.for_document(pipeline_opts)
     |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
-      {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
+      [
+        Absinthe.Plug.Validation.NoSubscriptionOnHTTP,
+        {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method},
+      ]
     )
   end
 
@@ -316,6 +327,10 @@ defmodule Absinthe.Plug do
     conn
     |> put_resp_content_type(content_type)
     |> send_resp(status, mod.encode!(body, opts))
+  end
+
+  def encode_json!(value, %{json_codec: json_codec}) do
+    json_codec.module.encode!(value, json_codec.opts)
   end
 
 end
