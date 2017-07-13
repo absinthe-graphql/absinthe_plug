@@ -227,7 +227,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
    %{"id" => "2",
      "payload" => %{"errors" => [%{"locations" => [%{"column" => 0,
              "line" => 2}],
-          "message" => "In argument \"id\": Expected type \"ID!\", found null."}]}}]
+          "message" => "In argument \"id\": Expected type \"ID!\", found null."}, %{"locations" => [%{"column" => 0, "line" => 1}], "message" => "Variable \"id\": Expected non-null, found null."}]}}]
 
   test "can include fragments with undefined variable" do
     opts = Absinthe.Plug.init(schema: TestSchema)
