@@ -140,35 +140,22 @@ defmodule Absinthe.Plug.GraphiQL do
   end
 
   defp do_call(conn, %{json_codec: json_codec, interface: interface} = config) do
-    config = case config[:default_headers] do
-        nil -> Map.put(config, :default_headers, "[]")
+    header_string = case config[:default_headers] do
+        nil -> "[]"
         {module, fun} when is_atom(fun) ->
-          header_string =
-            apply(module, fun, [])
-            |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
-            |> json_codec.module.encode!(pretty: true)
-
-          Map.put(config, :default_headers, header_string)
+          compile_headers(json_codec, apply(module, fun, []))
 
         fun when is_function(fun, 1) ->
-          header_string =
-            apply(fun, [conn])
-            |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
-            |> json_codec.module.encode!(pretty: true)
-
-          Map.put(config, :default_headers, header_string)
+          compile_headers(json_codec, apply(fun, [conn]))
 
         fun when is_function(fun, 0) ->
-          header_string =
-            apply(fun, [])
-            |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
-            |> json_codec.module.encode!(pretty: true)
-
-          Map.put(config, :default_headers, header_string)
+          compile_headers(json_codec, apply(fun, []))
 
         val ->
           raise "invalid default headers: #{inspect val}"
       end
+
+    config = Map.put(config, :default_headers, header_string)
 
     config = case config[:default_url] do
       fun when is_function(fun, 1) ->
@@ -248,6 +235,12 @@ defmodule Absinthe.Plug.GraphiQL do
         |> send_resp(500, error)
 
     end
+  end
+
+  defp compile_headers(json_codec, headers) do
+    headers
+    |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
+    |> json_codec.module.encode!(pretty: true)
   end
 
   @spec select_mode(request :: Absinthe.Plug.Request.t) :: :start_interface | {:process, Absinthe.Plug.Request.t}
