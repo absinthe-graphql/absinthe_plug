@@ -59,7 +59,7 @@ defmodule Absinthe.Plug.GraphiQL do
 
   require EEx
   EEx.function_from_file :defp, :graphiql_html, Path.join(__DIR__, "graphiql.html.eex"),
-    [:query_string, :variables_string, :result_string, :assets]
+    [:query_string, :variables_string, :result_string, :socket_url, :assets]
 
   EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(__DIR__, "graphiql_workspace.html.eex"),
     [:query_string, :variables_string, :default_headers, :default_url, :assets]
@@ -78,6 +78,8 @@ defmodule Absinthe.Plug.GraphiQL do
     default_headers: {module, atom},
     default_url: binary,
     assets: Keyword.t,
+    socket: module,
+    socket_url: binary,
   ]
 
   @doc false
@@ -91,6 +93,8 @@ defmodule Absinthe.Plug.GraphiQL do
     |> Map.put(:default_headers, Keyword.get(opts, :default_headers))
     |> Map.put(:default_url, Keyword.get(opts, :default_url))
     |> Map.put(:assets, assets)
+    |> Map.put(:socket, Keyword.get(opts, :socket))
+    |> Map.put(:socket_url, Keyword.get(opts, :socket_url))
   end
 
   @doc false
@@ -112,20 +116,24 @@ defmodule Absinthe.Plug.GraphiQL do
     end
   end
 
-  defp do_call(conn, %{json_codec: _, interface: interface} = config) do
-    default_headers = case config[:default_headers] do
-      nil -> %{}
-      {module, fun} when is_atom(fun) -> apply(module, fun, [])
-    end
-    |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
-    |> Poison.encode!(pretty: true)
+  defp do_call(conn, %{json_codec: json_codec, interface: interface} = config) do
+    config = case config[:default_headers] do
+        nil -> Map.put(config, :default_headers, "[]")
+        {module, fun} when is_atom(fun) ->
+          header_string =
+            apply(module, fun, [])
+            |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
+            |> json_codec.module.encode!(pretty: true)
 
-    default_url = config[:default_url]
+          Map.put(config, :default_headers, header_string)
+        val ->
+          raise "invalid default headers: #{inspect val}"
+      end
 
     with {:ok, conn, request} <- Absinthe.Plug.Request.parse(conn, config),
          {:process, request} <- select_mode(request),
          {:ok, request} <- Absinthe.Plug.ensure_processable(request, config),
-         :ok <- Absinthe.Plug.Request.log(request) do
+         :ok <- Absinthe.Plug.Request.log(request, config.log_level) do
 
       conn_info = %{
         conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
@@ -135,6 +143,9 @@ defmodule Absinthe.Plug.GraphiQL do
         {:ok, result} ->
           query = hd(request.queries) # GraphiQL doesn't batch requests, so the first query is the only one
           {:ok, conn, result, query.variables, query.document || ""}
+        {:error, {:http_method, _}, _} ->
+          query = hd(request.queries)
+          {:http_method_error, query.variables, query.document || ""}
         other -> other
       end
     end
@@ -143,33 +154,47 @@ defmodule Absinthe.Plug.GraphiQL do
         query = query |> js_escape
 
         var_string = variables
-        |> Poison.encode!(pretty: true)
+        |> config.json_codec.module.encode!(pretty: true)
         |> js_escape
 
 
         result = result
-        |> Poison.encode!(pretty: true)
+        |> config.json_codec.module.encode!(pretty: true)
         |> js_escape
 
+        config = %{
+          query: query,
+          var_string: var_string,
+          result: result,
+        } |> Map.merge(config)
+
         conn
-        |> render_interface(interface, query: query, var_string: var_string,
-                                       default_headers: default_headers,
-                                       result: result, default_url: default_url,
-                                       assets: config[:assets])
+        |> render_interface(interface, config)
 
       {:input_error, msg} ->
         conn
         |> send_resp(400, msg)
 
       :start_interface ->
-         conn
-         |> render_interface(interface, default_headers: default_headers,
-                                        default_url: default_url,
-                                        assets: config[:assets])
 
-      {:error, {:http_method, text}, _} ->
         conn
-        |> send_resp(405, text)
+        |> render_interface(interface, config)
+
+      {:http_method_error, variables, query} ->
+        query = query |> js_escape
+
+        var_string =
+          variables
+          |> config.json_codec.module.encode!(pretty: true)
+          |> js_escape
+
+        config = %{
+          query: query,
+          var_string: var_string,
+        } |> Map.merge(config)
+
+        conn
+        |> render_interface(interface, config)
 
       {:error, error, _} when is_binary(error) ->
         conn
@@ -182,19 +207,42 @@ defmodule Absinthe.Plug.GraphiQL do
   defp select_mode(%{queries: [%Absinthe.Plug.Request.Query{document: nil}]}), do: :start_interface
   defp select_mode(request), do: {:process, request}
 
-  @render_defaults [query: "", var_string: "", results: ""]
+  defp find_socket_path(endpoint, socket) do
+    endpoint.__sockets__
+    |> Enum.find(fn {_, module} ->
+      module == socket
+    end)
+    |> case do
+      {path, _} -> {:ok, path}
+      _ -> :error
+    end
+  end
+
+  @render_defaults %{query: "", var_string: "", results: ""}
 
   @spec render_interface(conn :: Conn.t, interface :: :advanced | :simple, opts :: Keyword.t) :: Conn.t
   defp render_interface(conn, interface, opts)
   defp render_interface(conn, :simple, opts) do
-    opts = Keyword.merge(@render_defaults, opts)
+    opts = Map.merge(@render_defaults, opts)
+
+    opts = with \
+      {:ok, socket} <- Map.fetch(opts, :socket),
+      %{private: %{phoenix_endpoint: endpoint}} <- conn,
+      {:ok, socket_path} <- find_socket_path(endpoint, socket) do
+        socket_url = "`${protocol}//${window.location.host}#{socket_path}`"
+        Map.put(opts, :socket_url, socket_url)
+      else
+        _ ->
+          opts
+      end
+
     graphiql_html(
-      opts[:query], opts[:var_string], opts[:result], opts[:assets]
+      opts[:query], opts[:var_string], opts[:result], opts[:socket_url], opts[:assets]
     )
     |> rendered(conn)
   end
   defp render_interface(conn, :advanced, opts) do
-    opts = Keyword.merge(@render_defaults, opts)
+    opts = Map.merge(@render_defaults, opts)
     graphiql_workspace_html(
       opts[:query], opts[:var_string], opts[:default_headers],
       default_url(opts[:default_url]), opts[:assets]

@@ -30,9 +30,10 @@ defmodule Absinthe.Plug.TestSchema do
     field :upload_test, :string do
       arg :file_a, non_null(:upload)
       arg :file_b, :upload
+      arg :auth, :string
 
       resolve fn args, _ ->
-        arg_keys = Enum.map(args, fn {key, %Plug.Upload{}} -> key end)
+        arg_keys = Enum.map(args, fn {key, _} -> key end)
         {:ok, arg_keys |> Enum.join(", ")}
       end
     end
@@ -53,6 +54,10 @@ defmodule Absinthe.Plug.TestSchema do
         raise "complex string must not be resolved"
       end
     end
+  end
+
+  subscription do
+    field :update, :string
   end
 
   object :item do

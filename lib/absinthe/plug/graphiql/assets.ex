@@ -19,7 +19,10 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     "graphiql.css" => "//cdn.jsdelivr.net/graphiql/#{@graphiql_version}/graphiql.css",
     "graphiql.js" => "//cdn.jsdelivr.net/graphiql/#{@graphiql_version}/graphiql.min.js",
     "graphiql-workspace.css" => "//cdn.jsdelivr.net/npm/graphiql-workspace@#{@graphiql_workspace_version}/graphiql-workspace.min.css",
-    "graphiql-workspace.js" => "//cdn.jsdelivr.net/npm/graphiql-workspace@#{@graphiql_workspace_version}/graphiql-workspace.min.js"
+    "graphiql-workspace.js" => "//cdn.jsdelivr.net/npm/graphiql-workspace@#{@graphiql_workspace_version}/graphiql-workspace.min.js",
+    "graphiql-subscriptions-fetcher/browser/client.js" => "//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js",
+    "phoenix.js" => "//unpkg.com/phoenix@1.2.1/priv/static/phoenix.js",
+    "absinthe-phoenix.js" => "//unpkg.com/absinthe-phoenix@0.1.0",
   }
 
   def assets_config do

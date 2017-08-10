@@ -274,6 +274,20 @@ defmodule Absinthe.PlugTest do
       assert resp_body == %{"data" => %{"uploadTest" => "file_a, file_b"}}
     end
 
+    test "work with variables", %{opts: opts} do
+      query = """
+      query ($auth: String){uploadTest(fileA: "a", fileB: "b", auth: $auth)}
+      """
+
+      upload = %Plug.Upload{}
+      variables = Poison.encode!(%{auth: "foo"})
+      assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"query" => query, "a" => upload, "b" => upload, "variables" => variables})
+      |> put_req_header("content-type", "multipart/form-data")
+      |> call(opts)
+
+      assert resp_body == %{"data" => %{"uploadTest" => "auth, file_a, file_b"}}
+    end
+
     test "error when no argument is given with a valid required upload", %{opts: opts} do
       query = """
       {uploadTest}
@@ -315,6 +329,21 @@ defmodule Absinthe.PlugTest do
                  "message" => "Field expensive is too complex: complexity is 1000 and maximum is 100"},
                %{"locations" => [%{"column" => 0, "line" => 1}],
                  "message" => "Operation is too complex: complexity is 1000 and maximum is 100"}]}
+
+    assert expected == resp_body
+  end
+
+  test "subscriptions over HTTP return an error" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    query = "subscription {update}"
+
+    assert %{status: 405, resp_body: resp_body} = conn(:post, "/", query: query)
+    |> put_req_header("content-type", "application/json")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    expected = "Subscriptions cannot be run over HTTP."
 
     assert expected == resp_body
   end

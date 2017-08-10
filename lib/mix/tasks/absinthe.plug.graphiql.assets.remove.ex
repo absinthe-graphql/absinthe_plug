@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.CleanUp do
+defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.Remove do
   use Mix.Task
 
   @shortdoc "Removes GraphiQL assets"
