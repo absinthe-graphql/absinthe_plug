@@ -58,13 +58,11 @@ defmodule Absinthe.Plug.GraphiQL do
   """
 
   require EEx
-  @graphiql_version "0.9.3"
   EEx.function_from_file :defp, :graphiql_html, Path.join(__DIR__, "graphiql.html.eex"),
-    [:graphiql_version, :query_string, :variables_string, :result_string, :socket_url]
+    [:query_string, :variables_string, :result_string, :socket_url, :assets]
 
-  @graphiql_workspace_version "1.0.4"
   EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(__DIR__, "graphiql_workspace.html.eex"),
-    [:graphiql_workspace_version, :query_string, :variables_string, :default_headers, :default_url]
+    [:query_string, :variables_string, :default_headers, :default_url, :assets]
 
   @behaviour Plug
 
@@ -79,6 +77,7 @@ defmodule Absinthe.Plug.GraphiQL do
     interface: :advanced | :simple,
     default_headers: {module, atom},
     default_url: binary,
+    assets: Keyword.t,
     socket: module,
     socket_url: binary,
   ]
@@ -86,11 +85,14 @@ defmodule Absinthe.Plug.GraphiQL do
   @doc false
   @spec init(opts :: opts) :: map
   def init(opts) do
+    assets = Absinthe.Plug.GraphiQL.Assets.get_assets(:local)
+
     opts
     |> Absinthe.Plug.init
     |> Map.put(:interface, Keyword.get(opts, :interface) || :advanced)
     |> Map.put(:default_headers, Keyword.get(opts, :default_headers))
     |> Map.put(:default_url, Keyword.get(opts, :default_url))
+    |> Map.put(:assets, assets)
     |> Map.put(:socket, Keyword.get(opts, :socket))
     |> Map.put(:socket_url, Keyword.get(opts, :socket_url))
   end
@@ -235,19 +237,15 @@ defmodule Absinthe.Plug.GraphiQL do
       end
 
     graphiql_html(
-      @graphiql_version,
-      opts[:query], opts[:var_string], opts[:result], opts[:socket_url]
+      opts[:query], opts[:var_string], opts[:result], opts[:socket_url], opts[:assets]
     )
     |> rendered(conn)
   end
   defp render_interface(conn, :advanced, opts) do
     opts = Map.merge(@render_defaults, opts)
     graphiql_workspace_html(
-      @graphiql_workspace_version,
-      opts[:query],
-      opts[:var_string],
-      opts[:default_headers],
-      default_url(opts[:default_url])
+      opts[:query], opts[:var_string], opts[:default_headers],
+      default_url(opts[:default_url]), opts[:assets]
     )
     |> rendered(conn)
   end
