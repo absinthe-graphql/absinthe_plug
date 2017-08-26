@@ -9,20 +9,21 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
   ]
 
   @graphiql_workspace_version "1.0.4"
-  @graphiql_version "0.9.3"
+  @graphiql_version "0.10.2"
+  @react_version "15.5.4"
 
   @assets %{
     "fetch.js" => "//cdn.jsdelivr.net/fetch/2.0.1/fetch.min.js",
-    "react.js" => "//cdn.jsdelivr.net/react/15.4.2/react.min.js",
-    "react-dom.js" => "//cdn.jsdelivr.net/react/15.4.2/react-dom.min.js",
+    "react.js" => "//cdn.jsdelivr.net/react/#{@react_version}/react.min.js",
+    "react-dom.js" => "//cdn.jsdelivr.net/react/#{@react_version}/react-dom.min.js",
     "bootstrap.css" => "//maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css",
     "graphiql.css" => "//cdn.jsdelivr.net/graphiql/#{@graphiql_version}/graphiql.css",
     "graphiql.js" => "//cdn.jsdelivr.net/graphiql/#{@graphiql_version}/graphiql.min.js",
     "graphiql-workspace.css" => "//cdn.jsdelivr.net/npm/graphiql-workspace@#{@graphiql_workspace_version}/graphiql-workspace.min.css",
     "graphiql-workspace.js" => "//cdn.jsdelivr.net/npm/graphiql-workspace@#{@graphiql_workspace_version}/graphiql-workspace.min.js",
     "graphiql-subscriptions-fetcher/browser/client.js" => "//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js",
-    "phoenix.js" => "//unpkg.com/phoenix@1.2.1/priv/static/phoenix.js",
-    "absinthe-phoenix.js" => "//unpkg.com/absinthe-phoenix@0.1.0",
+    "phoenix.js" => "//unpkg.com/phoenix@1.3.0/priv/static/phoenix.js",
+    "absinthe-phoenix.js" => "//unpkg.com/absinthe-phoenix@0.1.1",
   }
 
   def assets_config do
