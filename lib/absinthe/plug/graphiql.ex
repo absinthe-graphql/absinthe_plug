@@ -62,7 +62,7 @@ defmodule Absinthe.Plug.GraphiQL do
     [:query_string, :variables_string, :result_string, :socket_url, :assets]
 
   EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(__DIR__, "graphiql_workspace.html.eex"),
-    [:query_string, :variables_string, :default_headers, :default_url, :assets]
+    [:query_string, :variables_string, :default_headers, :default_url, :socket_url, :assets]
 
   @behaviour Plug
 
@@ -224,17 +224,7 @@ defmodule Absinthe.Plug.GraphiQL do
   defp render_interface(conn, interface, opts)
   defp render_interface(conn, :simple, opts) do
     opts = Map.merge(@render_defaults, opts)
-
-    opts = with \
-      {:ok, socket} <- Map.fetch(opts, :socket),
-      %{private: %{phoenix_endpoint: endpoint}} <- conn,
-      {:ok, socket_path} <- find_socket_path(endpoint, socket) do
-        socket_url = "`${protocol}//${window.location.host}#{socket_path}`"
-        Map.put(opts, :socket_url, socket_url)
-      else
-        _ ->
-          opts
-      end
+      |> with_socket_url(conn, opts)
 
     graphiql_html(
       opts[:query], opts[:var_string], opts[:result], opts[:socket_url], opts[:assets]
@@ -243,11 +233,24 @@ defmodule Absinthe.Plug.GraphiQL do
   end
   defp render_interface(conn, :advanced, opts) do
     opts = Map.merge(@render_defaults, opts)
+      |> with_socket_url(conn, opts)
+    
     graphiql_workspace_html(
       opts[:query], opts[:var_string], opts[:default_headers],
-      default_url(opts[:default_url]), opts[:assets]
+      default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
     )
     |> rendered(conn)
+  end
+
+  defp with_socket_url(map, conn, opts) do
+    with {:ok, socket} <- Map.fetch(opts, :socket),
+         %{private: %{phoenix_endpoint: endpoint}} <- conn,
+         {:ok, socket_path} <- find_socket_path(endpoint, socket) do
+      socket_url = "`${protocol}//${window.location.host}#{socket_path}`"
+      Map.put(opts, :socket_url, socket_url)
+    else
+      _ -> map
+    end
   end
 
   defp default_url(nil), do: "window.location.origin + window.location.pathname"
