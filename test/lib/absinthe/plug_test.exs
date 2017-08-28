@@ -237,7 +237,7 @@ defmodule Absinthe.PlugTest do
     assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Poison.encode!(%{query: query, operationName: ""}))
     |> put_req_header("content-type", "application/json")
     |> plug_parser
-    |> put_private(:absinthe, %{root_value: %{field_on_root_value: "foo"}})
+    |> Absinthe.Plug.put_options(root_value: %{field_on_root_value: "foo"})
     |> Absinthe.Plug.call(opts)
 
     assert resp_body == "{\"data\":{\"field_on_root_value\":\"foo\"}}"
@@ -346,6 +346,36 @@ defmodule Absinthe.PlugTest do
     expected = "Subscriptions cannot be run over HTTP."
 
     assert expected == resp_body
+  end
+
+
+  describe "put_options/2" do
+    test "with a pristine connection it sets the values as provided" do
+      conn =
+        conn(:post, "/")
+        |> Absinthe.Plug.put_options(context: %{current_user: %{id: 1}})
+
+      assert conn.private.absinthe.context.current_user.id == 1
+    end
+
+    test "sets multiple values at once" do
+      conn =
+        conn(:post, "/")
+        |> Absinthe.Plug.put_options(root_value: %{field_on_root_value: "foo"}, context: %{current_user: %{id: 1}})
+
+      assert conn.private.absinthe.context.current_user.id == 1
+      assert conn.private.absinthe.root_value.field_on_root_value == "foo"
+    end
+
+    test "doesn't wipe out previously set options if called twice" do
+      conn =
+        conn(:post, "/")
+        |> Absinthe.Plug.put_options(root_value: %{field_on_root_value: "foo"})
+        |> Absinthe.Plug.put_options(context: %{current_user: %{id: 1}})
+
+      assert conn.private.absinthe.context.current_user.id == 1
+      assert conn.private.absinthe.root_value.field_on_root_value == "foo"
+    end
   end
 
   defp basic_opts(context) do
