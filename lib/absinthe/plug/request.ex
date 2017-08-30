@@ -45,10 +45,13 @@ defmodule Absinthe.Plug.Request do
       # Phoenix puts parsed params under the "_json" key when the
       # structure is an array; otherwise it's just the keys themselves,
       # and they may sit in the body or in the params
-      batch? = Map.has_key?(params, "_json")
+      batch? = is_batched?(params)
       {:ok, conn, build_request(body, params, config, batch?: batch?)}
     end
   end
+
+  defp is_batched?(%{"_json" => json}) when is_list(json), do: true
+  defp is_batched?(_), do: false
 
   defp build_request(_body, params, config, batch?: true) do
     queries = Enum.map(params["_json"], fn query ->
@@ -64,6 +67,11 @@ defmodule Absinthe.Plug.Request do
       batch: true,
       extra_keys: extra_keys,
     }
+  end
+  defp build_request(body, %{"_json" => json} = params, config, batch?: false) do
+    params = params |> Map.merge(json) |> Map.drop(["_json"])
+
+    build_request(body, params, config, batch?: false)
   end
   defp build_request(body, params, config, batch?: false) do
     queries =
