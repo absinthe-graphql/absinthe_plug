@@ -96,11 +96,21 @@ defmodule Absinthe.Plug.Request do
     end
   end
 
+  defp convert_operations_param(conn = %{params: %{"operations" => operations}}) when is_binary(operations) do
+    put_in(conn.params["_json"], conn.params["operations"])
+    |> Map.delete("operations")
+  end
+  defp convert_operations_param(conn), do: conn
+
   defp extract_body_and_params_batched(conn, body, config) do
-    conn = fetch_query_params(conn)
+    conn =
+      conn
+      |> fetch_query_params()
+      |> convert_operations_param()
+
     with %{"_json" => string} = params when is_binary(string) <- conn.params,
-    {:ok, decoded} <- config.json_codec.module.decode(string) do
-      {:ok, conn, body, %{params | "_json" => decoded}}
+         {:ok, decoded} <- config.json_codec.module.decode(string) do
+         {:ok, conn, body, %{params | "_json" => decoded}}
     else
       {:error, {:invalid, token, pos}} ->
         {:input_error, "Could not parse JSON. Invalid token `#{token}` at position #{pos}"}
