@@ -60,6 +60,7 @@ defmodule Absinthe.Plug.Request.Query do
         context: config.context,
         adapter: config.adapter,
         root_value: config.root_value,
+        schema: config.schema_mod,
         params: params,
       }
       |> provide_document(config)
