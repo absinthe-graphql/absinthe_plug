@@ -13,7 +13,7 @@ add "&raw" to the end of the URL within a browser.
 
   <title>GraphiQL Workspace</title>
 
-  <link rel="stylesheet" media="screen" href="<%= assets["bootstrap/bootstrap.css"] %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["bootstrap/css/bootstrap.css"] %>">
   <link rel="stylesheet" media="screen" href="<%= assets["graphiql/graphiql.css"] %>">
   <link rel="stylesheet" media="screen" href="<%= assets["graphiql-workspace/graphiql-workspace.css"] %>">
 
