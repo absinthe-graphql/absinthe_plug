@@ -182,6 +182,23 @@ defmodule Absinthe.Plug do
     end
   end
 
+  @doc """
+  Sets the options for a given GraphQL document execution.
+
+  ## Examples
+
+      iex> Absinthe.Plug.put_options(conn, context: %{current_user: user})
+      %Plug.Conn{}
+  """
+  @spec put_options(Plug.Conn.t, Keyword.t) :: Plug.Conn.t
+  def put_options(%Plug.Conn{private: %{absinthe: absinthe}} = conn, opts) do
+    opts = Map.merge(absinthe, Enum.into(opts, %{}))
+    Plug.Conn.put_private(conn, :absinthe, opts)
+  end
+  def put_options(conn, opts) do
+    Plug.Conn.put_private(conn, :absinthe, Enum.into(opts, %{}))
+  end
+
   @doc false
   @spec execute(Plug.Conn.t, map) :: {Plug.Conn.t, any}
   def execute(conn, config) do

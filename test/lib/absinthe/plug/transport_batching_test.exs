@@ -365,6 +365,19 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert [%{"id" => "1", "payload" => %{"data" => %{"uploadTest" => "file_a"}}}, %{"id" => "2", "payload" => %{"data" => %{"uploadTest" => "file_a"}}}] == resp_body
   end
 
+  test "single batched query with operations argument works with variables and uploads" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    upload = %Plug.Upload{}
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"operations" => @upload_relay_variable_query, "a" => upload})
+    |> put_req_header("content-type", "multipart/form-data")
+    |> plug_parser
+    |> absinthe_plug(opts)
+
+    assert [%{"id" => "1", "payload" => %{"data" => %{"uploadTest" => "file_a"}}}, %{"id" => "2", "payload" => %{"data" => %{"uploadTest" => "file_a"}}}] == resp_body
+  end
+
   defp absinthe_plug(conn, opts) do
     %{resp_body: body} = conn = Absinthe.Plug.call(conn, opts)
 
