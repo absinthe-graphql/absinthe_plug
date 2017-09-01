@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.Download do
 
     Application.ensure_all_started(:inets)
 
-    Absinthe.Plug.GraphiQL.Assets.get_asset_mappings()
+    Absinthe.Plug.GraphiQL.Assets.get_remote_asset_mappings()
     |> Enum.map(&download_file/1)
   end
 

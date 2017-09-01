@@ -88,7 +88,7 @@ defmodule Absinthe.Plug.GraphiQL do
   @doc false
   @spec init(opts :: opts) :: map
   def init(opts) do
-    assets = Absinthe.Plug.GraphiQL.Assets.get_assets(:smart)
+    assets = Absinthe.Plug.GraphiQL.Assets.get_assets()
 
     opts
     |> Absinthe.Plug.init

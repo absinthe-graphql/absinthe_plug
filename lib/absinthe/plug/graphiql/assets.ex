@@ -4,6 +4,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
 
   @config Application.get_env(:absinthe_plug, Absinthe.Plug.GraphiQL)
   @default_config [
+    source: :smart,
     local_url_path: "/absinthe_graphiql",
     local_directory: "priv/static/absinthe_graphiql",
     local_source: ":package/:alias",
@@ -54,16 +55,16 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     end
   end
 
-  def get_assets(source), do: reduce_assets(
+  def get_assets(), do: reduce_assets(
     %{},
     &Map.put(
       &2,
       build_asset_path(:local_source, &1),
-      asset_source_url(source, &1)
+      asset_source_url(assets_config()[:source], &1)
     )
   )
 
-  def get_asset_mappings, do: reduce_assets(
+  def get_remote_asset_mappings, do: reduce_assets(
     [],
     &(&2 ++ [{
       local_asset_path(&1),
