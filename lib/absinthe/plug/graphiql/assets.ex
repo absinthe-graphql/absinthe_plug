@@ -6,7 +6,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
   @default_config [
     local_url_path: "/absinthe_graphiql",
     local_directory: "priv/static/absinthe_graphiql",
-    local_source: ":package/:file",
+    local_source: ":package/:alias",
     remote_source: "https://cdn.jsdelivr.net/npm/:package@:version/:file",
   ]
 
@@ -34,13 +34,13 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
       {"graphiql-workspace.min.js", "graphiql-workspace.js"}
     ]},
     {"graphiql-subscriptions-fetcher", "0.0.2", [
-      "browser/client.js",
+      {"browser/client.js", "graphiql-subscriptions-fetcher.js"},
     ]},
     {"phoenix", "1.3.0", [
       {"priv/static/phoenix.min.js", "phoenix.js"},
     ]},
     {"absinthe-phoenix", "0.1.1", [
-      {"browser/index.min.js", "browser.js"},
+      {"browser/index.min.js", "absinthe-phoenix.js"},
     ]},
   ]
 
@@ -58,23 +58,18 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     %{},
     &Map.put(
       &2,
-      build_asset_path(:local_source, resolve_asset_file(&1, :alias)),
-      asset_source_url(source, resolve_asset_file(&1))
+      build_asset_path(:local_source, &1),
+      asset_source_url(source, &1)
     )
   )
 
   def get_asset_mappings, do: reduce_assets(
     [],
     &(&2 ++ [{
-      local_asset_path(resolve_asset_file(&1, :alias)),
-      asset_source_url(:remote, resolve_asset_file(&1))
+      local_asset_path(&1),
+      asset_source_url(:remote, &1)
     }])
   )
-
-  defp resolve_asset_file(_, to \\ :real)
-  defp resolve_asset_file({package, version, {real_path, _}}, :real), do: {package, version, real_path}
-  defp resolve_asset_file({package, version, {_, alias_path}}, :alias), do: {package, version, alias_path}
-  defp resolve_asset_file(asset, _), do: asset
 
   defp reduce_assets(initial, reducer) do
     Enum.reduce(@assets, initial, fn {package, version, files}, acc ->
@@ -95,10 +90,12 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
   defp asset_source_url(:local, asset), do: Path.join(assets_config()[:local_url_path], build_asset_path(:local_source, asset))
   defp asset_source_url(:remote, asset), do: build_asset_path(:remote_source, asset)
 
-  defp build_asset_path(source, {package, version, file}) do
+  defp build_asset_path(source, {package, version, {real_path, aliased_path}}) do
     assets_config()[source]
     |> String.replace(":package", package)
     |> String.replace(":version", version)
-    |> String.replace(":file", file)
+    |> String.replace(":file", real_path)
+    |> String.replace(":alias", aliased_path)
   end
+  defp build_asset_path(source, {package, version, path}), do: build_asset_path(source, {package, version, {path, path}})
 end
