@@ -121,7 +121,7 @@ defmodule Absinthe.Plug.GraphiQL do
         nil -> Map.put(config, :default_headers, "[]")
         {module, fun} when is_atom(fun) ->
           header_string =
-            apply(module, fun, [])
+            if(function_exported?(module, fun, 1), do: apply(module, fun, [conn]), else: apply(module, fun, []))
             |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
             |> json_codec.module.encode!(pretty: true)
 
