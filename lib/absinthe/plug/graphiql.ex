@@ -121,7 +121,9 @@ defmodule Absinthe.Plug.GraphiQL do
         nil -> Map.put(config, :default_headers, "[]")
         {module, fun} when is_atom(fun) ->
           header_string =
-            if(function_exported?(module, fun, 1), do: apply(module, fun, [conn]), else: apply(module, fun, []))
+            module
+            |> function_exported?(fun, 1)
+            |> call_exported_function(module, fun, conn)
             |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
             |> json_codec.module.encode!(pretty: true)
 
@@ -202,6 +204,10 @@ defmodule Absinthe.Plug.GraphiQL do
 
     end
   end
+
+  @spec call_exported_function(boolean, module, (() -> map) | ((Plug.Conn.t) -> map), Plug.Conn.t | nil) :: map
+  defp call_exported_function(true, module, fun, conn), do: apply(module, fun, [conn])
+  defp call_exported_function(false, module, fun, _conn), do: apply(module, fun, [])
 
   @spec select_mode(request :: Absinthe.Plug.Request.t) :: :start_interface | {:process, Absinthe.Plug.Request.t}
   defp select_mode(%{queries: [%Absinthe.Plug.Request.Query{document: nil}]}), do: :start_interface
