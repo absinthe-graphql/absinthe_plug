@@ -62,8 +62,9 @@ plug Plug.Parsers,
   pass: ["*/*"],
   json_decoder: Poison
 
-forward "/api", Absinthe.Plug,
-  schema: MyApp.Schema
+forward "/api",
+  to: Absinthe.Plug,
+  init_opts: [schema: MyApp.Schema]
 ```
 
 For more information, see the API documentation for `Absinthe.Plug`.
@@ -75,8 +76,8 @@ To add support for a GraphiQL interface, add a configuration for
 
 ```elixir
 forward "/graphiql",
-  Absinthe.Plug.GraphiQL,
-  schema: MyApp.Schema,
+  to: Absinthe.Plug.GraphiQL,
+  init_opts: [schema: MyApp.Schema]
 ```
 
 See the API documentation for `Absinthe.Plug.GraphiQL` for more information.
