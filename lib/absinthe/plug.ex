@@ -22,8 +22,9 @@ defmodule Absinthe.Plug do
         pass: ["*/*"],
         json_decoder: Poison
 
-      forward "/api", Absinthe.Plug,
-        schema: MyApp.Schema
+      forward "/api",
+        to: Absinthe.Plug,
+        init_opts: [schema: MyApp.Schema]
 
   See the documentation on `Absinthe.Plug.init/1` and the `Absinthe.Plug.opts`
   type for information on the available options.
@@ -31,9 +32,33 @@ defmodule Absinthe.Plug do
   To add support for a GraphiQL interface, add a configuration for
   `Absinthe.Plug.GraphiQL`:
 
+    forward "/graphiql",
+      to: Absinthe.Plug.GraphiQL,
+      init_opts: [schema: MyApp.Schema]
+
+  For more information, see the API documentation for `Absinthe.Plug`.
+
+  ### Phoenix.Router
+
+  If you are using [Phoenix.Router](https://hexdocs.pm/phoenix/Phoenix.Router.html), `forward` expects different arguments:
+
+  #### Plug.Router
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyApp.Schema,
+          interface: :simple
+        ]
+
+  #### Phoenix.Router
+
       forward "/graphiql",
         Absinthe.Plug.GraphiQL,
-        schema: MyApp.Schema,
+         schema: MyApp.Schema,
+         interface: :simple
+
+  For more information see [Phoenix.Router.forward/4](https://hexdocs.pm/phoenix/Phoenix.Router.html#forward/4).
 
   ## Included GraphQL Types
 

@@ -9,17 +9,19 @@ defmodule Absinthe.Plug.GraphiQL do
 
       if Mix.env == :dev do
         forward "/graphiql",
-          Absinthe.Plug.GraphiQL,
-          schema: MyApp.Schema
+          to: Absinthe.Plug.GraphiQL,
+          init_opts: [schema: MyApp.Schema]
       end
 
   Use the "simple" interface (original GraphiQL) instead:
 
       if Mix.env == :dev do
         forward "/graphiql",
-          Absinthe.Plug.GraphiQL,
-          schema: MyApp.Schema,
-          interface: :simple
+          to: Absinthe.Plug.GraphiQL,
+          init_opts: [
+            schema: MyApp.Schema,
+            interface: :simple
+          ]
 
   ## Interface Selection
 
@@ -36,9 +38,11 @@ defmodule Absinthe.Plug.GraphiQL do
   Note that you may have to clean up your existing workspace by clicking the trashcan icon in order to see the newly set default headers.
 
       forward "/graphiql",
-        Absinthe.Plug.GraphiQL,
-        schema: MyApp.Schema,
-        default_headers: {__MODULE__, :graphiql_headers}
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyApp.Schema,
+          default_headers: {__MODULE__, :graphiql_headers}
+        ]
 
       def graphiql_headers do
         %{
@@ -52,9 +56,11 @@ defmodule Absinthe.Plug.GraphiQL do
   You can also optionally set the default URL to be used for sending the queries to. This only applies to the advanced interface (GraphiQL Workspace).
 
       forward "/graphiql",
-        Absinthe.Plug.GraphiQL,
-        schema: MyApp.Schema,
-        default_url: "https://api.mydomain.com/graphql"
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyApp.Schema,
+          default_url: "https://api.mydomain.com/graphql"
+        ]
   """
 
   require EEx
