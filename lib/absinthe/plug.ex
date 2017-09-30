@@ -36,6 +36,30 @@ defmodule Absinthe.Plug do
       to: Absinthe.Plug.GraphiQL,
       init_opts: [schema: MyApp.Schema]
 
+  For more information, see the API documentation for `Absinthe.Plug`.
+
+  ### Phoenix.Router
+
+  If you are using [Phoenix.Router](https://hexdocs.pm/phoenix/Phoenix.Router.html), `forward` expects different arguments:
+
+  #### Plug.Router
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyApp.Schema,
+          interface: :simple
+        ]
+
+  #### Phoenix.Router
+
+      forward "/graphiql",
+        Absinthe.Plug.GraphiQL,
+         schema: MyApp.Schema,
+         interface: :simple
+
+  For more information see [Phoenix.Router.forward/4](https://hexdocs.pm/phoenix/Phoenix.Router.html#forward/4).
+
   ## Included GraphQL Types
 
   This package includes additional types for use in Absinthe GraphQL schema and
