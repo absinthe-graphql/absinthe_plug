@@ -333,21 +333,72 @@ defmodule Absinthe.PlugTest do
     assert expected == resp_body
   end
 
-  test "subscriptions over HTTP return an error" do
-    opts = Absinthe.Plug.init(schema: TestSchema)
+  defmodule PubSub do
+    @behaviour Absinthe.Subscription.Pubsub
 
-    query = "subscription {update}"
+    def start_link() do
+      Registry.start_link(:unique, __MODULE__)
+    end
 
-    assert %{status: 405, resp_body: resp_body} = conn(:post, "/", query: query)
-    |> put_req_header("content-type", "application/json")
-    |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    def subscribe(topic) do
+      Registry.register(__MODULE__, topic, [])
+      :ok
+    end
 
-    expected = "Subscriptions cannot be run over HTTP."
+    def publish_subscription(topic, data) do
+      message = %{topic: topic, event: "subscription:data", result: data}
+      Registry.dispatch(__MODULE__, topic, fn entries ->
+        for {pid, _} <- entries, do: send(pid, message)
+      end)
+    end
 
-    assert expected == resp_body
+    def publish_mutation(_proxy_topic, _mutation_result, _subscribed_fields) do
+      # this pubsub is local and doesn't support clusters
+      :ok
+    end
   end
 
+  defmodule SubscriptionTestPlug do
+    use Plug.Builder
+
+    plug Plug.Parsers, parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser], pass: ["*/*"], json_decoder: Poison
+    plug Absinthe.Plug, schema: TestSchema, context: %{pubsub: Absinthe.PlugTest.PubSub}
+  end
+
+  test "subscriptions over HTTP work!" do
+    Application.ensure_all_started(:httpoison)
+    Absinthe.PlugTest.PubSub.start_link
+    Absinthe.Subscription.start_link(Absinthe.PlugTest.PubSub)
+    {:ok, _} = Plug.Adapters.Cowboy.http(SubscriptionTestPlug, [], [port: 8881])
+
+    query = "subscription {update}"
+    HTTPoison.post!("http://localhost:8881", query, ["content-type": "application/graphql"], [stream_to: self()])
+
+    receive do
+      %HTTPoison.AsyncHeaders{} -> nil
+    end
+    receive do
+      %HTTPoison.AsyncStatus{} -> nil
+    end
+
+    Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "FOO", update: "*")
+    receive do
+      %HTTPoison.AsyncChunk{chunk: chunk} ->
+        assert %{"update" => "FOO"} = Poison.decode!(chunk)
+    end
+
+    Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "BAR", update: "*")
+    receive do
+      %HTTPoison.AsyncChunk{chunk: chunk} ->
+        assert %{"update" => "BAR"} = Poison.decode!(chunk)
+    end
+
+    Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "BAZ", update: "*")
+    receive do
+      %HTTPoison.AsyncChunk{chunk: chunk} ->
+        assert %{"update" => "BAZ"} = Poison.decode!(chunk)
+    end
+  end
 
   describe "put_options/2" do
     test "with a pristine connection it sets the values as provided" do

@@ -184,6 +184,10 @@ defmodule Absinthe.Plug do
         conn
         |> send_resp(400, msg)
 
+      {:ok, %{"subscribed" => topic}} ->
+        conn
+        |> subscribe(topic, config)
+
       {:ok, %{data: _} = result} ->
         conn
         |> encode(200, result, config)
@@ -204,6 +208,29 @@ defmodule Absinthe.Plug do
         conn
         |> send_resp(500, error)
 
+    end
+  end
+
+  def subscribe(conn, topic, %{context: %{pubsub: pubsub}}) do
+    pubsub.subscribe(topic)
+    conn
+    |> put_resp_header("content-type", "text/event-stream")
+    |> send_chunked(200)
+    |> subscribe_loop
+  end
+
+  def subscribe_loop(conn) do
+    receive do
+      %{event: "subscription:data", result: result, topic: _topic} ->
+        case chunk(conn, "#{Poison.encode!(result.data)}\n\n") do
+          {:ok, conn} ->
+            subscribe_loop(conn)
+          {:error, :closed} ->
+            conn
+        end
+    after
+      5000 ->
+        conn
     end
   end
 
@@ -335,7 +362,7 @@ defmodule Absinthe.Plug do
     |> Absinthe.Pipeline.for_document(pipeline_opts)
     |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
       [
-        Absinthe.Plug.Validation.NoSubscriptionOnHTTP,
+        # Absinthe.Plug.Validation.NoSubscriptionOnHTTP,
         {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method},
       ]
     )
