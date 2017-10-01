@@ -211,20 +211,20 @@ defmodule Absinthe.Plug do
     end
   end
 
-  def subscribe(conn, topic, %{context: %{pubsub: pubsub}}) do
+  def subscribe(conn, topic, %{context: %{pubsub: pubsub}} = config) do
     pubsub.subscribe(topic)
     conn
     |> put_resp_header("content-type", "text/event-stream")
     |> send_chunked(200)
-    |> subscribe_loop
+    |> subscribe_loop(config)
   end
 
-  def subscribe_loop(conn) do
+  def subscribe_loop(conn, config) do
     receive do
       %{event: "subscription:data", result: result, topic: _topic} ->
-        case chunk(conn, "#{Poison.encode!(result.data)}\n\n") do
+        case chunk(conn, encode_json!(result.data, config)) do
           {:ok, conn} ->
-            subscribe_loop(conn)
+            subscribe_loop(conn, config)
           {:error, :closed} ->
             conn
         end
