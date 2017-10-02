@@ -145,12 +145,8 @@ defmodule Absinthe.Plug do
     raw_options = Keyword.take(opts, @raw_options)
     log_level = Keyword.get(opts, :log_level, :debug)
 
-    subscription_timeout = Keyword.get(opts, :subscription_timeout, :infinity)
-
-    context = case Keyword.get(opts, :pubsub, :none) do
-      :none -> context
-      pubsub -> Map.put_new(context, :pubsub, pubsub)
-    end
+    pubsub = Keyword.get(opts, :pubsub, nil)
+    pubsub_timeout = Keyword.get(opts, :pubsub_timeout, :infinity)
 
     %{
       adapter: adapter,
@@ -164,7 +160,8 @@ defmodule Absinthe.Plug do
       serializer: serializer,
       content_type: content_type,
       log_level: log_level,
-      subscription_timeout: subscription_timeout,
+      pubsub: pubsub,
+      pubsub_timeout: pubsub_timeout,
     }
   end
 
@@ -219,7 +216,7 @@ defmodule Absinthe.Plug do
     end
   end
 
-  def subscribe(conn, topic, %{context: %{pubsub: pubsub}} = config) do
+  def subscribe(conn, topic, %{pubsub: pubsub} = config) do
     pubsub.subscribe(topic)
     conn
     |> put_resp_header("content-type", "text/event-stream")
@@ -237,7 +234,7 @@ defmodule Absinthe.Plug do
             conn
         end
     after
-      config.subscription_timeout ->
+      config.pubsub_timeout ->
         conn
     end
   end
@@ -266,13 +263,11 @@ defmodule Absinthe.Plug do
       conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
     }
 
-    config = with nil <- config[:context][:pubsub],
-      %{private: %{phoenix_endpoint: endpoint}} <- conn do
-        context = Map.put(config.context, :pubsub, endpoint)
-        %{config | context: context}
-      else
-        _ -> config
-      end
+    pubsub = config[:pubsub] || config.context[:pubsub] || conn.private[:phoenix_endpoint]
+    config = case pubsub do
+      nil -> config
+      pubsub -> put_in(config, [:context, :pubsub], pubsub)
+    end
 
     with {:ok, conn, request} <- Request.parse(conn, config),
          {:ok, request} <- ensure_processable(request, config) do
@@ -370,7 +365,6 @@ defmodule Absinthe.Plug do
     |> Absinthe.Pipeline.for_document(pipeline_opts)
     |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
       [
-        # Absinthe.Plug.Validation.NoSubscriptionOnHTTP,
         {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method},
       ]
     )

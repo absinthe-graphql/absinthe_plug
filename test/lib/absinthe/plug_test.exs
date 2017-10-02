@@ -358,12 +358,12 @@ defmodule Absinthe.PlugTest do
     end
   end
 
-  test "Subscriptions over HTTP with chunked response" do
+  test "Subscriptions over HTTP with Server Sent Events chunked response" do
     Absinthe.PlugTest.PubSub.start_link
     Absinthe.Subscription.start_link(Absinthe.PlugTest.PubSub)
 
     query = "subscription {update}"
-    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: Absinthe.PlugTest.PubSub, subscription_timeout: 300)
+    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: Absinthe.PlugTest.PubSub, pubsub_timeout: 300)
 
     request =
       Task.async(fn ->
@@ -378,15 +378,15 @@ defmodule Absinthe.PlugTest do
     Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "BAR", update: "*")
 
     conn = Task.await(request)
-    {_module, %{chunks: chunks}} = conn.adapter
-    chunks =
-      chunks
+    {_module, state} = conn.adapter
+    events =
+      state.chunks
       |> String.split
       |> Enum.map(&Poison.decode!/1)
 
-    assert length(chunks) == 2
-    assert Enum.member?(chunks, %{"data" => %{"update" => "FOO"}})
-    assert Enum.member?(chunks, %{"data" => %{"update" => "BAR"}})
+    assert length(events) == 2
+    assert Enum.member?(events, %{"data" => %{"update" => "FOO"}})
+    assert Enum.member?(events, %{"data" => %{"update" => "BAR"}})
   end
 
   describe "put_options/2" do
