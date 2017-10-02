@@ -1,6 +1,7 @@
 defmodule Absinthe.PlugTest do
   use Absinthe.Plug.TestCase
   alias Absinthe.Plug.TestSchema
+  alias Absinthe.Plug.TestPubSub
 
   @foo_result ~s({"data":{"item":{"name":"Foo"}}})
   @bar_result ~s({"data":{"item":{"name":"Bar"}}})
@@ -333,38 +334,12 @@ defmodule Absinthe.PlugTest do
     assert expected == resp_body
   end
 
-  defmodule PubSub do
-    @behaviour Absinthe.Subscription.Pubsub
-
-    def start_link() do
-      Registry.start_link(:unique, __MODULE__)
-    end
-
-    def subscribe(topic) do
-      Registry.register(__MODULE__, topic, [])
-      :ok
-    end
-
-    def publish_subscription(topic, data) do
-      message = %{topic: topic, event: "subscription:data", result: data}
-      Registry.dispatch(__MODULE__, topic, fn entries ->
-        for {pid, _} <- entries, do: send(pid, message)
-      end)
-    end
-
-    def publish_mutation(_proxy_topic, _mutation_result, _subscribed_fields) do
-      # this pubsub is local and doesn't support clusters
-      :ok
-    end
-  end
-
   test "Subscriptions over HTTP with Server Sent Events chunked response" do
-    Absinthe.PlugTest.PubSub.start_link
-    Absinthe.Subscription.start_link(Absinthe.PlugTest.PubSub)
+    TestPubSub.start_link
+    Absinthe.Subscription.start_link(TestPubSub)
 
     query = "subscription {update}"
-    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: Absinthe.PlugTest.PubSub, pubsub_timeout: 300)
-
+    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub, pubsub_timeout: 300)
     request =
       Task.async(fn ->
         conn(:post, "/", query: query)
@@ -374,8 +349,8 @@ defmodule Absinthe.PlugTest do
       end)
 
     Process.sleep(200)
-    Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "FOO", update: "*")
-    Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "BAR", update: "*")
+    Absinthe.Subscription.publish(TestPubSub, "FOO", update: "*")
+    Absinthe.Subscription.publish(TestPubSub, "BAR", update: "*")
 
     conn = Task.await(request)
     {_module, state} = conn.adapter
