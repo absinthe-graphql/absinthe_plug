@@ -384,20 +384,51 @@ defmodule Absinthe.PlugTest do
     Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "FOO", update: "*")
     receive do
       %HTTPoison.AsyncChunk{chunk: chunk} ->
-        assert %{"update" => "FOO"} = Poison.decode!(chunk)
+        assert %{"data" => %{"update" => "FOO"}} = Poison.decode!(chunk)
     end
 
     Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "BAR", update: "*")
     receive do
       %HTTPoison.AsyncChunk{chunk: chunk} ->
-        assert %{"update" => "BAR"} = Poison.decode!(chunk)
+        assert %{"data" => %{"update" => "BAR"}} = Poison.decode!(chunk)
     end
 
     Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "BAZ", update: "*")
     receive do
       %HTTPoison.AsyncChunk{chunk: chunk} ->
-        assert %{"update" => "BAZ"} = Poison.decode!(chunk)
+        assert %{"data" => %{"update" => "BAZ"}} = Poison.decode!(chunk)
     end
+  end
+
+  test "subscriptions via plug test" do
+    Absinthe.PlugTest.PubSub.start_link
+    Absinthe.Subscription.start_link(Absinthe.PlugTest.PubSub)
+
+    query = "subscription {update}"
+    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: Absinthe.PlugTest.PubSub, subscription_timeout: 300)
+
+    request =
+      Task.async(fn ->
+        conn(:post, "/", query: query)
+        |> put_req_header("content-type", "application/json")
+        |> plug_parser
+        |> Absinthe.Plug.call(opts)
+      end)
+
+    Process.sleep(200)
+    Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "FOO", update: "*")
+    Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "BAR", update: "*")
+
+    conn = Task.await(request)
+    {_module, %{chunks: chunks}} = conn.adapter
+    chunks =
+      chunks
+      |> String.split
+      |> Enum.map(&Poison.decode!/1)
+
+    assert length(chunks) == 2
+    assert Enum.member?(chunks, %{"data" => %{"update" => "FOO"}})
+    assert Enum.member?(chunks, %{"data" => %{"update" => "BAR"}})
   end
 
   describe "put_options/2" do

@@ -145,6 +145,13 @@ defmodule Absinthe.Plug do
     raw_options = Keyword.take(opts, @raw_options)
     log_level = Keyword.get(opts, :log_level, :debug)
 
+    subscription_timeout = Keyword.get(opts, :subscription_timeout, :infinity)
+
+    context = case Keyword.get(opts, :pubsub, :none) do
+      :none -> context
+      pubsub -> Map.put_new(context, :pubsub, pubsub)
+    end
+
     %{
       adapter: adapter,
       context: context,
@@ -157,6 +164,7 @@ defmodule Absinthe.Plug do
       serializer: serializer,
       content_type: content_type,
       log_level: log_level,
+      subscription_timeout: subscription_timeout,
     }
   end
 
@@ -222,14 +230,14 @@ defmodule Absinthe.Plug do
   def subscribe_loop(conn, config) do
     receive do
       %{event: "subscription:data", result: result, topic: _topic} ->
-        case chunk(conn, encode_json!(result.data, config)) do
+        case chunk(conn, "#{encode_json!(result, config)}\n\n") do
           {:ok, conn} ->
             subscribe_loop(conn, config)
           {:error, :closed} ->
             conn
         end
     after
-      5000 ->
+      config.subscription_timeout ->
         conn
     end
   end
