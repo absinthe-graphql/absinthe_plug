@@ -339,7 +339,7 @@ defmodule Absinthe.PlugTest do
     Absinthe.Subscription.start_link(TestPubSub)
 
     query = "subscription {update}"
-    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub, pubsub_timeout: 300)
+    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub)
     request =
       Task.async(fn ->
         conn(:post, "/", query: query)
@@ -351,6 +351,7 @@ defmodule Absinthe.PlugTest do
     Process.sleep(200)
     Absinthe.Subscription.publish(TestPubSub, "FOO", update: "*")
     Absinthe.Subscription.publish(TestPubSub, "BAR", update: "*")
+    send request.pid, :close
 
     conn = Task.await(request)
     {_module, state} = conn.adapter

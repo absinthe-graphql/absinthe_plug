@@ -146,7 +146,6 @@ defmodule Absinthe.Plug do
     log_level = Keyword.get(opts, :log_level, :debug)
 
     pubsub = Keyword.get(opts, :pubsub, nil)
-    pubsub_timeout = Keyword.get(opts, :pubsub_timeout, :infinity)
 
     %{
       adapter: adapter,
@@ -161,7 +160,6 @@ defmodule Absinthe.Plug do
       content_type: content_type,
       log_level: log_level,
       pubsub: pubsub,
-      pubsub_timeout: pubsub_timeout,
     }
   end
 
@@ -233,8 +231,7 @@ defmodule Absinthe.Plug do
           {:error, :closed} ->
             conn
         end
-    after
-      config.pubsub_timeout ->
+      :close ->
         conn
     end
   end
