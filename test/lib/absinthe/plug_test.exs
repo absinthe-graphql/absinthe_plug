@@ -358,49 +358,7 @@ defmodule Absinthe.PlugTest do
     end
   end
 
-  defmodule SubscriptionTestPlug do
-    use Plug.Builder
-
-    plug Plug.Parsers, parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser], pass: ["*/*"], json_decoder: Poison
-    plug Absinthe.Plug, schema: TestSchema, context: %{pubsub: Absinthe.PlugTest.PubSub}
-  end
-
-  test "subscriptions over HTTP work!" do
-    Application.ensure_all_started(:httpoison)
-    Absinthe.PlugTest.PubSub.start_link
-    Absinthe.Subscription.start_link(Absinthe.PlugTest.PubSub)
-    {:ok, _} = Plug.Adapters.Cowboy.http(SubscriptionTestPlug, [], [port: 8881])
-
-    query = "subscription {update}"
-    HTTPoison.post!("http://localhost:8881", query, ["content-type": "application/graphql"], [stream_to: self()])
-
-    receive do
-      %HTTPoison.AsyncHeaders{} -> nil
-    end
-    receive do
-      %HTTPoison.AsyncStatus{} -> nil
-    end
-
-    Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "FOO", update: "*")
-    receive do
-      %HTTPoison.AsyncChunk{chunk: chunk} ->
-        assert %{"data" => %{"update" => "FOO"}} = Poison.decode!(chunk)
-    end
-
-    Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "BAR", update: "*")
-    receive do
-      %HTTPoison.AsyncChunk{chunk: chunk} ->
-        assert %{"data" => %{"update" => "BAR"}} = Poison.decode!(chunk)
-    end
-
-    Absinthe.Subscription.publish(Absinthe.PlugTest.PubSub, "BAZ", update: "*")
-    receive do
-      %HTTPoison.AsyncChunk{chunk: chunk} ->
-        assert %{"data" => %{"update" => "BAZ"}} = Poison.decode!(chunk)
-    end
-  end
-
-  test "subscriptions via plug test" do
+  test "Subscriptions over HTTP with chunked response" do
     Absinthe.PlugTest.PubSub.start_link
     Absinthe.Subscription.start_link(Absinthe.PlugTest.PubSub)
 

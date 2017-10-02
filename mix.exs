@@ -40,8 +40,6 @@ defmodule Absinthe.Plug.Mixfile do
       {:plug, "~> 1.3.2 or ~> 1.4"},
       {:absinthe, "~> 1.4.0-rc"},
       {:poison, ">= 0.0.0", only: [:dev, :test]},
-      {:httpoison, "> 0.0.0", only: :test},
-      {:cowboy, ">= 0.0.0", only: :test},
       {:ex_doc, "~> 0.14.0", only: :dev},
       {:earmark, "~> 1.1.0", only: :dev},
     ]
