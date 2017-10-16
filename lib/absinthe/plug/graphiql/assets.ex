@@ -54,27 +54,30 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
       nil ->
         @default_config
       config ->
-        @default_config
-        |> Keyword.merge(Keyword.get(config, :assets, []))
+        Keyword.merge(@default_config, Keyword.get(config, :assets, []))
     end
   end
 
-  def get_assets(), do: reduce_assets(
-    %{},
-    &Map.put(
-      &2,
-      build_asset_path(:local_source, &1),
-      asset_source_url(assets_config()[:source], &1)
+  def get_assets do
+    reduce_assets(
+      %{},
+      &Map.put(
+        &2,
+        build_asset_path(:local_source, &1),
+        asset_source_url(assets_config()[:source], &1)
+      )
     )
-  )
+  end
 
-  def get_remote_asset_mappings, do: reduce_assets(
-    [],
-    &(&2 ++ [{
-      local_asset_path(&1),
-      asset_source_url(:remote, &1)
-    }])
-  )
+  def get_remote_asset_mappings do
+    reduce_assets(
+      [],
+      &(&2 ++ [{
+        local_asset_path(&1),
+        asset_source_url(:remote, &1)
+      }])
+    )
+  end
 
   defp reduce_assets(initial, reducer) do
     Enum.reduce(@assets, initial, fn {package, version, files}, acc ->
@@ -82,8 +85,9 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     end)
   end
 
-  defp local_asset_path(asset), do: Path.join(
-    assets_config()[:local_directory], build_asset_path(:local_source, asset))
+  defp local_asset_path(asset) do
+    Path.join(assets_config()[:local_directory], build_asset_path(:local_source, asset))
+  end
 
   defp asset_source_url(:smart, asset) do
     if File.exists?(local_asset_path(asset)) do
@@ -92,8 +96,12 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
       asset_source_url(:remote, asset)
     end
   end
-  defp asset_source_url(:local, asset), do: Path.join(assets_config()[:local_url_path], build_asset_path(:local_source, asset))
-  defp asset_source_url(:remote, asset), do: build_asset_path(:remote_source, asset)
+  defp asset_source_url(:local, asset) do
+    Path.join(assets_config()[:local_url_path], build_asset_path(:local_source, asset))
+  end
+  defp asset_source_url(:remote, asset) do
+    build_asset_path(:remote_source, asset)
+  end
 
   defp build_asset_path(source, {package, version, {real_path, aliased_path}}) do
     assets_config()[source]
@@ -102,5 +110,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     |> String.replace(":file", real_path)
     |> String.replace(":alias", aliased_path)
   end
-  defp build_asset_path(source, {package, version, path}), do: build_asset_path(source, {package, version, {path, path}})
+  defp build_asset_path(source, {package, version, path}) do
+    build_asset_path(source, {package, version, {path, path}})
+  end
 end
