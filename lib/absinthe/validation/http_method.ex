@@ -5,7 +5,7 @@ defmodule Absinthe.Plug.Validation.HTTPMethod do
 
   alias Absinthe.Blueprint
 
-  @post_only [:mutation, :subscription]
+  @post_only [:mutation]
 
   def run(blueprint, options) do
     do_run(blueprint, Map.new(options))

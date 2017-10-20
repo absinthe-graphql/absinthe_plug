@@ -145,6 +145,8 @@ defmodule Absinthe.Plug do
     raw_options = Keyword.take(opts, @raw_options)
     log_level = Keyword.get(opts, :log_level, :debug)
 
+    pubsub = Keyword.get(opts, :pubsub, nil)
+
     %{
       adapter: adapter,
       context: context,
@@ -157,6 +159,7 @@ defmodule Absinthe.Plug do
       serializer: serializer,
       content_type: content_type,
       log_level: log_level,
+      pubsub: pubsub,
     }
   end
 
@@ -184,6 +187,10 @@ defmodule Absinthe.Plug do
         conn
         |> send_resp(400, msg)
 
+      {:ok, %{"subscribed" => topic}} ->
+        conn
+        |> subscribe(topic, config)
+
       {:ok, %{data: _} = result} ->
         conn
         |> encode(200, result, config)
@@ -204,6 +211,28 @@ defmodule Absinthe.Plug do
         conn
         |> send_resp(500, error)
 
+    end
+  end
+
+  def subscribe(conn, topic, %{pubsub: pubsub} = config) do
+    pubsub.subscribe(topic)
+    conn
+    |> put_resp_header("content-type", "text/event-stream")
+    |> send_chunked(200)
+    |> subscribe_loop(config)
+  end
+
+  def subscribe_loop(conn, config) do
+    receive do
+      %{event: "subscription:data", result: result, topic: _topic} ->
+        case chunk(conn, "#{encode_json!(result, config)}\n\n") do
+          {:ok, conn} ->
+            subscribe_loop(conn, config)
+          {:error, :closed} ->
+            conn
+        end
+      :close ->
+        conn
     end
   end
 
@@ -231,13 +260,11 @@ defmodule Absinthe.Plug do
       conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
     }
 
-    config = with nil <- config[:context][:pubsub],
-      %{private: %{phoenix_endpoint: endpoint}} <- conn do
-        context = Map.put(config.context, :pubsub, endpoint)
-        %{config | context: context}
-      else
-        _ -> config
-      end
+    pubsub = config[:pubsub] || config.context[:pubsub] || conn.private[:phoenix_endpoint]
+    config = case pubsub do
+      nil -> config
+      pubsub -> put_in(config, [:context, :pubsub], pubsub)
+    end
 
     with {:ok, conn, request} <- Request.parse(conn, config),
          {:ok, request} <- ensure_processable(request, config) do
@@ -335,7 +362,6 @@ defmodule Absinthe.Plug do
     |> Absinthe.Pipeline.for_document(pipeline_opts)
     |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
       [
-        Absinthe.Plug.Validation.NoSubscriptionOnHTTP,
         {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method},
       ]
     )

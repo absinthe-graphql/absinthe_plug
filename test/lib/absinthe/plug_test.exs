@@ -1,6 +1,7 @@
 defmodule Absinthe.PlugTest do
   use Absinthe.Plug.TestCase
   alias Absinthe.Plug.TestSchema
+  alias Absinthe.Plug.TestPubSub
 
   @foo_result ~s({"data":{"item":{"name":"Foo"}}})
   @bar_result ~s({"data":{"item":{"name":"Bar"}}})
@@ -333,21 +334,36 @@ defmodule Absinthe.PlugTest do
     assert expected == resp_body
   end
 
-  test "subscriptions over HTTP return an error" do
-    opts = Absinthe.Plug.init(schema: TestSchema)
+  test "Subscriptions over HTTP with Server Sent Events chunked response" do
+    TestPubSub.start_link
+    Absinthe.Subscription.start_link(TestPubSub)
 
     query = "subscription {update}"
+    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub)
+    request =
+      Task.async(fn ->
+        conn(:post, "/", query: query)
+        |> put_req_header("content-type", "application/json")
+        |> plug_parser
+        |> Absinthe.Plug.call(opts)
+      end)
 
-    assert %{status: 405, resp_body: resp_body} = conn(:post, "/", query: query)
-    |> put_req_header("content-type", "application/json")
-    |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    Process.sleep(200)
+    Absinthe.Subscription.publish(TestPubSub, "FOO", update: "*")
+    Absinthe.Subscription.publish(TestPubSub, "BAR", update: "*")
+    send request.pid, :close
 
-    expected = "Subscriptions cannot be run over HTTP."
+    conn = Task.await(request)
+    {_module, state} = conn.adapter
+    events =
+      state.chunks
+      |> String.split
+      |> Enum.map(&Poison.decode!/1)
 
-    assert expected == resp_body
+    assert length(events) == 2
+    assert Enum.member?(events, %{"data" => %{"update" => "FOO"}})
+    assert Enum.member?(events, %{"data" => %{"update" => "BAR"}})
   end
-
 
   describe "put_options/2" do
     test "with a pristine connection it sets the values as provided" do
