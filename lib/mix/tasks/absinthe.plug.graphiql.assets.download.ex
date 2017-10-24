@@ -14,7 +14,7 @@ defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.Download do
   end
 
   defp download_file(assets_dir_path, {asset_name, asset_url} = _asset) do
-    asset_url = String.to_char_list("https:" <> asset_url) # Required by :httpc
+    asset_url = String.to_charlist("https:" <> asset_url) # Required by :httpc
     {:ok, response} = :httpc.request(:get, {asset_url, []}, [], [body_format: :binary])
 
     case response do
