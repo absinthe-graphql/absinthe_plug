@@ -36,7 +36,7 @@ defmodule Absinthe.Plug.Batch.Runner do
     end)
 
     blueprints
-    |> Absinthe.Plug.Batch.Resolver.resolve(schema: schema)
+    |> Absinthe.Pipeline.BatchResolver.run(schema: schema)
     |> Enum.zip(querys_and_indices)
     |> Enum.map(fn {bp, {query, i}} ->
       {i, get_result(bp, query)}
@@ -62,7 +62,7 @@ defmodule Absinthe.Plug.Batch.Runner do
     for {query, i} <- Enum.with_index(queries) do
       case Absinthe.Pipeline.run(query.document, validation_pipeline(query)) do
         {:ok, bp, _} ->
-          case bp.resolution.validation_errors do
+          case bp.execution.validation_errors do
             [] ->
               {:ok, bp, query, i}
             _ ->
