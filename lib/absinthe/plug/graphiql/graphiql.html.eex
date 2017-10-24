@@ -17,15 +17,15 @@ add "&raw" to the end of the URL within a browser.
       width: 100%;
     }
   </style>
-  <link href="<%= assets["graphiql.css"] %>" rel="stylesheet" />
-  <script src="<%= assets["fetch.js"] %>"></script>
-  <script src="<%= assets["react.js"] %>"></script>
-  <script src="<%= assets["react-dom.js"] %>"></script>
-  <script src="<%= assets["graphiql.js"] %>"></script>
+  <link href="<%= assets["graphiql/graphiql.css"] %>" rel="stylesheet" />
+  <script src="<%= assets["whatwg-fetch/fetch.js"] %>"></script>
+  <script src="<%= assets["react/react.js"] %>"></script>
+  <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
+  <script src="<%= assets["graphiql/graphiql.js"] %>"></script>
   <%= if socket_url do %>
-    <script src="<%= assets["graphiql-subscriptions-fetcher/browser/client.js"] %>"></script>
-    <script src="<%= assets["phoenix.js"] %>"></script>
-    <script src="<%= assets["absinthe-phoenix.js"] %>"></script>
+    <script src="<%= assets["graphiql-subscriptions-fetcher/graphiql-subscriptions-fetcher.js"] %>"></script>
+    <script src="<%= assets["phoenix/phoenix.js"] %>"></script>
+    <script src="<%= assets["absinthe-phoenix/absinthe-phoenix.js"] %>"></script>
   <% end %>
 </head>
 <body>
