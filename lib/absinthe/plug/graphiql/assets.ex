@@ -8,7 +8,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     directory: "priv/static/absinthe_graphiql"
   ]
 
-  @graphiql_workspace_version "1.0.4"
+  @graphiql_workspace_version "1.1.3"
   @graphiql_version "0.9.3"
 
   @assets %{
