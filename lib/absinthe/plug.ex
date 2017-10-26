@@ -22,8 +22,9 @@ defmodule Absinthe.Plug do
         pass: ["*/*"],
         json_decoder: Poison
 
-      forward "/api", Absinthe.Plug,
-        schema: MyApp.Schema
+      forward "/api",
+        to: Absinthe.Plug,
+        init_opts: [schema: MyApp.Schema]
 
   See the documentation on `Absinthe.Plug.init/1` and the `Absinthe.Plug.opts`
   type for information on the available options.
@@ -31,9 +32,33 @@ defmodule Absinthe.Plug do
   To add support for a GraphiQL interface, add a configuration for
   `Absinthe.Plug.GraphiQL`:
 
+    forward "/graphiql",
+      to: Absinthe.Plug.GraphiQL,
+      init_opts: [schema: MyApp.Schema]
+
+  For more information, see the API documentation for `Absinthe.Plug`.
+
+  ### Phoenix.Router
+
+  If you are using [Phoenix.Router](https://hexdocs.pm/phoenix/Phoenix.Router.html), `forward` expects different arguments:
+
+  #### Plug.Router
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyApp.Schema,
+          interface: :simple
+        ]
+
+  #### Phoenix.Router
+
       forward "/graphiql",
         Absinthe.Plug.GraphiQL,
-        schema: MyApp.Schema,
+         schema: MyApp.Schema,
+         interface: :simple
+
+  For more information see [Phoenix.Router.forward/4](https://hexdocs.pm/phoenix/Phoenix.Router.html#forward/4).
 
   ## Included GraphQL Types
 
@@ -120,6 +145,8 @@ defmodule Absinthe.Plug do
     raw_options = Keyword.take(opts, @raw_options)
     log_level = Keyword.get(opts, :log_level, :debug)
 
+    pubsub = Keyword.get(opts, :pubsub, nil)
+
     %{
       adapter: adapter,
       context: context,
@@ -132,6 +159,7 @@ defmodule Absinthe.Plug do
       serializer: serializer,
       content_type: content_type,
       log_level: log_level,
+      pubsub: pubsub,
     }
   end
 
@@ -159,6 +187,10 @@ defmodule Absinthe.Plug do
         conn
         |> send_resp(400, msg)
 
+      {:ok, %{"subscribed" => topic}} ->
+        conn
+        |> subscribe(topic, config)
+
       {:ok, %{data: _} = result} ->
         conn
         |> encode(200, result, config)
@@ -182,6 +214,45 @@ defmodule Absinthe.Plug do
     end
   end
 
+  def subscribe(conn, topic, %{pubsub: pubsub} = config) do
+    pubsub.subscribe(topic)
+    conn
+    |> put_resp_header("content-type", "text/event-stream")
+    |> send_chunked(200)
+    |> subscribe_loop(config)
+  end
+
+  def subscribe_loop(conn, config) do
+    receive do
+      %{event: "subscription:data", result: result, topic: _topic} ->
+        case chunk(conn, "#{encode_json!(result, config)}\n\n") do
+          {:ok, conn} ->
+            subscribe_loop(conn, config)
+          {:error, :closed} ->
+            conn
+        end
+      :close ->
+        conn
+    end
+  end
+
+  @doc """
+  Sets the options for a given GraphQL document execution.
+
+  ## Examples
+
+      iex> Absinthe.Plug.put_options(conn, context: %{current_user: user})
+      %Plug.Conn{}
+  """
+  @spec put_options(Plug.Conn.t, Keyword.t) :: Plug.Conn.t
+  def put_options(%Plug.Conn{private: %{absinthe: absinthe}} = conn, opts) do
+    opts = Map.merge(absinthe, Enum.into(opts, %{}))
+    Plug.Conn.put_private(conn, :absinthe, opts)
+  end
+  def put_options(conn, opts) do
+    Plug.Conn.put_private(conn, :absinthe, Enum.into(opts, %{}))
+  end
+
   @doc false
   @spec execute(Plug.Conn.t, map) :: {Plug.Conn.t, any}
   def execute(conn, config) do
@@ -189,13 +260,11 @@ defmodule Absinthe.Plug do
       conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
     }
 
-    config = with nil <- config[:context][:pubsub],
-      %{private: %{phoenix_endpoint: endpoint}} <- conn do
-        context = Map.put(config.context, :pubsub, endpoint)
-        %{config | context: context}
-      else
-        _ -> config
-      end
+    pubsub = config[:pubsub] || config.context[:pubsub] || conn.private[:phoenix_endpoint]
+    config = case pubsub do
+      nil -> config
+      pubsub -> put_in(config, [:context, :pubsub], pubsub)
+    end
 
     with {:ok, conn, request} <- Request.parse(conn, config),
          {:ok, request} <- ensure_processable(request, config) do
@@ -293,7 +362,6 @@ defmodule Absinthe.Plug do
     |> Absinthe.Pipeline.for_document(pipeline_opts)
     |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
       [
-        Absinthe.Plug.Validation.NoSubscriptionOnHTTP,
         {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method},
       ]
     )

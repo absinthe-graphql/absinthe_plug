@@ -57,7 +57,9 @@ defmodule Absinthe.Plug.TestSchema do
   end
 
   subscription do
-    field :update, :string
+    field :update, :string do
+      config fn _args, _info -> {:ok, topic: "*"} end
+    end
   end
 
   object :item do

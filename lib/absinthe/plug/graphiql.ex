@@ -9,17 +9,19 @@ defmodule Absinthe.Plug.GraphiQL do
 
       if Mix.env == :dev do
         forward "/graphiql",
-          Absinthe.Plug.GraphiQL,
-          schema: MyApp.Schema
+          to: Absinthe.Plug.GraphiQL,
+          init_opts: [schema: MyApp.Schema]
       end
 
   Use the "simple" interface (original GraphiQL) instead:
 
       if Mix.env == :dev do
         forward "/graphiql",
-          Absinthe.Plug.GraphiQL,
-          schema: MyApp.Schema,
-          interface: :simple
+          to: Absinthe.Plug.GraphiQL,
+          init_opts: [
+            schema: MyApp.Schema,
+            interface: :simple
+          ]
 
   ## Interface Selection
 
@@ -36,9 +38,11 @@ defmodule Absinthe.Plug.GraphiQL do
   Note that you may have to clean up your existing workspace by clicking the trashcan icon in order to see the newly set default headers.
 
       forward "/graphiql",
-        Absinthe.Plug.GraphiQL,
-        schema: MyApp.Schema,
-        default_headers: {__MODULE__, :graphiql_headers}
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyApp.Schema,
+          default_headers: {__MODULE__, :graphiql_headers}
+        ]
 
       def graphiql_headers do
         %{
@@ -49,11 +53,6 @@ defmodule Absinthe.Plug.GraphiQL do
 
   You can also provide a function that takes a conn argument if you need to access connection data
   (e.g. if you need to set an Authorization header based on the currently logged-in user).
-
-      forward "/graphiql",
-        Absinthe.Plug.GraphiQL,
-        schema: MyApp.Schema,
-        default_headers: &__MODULE__.graphiql_headers/1
 
       def graphiql_headers(conn) do
         %{
@@ -66,16 +65,20 @@ defmodule Absinthe.Plug.GraphiQL do
   You can also optionally set the default URL to be used for sending the queries to. This only applies to the advanced interface (GraphiQL Workspace).
 
       forward "/graphiql",
-        Absinthe.Plug.GraphiQL,
-        schema: MyApp.Schema,
-        default_url: "https://api.mydomain.com/graphql"
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyApp.Schema,
+          default_url: "https://api.mydomain.com/graphql"
+        ]
 
-  This option also accepts a function that takes a conn argument:
+  This option also accepts a function:
 
       forward "/graphiql",
-        Absinthe.Plug.GraphiQL,
-        schema: MyApp.Schema,
-        default_url: &__MODULE__.graphiql_default_url/1
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyApp.Schema,
+          default_url: {__MODULE__, :graphiql_default_url}
+        ]
 
       def graphiql_default_url(conn) do
         conn.assigns[:graphql_url]
@@ -83,13 +86,11 @@ defmodule Absinthe.Plug.GraphiQL do
   """
 
   require EEx
-  @graphiql_version "0.9.3"
   EEx.function_from_file :defp, :graphiql_html, Path.join(__DIR__, "graphiql.html.eex"),
-    [:graphiql_version, :query_string, :variables_string, :result_string, :socket_url]
+    [:query_string, :variables_string, :result_string, :socket_url, :assets]
 
-  @graphiql_workspace_version "1.0.4"
   EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(__DIR__, "graphiql_workspace.html.eex"),
-    [:graphiql_workspace_version, :query_string, :variables_string, :default_headers, :default_url]
+    [:query_string, :variables_string, :default_headers, :default_url, :assets]
 
   @behaviour Plug
 
@@ -104,6 +105,7 @@ defmodule Absinthe.Plug.GraphiQL do
     interface: :advanced | :simple,
     default_headers: {module, atom},
     default_url: binary,
+    assets: Keyword.t,
     socket: module,
     socket_url: binary,
   ]
@@ -111,11 +113,14 @@ defmodule Absinthe.Plug.GraphiQL do
   @doc false
   @spec init(opts :: opts) :: map
   def init(opts) do
+    assets = Absinthe.Plug.GraphiQL.Assets.get_assets(:local)
+
     opts
     |> Absinthe.Plug.init
     |> Map.put(:interface, Keyword.get(opts, :interface) || :advanced)
     |> Map.put(:default_headers, Keyword.get(opts, :default_headers))
     |> Map.put(:default_url, Keyword.get(opts, :default_url))
+    |> Map.put(:assets, assets)
     |> Map.put(:socket, Keyword.get(opts, :socket))
     |> Map.put(:socket_url, Keyword.get(opts, :socket_url))
   end
@@ -140,29 +145,34 @@ defmodule Absinthe.Plug.GraphiQL do
   end
 
   defp do_call(conn, %{json_codec: json_codec, interface: interface} = config) do
-    header_string = case config[:default_headers] do
-        nil -> "[]"
+    config = case config[:default_headers] do
+        nil -> Map.put(config, :default_headers, "[]")
         {module, fun} when is_atom(fun) ->
-          compile_headers(json_codec, apply(module, fun, []))
+          header_string =
+            module
+            |> function_exported?(fun, 1)
+            |> call_exported_function(module, fun, conn)
+            |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
+            |> json_codec.module.encode!(pretty: true)
 
-        fun when is_function(fun, 1) ->
-          compile_headers(json_codec, apply(fun, [conn]))
-
-        fun when is_function(fun, 0) ->
-          compile_headers(json_codec, apply(fun, []))
-
+          Map.put(config, :default_headers, header_string)
         val ->
           raise "invalid default headers: #{inspect val}"
       end
 
-    config = Map.put(config, :default_headers, header_string)
+     config = case config[:default_url] do
+        nil -> config
+        val when is_binary(val) -> Map.put(config, :default_url, val)
+        {module, fun} when is_atom(fun) ->
+          url =
+            module
+            |> function_exported?(fun, 1)
+            |> call_exported_function(module, fun, conn)
 
-    config = case config[:default_url] do
-      fun when is_function(fun, 1) ->
-        Map.put(config, :default_url, apply(fun, [conn]))
-      _ ->
-        config
-    end
+          Map.put(config, :default_url, url)
+        val ->
+          raise "invalid default url: #{inspect val}"
+       end
 
     with {:ok, conn, request} <- Absinthe.Plug.Request.parse(conn, config),
          {:process, request} <- select_mode(request),
@@ -237,11 +247,9 @@ defmodule Absinthe.Plug.GraphiQL do
     end
   end
 
-  defp compile_headers(json_codec, headers) do
-    headers
-    |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
-    |> json_codec.module.encode!(pretty: true)
-  end
+  @spec call_exported_function(boolean, module, (() -> map) | ((Plug.Conn.t) -> map), Plug.Conn.t | nil) :: map
+  defp call_exported_function(true, module, fun, conn), do: apply(module, fun, [conn])
+  defp call_exported_function(false, module, fun, _conn), do: apply(module, fun, [])
 
   @spec select_mode(request :: Absinthe.Plug.Request.t) :: :start_interface | {:process, Absinthe.Plug.Request.t}
   defp select_mode(%{queries: [%Absinthe.Plug.Request.Query{document: nil}]}), do: :start_interface
@@ -277,19 +285,15 @@ defmodule Absinthe.Plug.GraphiQL do
       end
 
     graphiql_html(
-      @graphiql_version,
-      opts[:query], opts[:var_string], opts[:result], opts[:socket_url]
+      opts[:query], opts[:var_string], opts[:result], opts[:socket_url], opts[:assets]
     )
     |> rendered(conn)
   end
   defp render_interface(conn, :advanced, opts) do
     opts = Map.merge(@render_defaults, opts)
     graphiql_workspace_html(
-      @graphiql_workspace_version,
-      opts[:query],
-      opts[:var_string],
-      opts[:default_headers],
-      default_url(opts[:default_url])
+      opts[:query], opts[:var_string], opts[:default_headers],
+      default_url(opts[:default_url]), opts[:assets]
     )
     |> rendered(conn)
   end
