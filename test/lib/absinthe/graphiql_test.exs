@@ -22,7 +22,7 @@ defmodule Absinthe.Plug.GraphiQLTest do
     assert 200 == status
   end
 
-  test "default_headers option works" do
+  test "default_headers option works with arity 0" do
     opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema, default_headers: {__MODULE__, :graphiql_default_headers})
 
     assert %{status: status, resp_body: body} = conn(:get, "/")
@@ -40,7 +40,54 @@ defmodule Absinthe.Plug.GraphiQLTest do
     assert body |> String.contains?("defaultHeaders: " <> header_json)
   end
 
-  test "default_url option works" do
+  test "default_headers option works with a function of arity 1" do
+    token = "Zm9vOmJhcg=="
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema, default_headers: {__MODULE__, :graphiql_default_headers_with_conn})
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> assign(:token, token)
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+
+    header_json = [
+      %{"name" => "Authorization", "value" => "Bearer Zm9vOmJhcg=="}
+    ] |> Poison.encode!(pretty: true)
+
+    assert body |> String.contains?("defaultHeaders: " <> header_json)
+  end
+
+  test "default_url option works a function of arity 0" do
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema,
+      default_url: {__MODULE__, :graphiql_default_url})
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body, "defaultUrl: '#{graphiql_default_url()}'")
+  end
+
+  test "default_url option works a function of arity 1" do
+    url = "http://myapp.com/graphql"
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema,
+      default_url: {__MODULE__, :graphiql_default_url_with_conn})
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> assign(:graphql_url, url)
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body, "defaultUrl: '#{url}'")
+  end
+
+  test "default_url option works with a string" do
     opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema,
       default_url: graphiql_default_url())
 
@@ -82,7 +129,17 @@ defmodule Absinthe.Plug.GraphiQLTest do
     }
   end
 
+  def graphiql_default_headers_with_conn(conn) do
+    %{
+      "Authorization" => "Bearer #{conn.assigns[:token]}"
+    }
+  end
+
   def graphiql_default_url do
     "https://api.foobarbaz.test"
+  end
+
+  def graphiql_default_url_with_conn(conn) do
+    conn.assigns[:graphql_url]
   end
 end
