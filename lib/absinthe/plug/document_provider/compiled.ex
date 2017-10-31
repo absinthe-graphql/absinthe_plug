@@ -77,7 +77,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
             {:halt, %{request | document: document, document_provider_key: document_key}}
         end
       end
-      defp do_process(request, _) do
+      defp do_process(request) do
         {:cont, request}
       end
 

@@ -3,6 +3,8 @@ v1.4.0
 Status: RC
 
 - Feature: Updated GraphiQL Workspace (`:advanced` interface) to latest version; supports subscriptions.
+- Bug Fix: Fix breakage when calling a document provider using `DocumentProvider.Compiled` without passing
+  params. (#112)
 
 v1.3.0
 
