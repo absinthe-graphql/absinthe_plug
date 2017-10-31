@@ -86,10 +86,13 @@ defmodule Absinthe.Plug.GraphiQL do
   """
 
   require EEx
-  EEx.function_from_file :defp, :graphiql_html, Path.join(__DIR__, "graphiql.html.eex"),
+
+  @graphiql_template_path Path.join(__DIR__, "graphiql")
+
+  EEx.function_from_file :defp, :graphiql_html, Path.join(@graphiql_template_path, "graphiql.html.eex"),
     [:query_string, :variables_string, :result_string, :socket_url, :assets]
 
-  EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(__DIR__, "graphiql_workspace.html.eex"),
+  EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(@graphiql_template_path, "graphiql_workspace.html.eex"),
     [:query_string, :variables_string, :default_headers, :default_url, :socket_url, :assets]
 
   @behaviour Plug
@@ -113,7 +116,7 @@ defmodule Absinthe.Plug.GraphiQL do
   @doc false
   @spec init(opts :: opts) :: map
   def init(opts) do
-    assets = Absinthe.Plug.GraphiQL.Assets.get_assets(:local)
+    assets = Absinthe.Plug.GraphiQL.Assets.get_assets()
 
     opts
     |> Absinthe.Plug.init
@@ -282,7 +285,7 @@ defmodule Absinthe.Plug.GraphiQL do
   defp render_interface(conn, :advanced, opts) do
     opts = Map.merge(@render_defaults, opts)
       |> with_socket_url(conn, opts)
-    
+
     graphiql_workspace_html(
       opts[:query], opts[:var_string], opts[:default_headers],
       default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
