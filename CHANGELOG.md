@@ -1,3 +1,9 @@
+v1.4.0
+
+Status: RC
+
+- Feature: Updated GraphiQL Workspace (`:advanced` interface) to latest version; supports subscriptions.
+
 v1.3.0
 
 - Major rework of the Absinthe.Plug internals, although API stays essentially the same.
