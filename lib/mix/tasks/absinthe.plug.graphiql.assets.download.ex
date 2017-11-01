@@ -4,22 +4,20 @@ defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.Download do
   @shortdoc "Download GraphiQL assets"
 
   def run(args) do
-    opts = Mix.Absinthe.Plug.GraphiQL.AssetsTask.run(args)
+    Mix.Absinthe.Plug.GraphiQL.AssetsTask.run(args)
 
     Application.ensure_all_started(:inets)
-    Mix.Generator.create_directory(opts[:directory])
 
-    Absinthe.Plug.GraphiQL.Assets.get_assets(:remote)
-    |> Enum.map(fn asset -> download_file(opts[:directory], asset) end)
+    Absinthe.Plug.GraphiQL.Assets.get_remote_asset_mappings()
+    |> Enum.map(&download_file/1)
   end
 
-  defp download_file(assets_dir_path, {asset_name, asset_url} = _asset) do
-    asset_url = String.to_charlist("https:" <> asset_url) # Required by :httpc
-    {:ok, response} = :httpc.request(:get, {asset_url, []}, [], [body_format: :binary])
+  defp download_file({destination, asset_url}) do
+    {:ok, response} = http_get(asset_url)
 
     case response do
       {{_, http_code, _}, _, body} when http_code in [200] ->
-        save_file(assets_dir_path, asset_name, body)
+        Mix.Generator.create_file(destination, body, [force: true])
       _ ->
         Mix.raise """
           Something went wrong downloading #{asset_url} Please try again.
@@ -27,9 +25,5 @@ defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.Download do
     end
   end
 
-  defp save_file(assets_dir_path, file_name, content) do
-    assets_dir_path
-    |> Path.join(file_name)
-    |> Mix.Generator.create_file(content, [force: true])
-  end
+  defp http_get(url), do: :httpc.request(:get, {String.to_charlist(url), []}, [], [body_format: :binary])
 end

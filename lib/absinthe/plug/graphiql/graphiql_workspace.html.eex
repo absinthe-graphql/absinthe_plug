@@ -13,16 +13,16 @@ add "&raw" to the end of the URL within a browser.
 
   <title>GraphiQL Workspace</title>
 
-  <link rel="stylesheet" media="screen" href="<%= assets["bootstrap.css"] %>">
-  <link rel="stylesheet" media="screen" href="<%= assets["graphiql.css"] %>">
-  <link rel="stylesheet" media="screen" href="<%= assets["graphiql-workspace.css"] %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["bootstrap/css/bootstrap.css"] %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["graphiql/graphiql.css"] %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["graphiql-workspace/graphiql-workspace.css"] %>">
 
-  <script src="<%= assets["react.js"] %>"></script>
-  <script src="<%= assets["react-dom.js"] %>"></script>
-  <script src="<%= assets["graphiql-workspace.js"] %>"></script>
+  <script src="<%= assets["react/react.js"] %>"></script>
+  <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
+  <script src="<%= assets["graphiql-workspace/graphiql-workspace.js"] %>"></script>
   <%= if socket_url do %>
-    <script src="<%= assets["phoenix.js"] %>"></script>
-    <script src="<%= assets["absinthe-phoenix.js"] %>"></script>
+    <script src="<%= assets["phoenix/phoenix.js"] %>"></script>
+    <script src="<%= assets["absinthe-phoenix/absinthe-phoenix.js"] %>"></script>
   <% end %>
 </head>
 <body>
