@@ -186,6 +186,8 @@ defmodule Absinthe.Plug.GraphiQL do
         conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
       }
 
+      config = set_pipeline(config)
+
       case Absinthe.Plug.run_request(request, conn_info, config) do
         {:ok, result} ->
           query = hd(request.queries) # GraphiQL doesn't batch requests, so the first query is the only one
@@ -248,6 +250,24 @@ defmodule Absinthe.Plug.GraphiQL do
         |> send_resp(500, error)
 
     end
+  end
+
+  defp set_pipeline(config) do
+    config
+    |> Map.put(:additional_pipeline, config.pipeline)
+    |> Map.put(:pipeline, {__MODULE__, :pipeline})
+  end
+
+  @doc false
+  def pipeline(config, opts) do
+    {module, fun} = config.additional_pipeline
+
+    apply(module, fun, [config, opts])
+    |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
+      [
+        Absinthe.GraphiQL.Validation.NoSubscriptionOnHTTP,
+      ]
+    )
   end
 
   @spec call_exported_function(boolean, module, (() -> map) | ((Plug.Conn.t) -> map), Plug.Conn.t | nil) :: map
