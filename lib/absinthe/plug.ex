@@ -180,6 +180,7 @@ defmodule Absinthe.Plug do
   """
   @spec call(Plug.Conn.t, map) :: Plug.Conn.t | no_return
   def call(conn, config) do
+    config = update_config(conn, config)
     {conn, result} = conn |> execute(config)
 
     case result do
@@ -211,6 +212,15 @@ defmodule Absinthe.Plug do
         conn
         |> send_resp(500, error)
 
+    end
+  end
+
+  defp update_config(conn, config) do
+    pubsub = config[:pubsub] || config.context[:pubsub] || conn.private[:phoenix_endpoint]
+    if pubsub do
+      put_in(config, [:context, :pubsub], pubsub)
+    else
+      config
     end
   end
 
@@ -259,12 +269,6 @@ defmodule Absinthe.Plug do
     conn_info = %{
       conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
     }
-
-    pubsub = config[:pubsub] || config.context[:pubsub] || conn.private[:phoenix_endpoint]
-    config = case pubsub do
-      nil -> config
-      pubsub -> put_in(config, [:context, :pubsub], pubsub)
-    end
 
     with {:ok, conn, request} <- Request.parse(conn, config),
          {:ok, request} <- ensure_processable(request, config) do
