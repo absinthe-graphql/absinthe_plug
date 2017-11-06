@@ -11,7 +11,7 @@ defmodule Absinthe.Plug.TestPubSub do
   end
 
   def publish_subscription(topic, data) do
-    message = %{topic: topic, event: "subscription:data", result: data}
+    message = %{topic: topic, event: "subscription:data", payload: %{result: data}}
     Registry.dispatch(__MODULE__, topic, fn entries ->
       for {pid, _} <- entries, do: send(pid, message)
     end)
