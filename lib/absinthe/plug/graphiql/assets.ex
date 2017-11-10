@@ -34,12 +34,9 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
       "graphiql.css",
       {"graphiql.min.js", "graphiql.js"},
     ]},
-    {"graphiql-workspace", "1.1.3", [
+    {"@absinthe/graphiql-workspace", "1.1.5", [
       "graphiql-workspace.css",
       {"graphiql-workspace.min.js", "graphiql-workspace.js"}
-    ]},
-    {"graphiql-subscriptions-fetcher", "0.0.2", [
-      {"browser/client.js", "graphiql-subscriptions-fetcher.js"},
     ]},
     {"@absinthe/socket-graphiql", "0.1.1", [
       {"compat/umd/index.js", "socket-graphiql.js"},
