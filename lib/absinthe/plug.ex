@@ -245,6 +245,15 @@ defmodule Absinthe.Plug do
       :close ->
         Absinthe.Subscription.unsubscribe(config.context.pubsub, topic)
         conn
+    after
+      30_000 ->
+        case chunk(conn, ":ping\n\n") do
+          {:ok, conn} ->
+            subscribe_loop(conn, topic, config)
+          {:error, :closed} ->
+            Absinthe.Subscription.unsubscribe(config.context.pubsub, topic)
+            conn
+        end
     end
   end
 
