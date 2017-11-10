@@ -30,7 +30,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
       {"dist/fonts/glyphicons-halflings-regular.svg", "fonts/glyphicons-halflings-regular.svg"},
       {"dist/css/bootstrap.min.css", "css/bootstrap.css"},
     ]},
-    {"graphiql", "0.11.3", [
+    {"graphiql", "0.11.10", [
       "graphiql.css",
       {"graphiql.min.js", "graphiql.js"},
     ]},
@@ -41,11 +41,8 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     {"graphiql-subscriptions-fetcher", "0.0.2", [
       {"browser/client.js", "graphiql-subscriptions-fetcher.js"},
     ]},
-    {"phoenix", "1.3.0", [
-      {"priv/static/phoenix.min.js", "phoenix.js"},
-    ]},
-    {"absinthe-phoenix", "0.1.1", [
-      {"browser/index.min.js", "absinthe-phoenix.js"},
+    {"@absinthe/socket-graphiql", "0.1.1", [
+      {"compat/umd/index.js", "socket-graphiql.js"},
     ]},
   ]
 
