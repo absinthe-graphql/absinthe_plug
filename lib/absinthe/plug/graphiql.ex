@@ -95,6 +95,9 @@ defmodule Absinthe.Plug.GraphiQL do
   EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(@graphiql_template_path, "graphiql_workspace.html.eex"),
     [:query_string, :variables_string, :default_headers, :default_url, :socket_url, :assets]
 
+  EEx.function_from_file :defp, :graphiql_playground_html, Path.join(@graphiql_template_path, "graphiql_playground.html.eex"),
+  [:query_string, :variables_string, :default_headers, :default_url, :socket_url, :assets]
+
   @behaviour Plug
 
   import Plug.Conn
@@ -105,7 +108,7 @@ defmodule Absinthe.Plug.GraphiQL do
     path: binary,
     context: map,
     json_codec: atom | {atom, Keyword.t},
-    interface: :advanced | :simple,
+    interface: :playground | :advanced | :simple,
     default_headers: {module, atom},
     default_url: binary,
     assets: Keyword.t,
@@ -307,6 +310,16 @@ defmodule Absinthe.Plug.GraphiQL do
       |> with_socket_url(conn, opts)
 
     graphiql_workspace_html(
+      opts[:query], opts[:var_string], opts[:default_headers],
+      default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
+    )
+    |> rendered(conn)
+  end
+  defp render_interface(conn, :playground, opts) do
+    opts = Map.merge(@render_defaults, opts)
+      |> with_socket_url(conn, opts)
+
+    graphiql_playground_html(
       opts[:query], opts[:var_string], opts[:default_headers],
       default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
     )

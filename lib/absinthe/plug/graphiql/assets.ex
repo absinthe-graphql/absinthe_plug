@@ -38,6 +38,10 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
       "graphiql-workspace.css",
       {"graphiql-workspace.min.js", "graphiql-workspace.js"}
     ]},
+    {"@absinthe/graphql-playground", "1.1.3", [
+      {"build/static/css/middleware.css", "playground.css"},
+      {"build/static/js/middleware.js", "playground.js"}
+    ]},
     {"@absinthe/socket-graphiql", "0.1.1", [
       {"compat/umd/index.js", "socket-graphiql.js"},
     ]},
