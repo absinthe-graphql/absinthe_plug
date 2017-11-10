@@ -96,7 +96,7 @@ defmodule Absinthe.Plug.GraphiQL do
     [:query_string, :variables_string, :default_headers, :default_url, :socket_url, :assets]
 
   EEx.function_from_file :defp, :graphiql_playground_html, Path.join(@graphiql_template_path, "graphiql_playground.html.eex"),
-  [:query_string, :variables_string, :default_headers, :default_url, :socket_url, :assets]
+  [:socket_url, :assets]
 
   @behaviour Plug
 
@@ -129,6 +129,7 @@ defmodule Absinthe.Plug.GraphiQL do
     |> Map.put(:assets, assets)
     |> Map.put(:socket, Keyword.get(opts, :socket))
     |> Map.put(:socket_url, Keyword.get(opts, :socket_url))
+    |> set_pipeline
   end
 
   @doc false
@@ -188,8 +189,6 @@ defmodule Absinthe.Plug.GraphiQL do
       conn_info = %{
         conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
       }
-
-      config = set_pipeline(config)
 
       case Absinthe.Plug.run_request(request, conn_info, config) do
         {:ok, result} ->
@@ -320,8 +319,7 @@ defmodule Absinthe.Plug.GraphiQL do
       |> with_socket_url(conn, opts)
 
     graphiql_playground_html(
-      opts[:query], opts[:var_string], opts[:default_headers],
-      default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
+      opts[:socket_url], opts[:assets]
     )
     |> rendered(conn)
   end
