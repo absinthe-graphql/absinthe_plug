@@ -22,11 +22,7 @@ add "&raw" to the end of the URL within a browser.
   <script src="<%= assets["react/react.js"] %>"></script>
   <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
   <script src="<%= assets["graphiql/graphiql.js"] %>"></script>
-  <%= if socket_url do %>
-    <script src="<%= assets["graphiql-subscriptions-fetcher/graphiql-subscriptions-fetcher.js"] %>"></script>
-    <script src="<%= assets["phoenix/phoenix.js"] %>"></script>
-    <script src="<%= assets["absinthe-phoenix/absinthe-phoenix.js"] %>"></script>
-  <% end %>
+  <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>"></script>
 </head>
 <body>
 
@@ -59,63 +55,14 @@ add "&raw" to the end of the URL within a browser.
         otherParams[k] = parameters[k];
       }
     }
+
     var fetchURL = locationQuery(otherParams);
-    // Defines a GraphQL fetcher using the fetch API.
-    function graphQLFetcher(graphQLParams) {
-      return fetch(fetchURL, {
-        method: 'post',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(graphQLParams),
-        credentials: 'include',
-      }).then(function (response) {
-        return response.text();
-      }).then(function (responseBody) {
-        try {
-          return JSON.parse(responseBody);
-        } catch (error) {
-          return responseBody;
-        }
-      });
-    }
+    var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    var wsUrl = <%= if socket_url do %> <%= socket_url %><% else %>'ws://localhost:4000/socket'<% end %>;
 
-    <%= if socket_url do %>
+    var subscriptionsClient = new AbsintheSocketGraphiql.SubscriptionsClient(wsUrl, {});
+    var fetcher = AbsintheSocketGraphiql.createFetcher(fetchURL, subscriptionsClient, 'Your subscription data will appear here after server publication!');
 
-      var protocol;
-      if (window.location.protocol === "https:") {
-        protocol = "wss:"
-      } else {
-        protocol = "ws:"
-      }
-
-      var client = new AbsinthePhoenix.default(<%= socket_url %>);
-      // stop doing this eventually
-      var serverSubscriptionId;
-      client.old_subscribe = client.subscribe
-      client.subscribe = function(doc, cb) {
-        this.old_subscribe(doc, cb).then(function(resp) { serverSubscriptionId = resp.subscriptionId});
-        // mock client generated subscription id
-        return "1"
-      };
-
-      client.old_unsubscribe = client.unsubscribe
-      client.unsubscribe = function(clientSubscriptionId) {
-        this.old_unsubscribe(serverSubscriptionId);
-      };
-
-      client.dispatchSubscriptionCallback = function(resp, cb) {
-        // GraphiQL wants the data as a string
-        cb(JSON.stringify(resp.result, null, 2));
-      }
-
-      client.connect()
-        .then(function () { console.log('Connected.'); })
-        .catch(function (e) { console.error(`Couldn't connect`, e) });
-      var graphQLFetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(client, graphQLFetcher);
-
-    <% end %>
     // When the query and variables string is edited, update the URL bar so
     // that it can be easily shared.
     function onEditQuery(newQuery) {
@@ -132,7 +79,7 @@ add "&raw" to the end of the URL within a browser.
     // Render <GraphiQL /> into the body.
     ReactDOM.render(
       React.createElement(GraphiQL, {
-        fetcher: graphQLFetcher,
+        fetcher,
         onEditQuery: onEditQuery,
         onEditVariables: onEditVariables,
         query: '<%= query_string %>',

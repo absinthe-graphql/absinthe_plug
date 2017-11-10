@@ -15,53 +15,22 @@ add "&raw" to the end of the URL within a browser.
 
   <link rel="stylesheet" media="screen" href="<%= assets["bootstrap/css/bootstrap.css"] %>">
   <link rel="stylesheet" media="screen" href="<%= assets["graphiql/graphiql.css"] %>">
-  <link rel="stylesheet" media="screen" href="<%= assets["graphiql-workspace/graphiql-workspace.css"] %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["@absinthe/graphiql-workspace/graphiql-workspace.css"] %>">
 
   <script src="<%= assets["react/react.js"] %>"></script>
   <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
-  <script src="<%= assets["graphiql-workspace/graphiql-workspace.js"] %>"></script>
-  <%= if socket_url do %>
-    <script src="<%= assets["phoenix/phoenix.js"] %>"></script>
-    <script src="<%= assets["absinthe-phoenix/absinthe-phoenix.js"] %>"></script>
-  <% end %>
+  <script src="<%= assets["@absinthe/graphiql-workspace/graphiql-workspace.js"] %>"></script>
+  <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>"></script>
 </head>
 <body>
   <div id="workspace" class="graphiql-workspace"></div>
 
   <script type="text/javascript">
-    <%= if socket_url do %>
-      function absintheSubscriptionsClientBuilder(url, connectionParams) {
-        var client = new AbsinthePhoenix.default(url, {params: connectionParams});
+    function absintheSubscriptionsClientBuilder(url, connectionParams) {
+      return new AbsintheSocketGraphiql.SubscriptionsClient(url, {params: connectionParams});
+    }
 
-        // stop doing this eventually
-        var serverSubscriptionId;
-        client.old_subscribe = client.subscribe
-        client.subscribe = function(doc, cb) {
-          this.old_subscribe(doc, cb).then(function(resp) { serverSubscriptionId = resp.subscriptionId});
-          // mock client generated subscription id
-          return "1"
-        };
-
-        client.old_unsubscribe = client.unsubscribe
-        client.unsubscribe = function(clientSubscriptionId) {
-          this.old_unsubscribe(serverSubscriptionId);
-        };
-
-        client.dispatchSubscriptionCallback = function(resp, cb) {
-          // GraphiQL wants the data as a string
-          cb(JSON.stringify(resp.result, null, 2));
-        }
-
-        client.connect()
-          .then(function () { console.log('Connected.'); })
-          .catch(function (e) { console.error(`Couldn't connect`, e) });
-
-        return client;
-      }
-
-      var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    <% end %>
-
+    var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     var config = new graphiqlWorkspace.AppConfig("graphiql", {
       defaultUrl: <%= default_url %>,
       <%= if socket_url do %>
