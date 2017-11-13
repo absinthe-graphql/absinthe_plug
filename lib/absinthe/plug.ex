@@ -12,7 +12,7 @@ defmodule Absinthe.Plug do
         json_decoder: Poison
 
       plug Absinthe.Plug,
-        schema: MyApp.Schema
+        schema: MyAppWeb.Schema
 
   If you want only `Absinthe.Plug` to serve a particular route, configure your
   router like:
@@ -24,7 +24,7 @@ defmodule Absinthe.Plug do
 
       forward "/api",
         to: Absinthe.Plug,
-        init_opts: [schema: MyApp.Schema]
+        init_opts: [schema: MyAppWeb.Schema]
 
   See the documentation on `Absinthe.Plug.init/1` and the `Absinthe.Plug.opts`
   type for information on the available options.
@@ -34,7 +34,7 @@ defmodule Absinthe.Plug do
 
     forward "/graphiql",
       to: Absinthe.Plug.GraphiQL,
-      init_opts: [schema: MyApp.Schema]
+      init_opts: [schema: MyAppWeb.Schema]
 
   For more information, see the API documentation for `Absinthe.Plug`.
 
@@ -47,7 +47,7 @@ defmodule Absinthe.Plug do
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
         init_opts: [
-          schema: MyApp.Schema,
+          schema: MyAppWeb.Schema,
           interface: :simple
         ]
 
@@ -55,7 +55,7 @@ defmodule Absinthe.Plug do
 
       forward "/graphiql",
         Absinthe.Plug.GraphiQL,
-         schema: MyApp.Schema,
+         schema: MyAppWeb.Schema,
          interface: :simple
 
   For more information see [Phoenix.Router.forward/4](https://hexdocs.pm/phoenix/Phoenix.Router.html#forward/4).

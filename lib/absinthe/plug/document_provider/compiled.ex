@@ -10,7 +10,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
 
   Define a new module and `use Absinthe.Plug.DocumentProvider.Compiled`:
 
-      defmodule MyApp.Schema.Documents do
+      defmodule MyAppWeb.Schema.Documents do
         use Absinthe.Plug.DocumentProvider.Compiled
 
         # ... Configure here

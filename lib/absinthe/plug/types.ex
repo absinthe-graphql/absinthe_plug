@@ -11,7 +11,7 @@ defmodule Absinthe.Plug.Types do
   multiple uploaded files as arguments (`:users` and `:metadata`):
 
   ```elixir
-  defmodule MyApp.Schema do
+  defmodule MyAppWeb.Schema do
     use Absinthe.Schema
 
     # Important: Needed to get the `:upload` type

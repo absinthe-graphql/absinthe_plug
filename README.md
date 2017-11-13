@@ -14,7 +14,7 @@ Install from [Hex.pm](https://hex.pm/packages/absinthe_plug):
 
 ```elixir
 def deps do
-  [{:absinthe_plug, "~> 1.3.0"}]
+  [{:absinthe_plug, "~> 1.4.0"}]
 end
 ```
 
@@ -33,7 +33,7 @@ end
 def deps do
   [
     ...,
-    {:absinthe_plug, "~> 1.3.0"},
+    {:absinthe_plug, "~> 1.4.0"},
     {:poison, "~> 1.3.0"}
   ]
 end
@@ -50,7 +50,7 @@ plug Plug.Parsers,
   json_decoder: Poison
 
 plug Absinthe.Plug,
-  schema: MyApp.Schema
+  schema: MyAppWeb.Schema
 ```
 
 If you want only `Absinthe.Plug` to serve a particular route, configure your
@@ -64,7 +64,7 @@ plug Plug.Parsers,
 
 forward "/api",
   to: Absinthe.Plug,
-  init_opts: [schema: MyApp.Schema]
+  init_opts: [schema: MyAppWeb.Schema]
 ```
 
 For more information, see the API documentation for `Absinthe.Plug`.
@@ -79,7 +79,7 @@ If you are using [Phoenix.Router](https://hexdocs.pm/phoenix/Phoenix.Router.html
 forward "/graphiql",
   to: Absinthe.Plug.GraphiQL,
   init_opts: [
-    schema: MyApp.Schema,
+    schema: MyAppWeb.Schema,
     interface: :simple
   ]
 ```
@@ -89,7 +89,7 @@ forward "/graphiql",
 ```elixir
 forward "/graphiql",
   Absinthe.Plug.GraphiQL,
-  schema: MyApp.Schema,
+  schema: MyAppWeb.Schema,
   interface: :simple
 ```
 
@@ -104,7 +104,7 @@ To add support for a GraphiQL interface, add a configuration for
 ```elixir
 forward "/graphiql",
   to: Absinthe.Plug.GraphiQL,
-  init_opts: [schema: MyApp.Schema]
+  init_opts: [schema: MyAppWeb.Schema]
 ```
 
 See the API documentation for `Absinthe.Plug.GraphiQL` for more information.

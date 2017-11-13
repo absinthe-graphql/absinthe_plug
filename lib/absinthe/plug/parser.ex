@@ -14,7 +14,7 @@ defmodule Absinthe.Plug.Parser do
         json_decoder: Poison
 
       plug Absinthe.Plug,
-        schema: MyApp.Schema
+        schema: MyAppWeb.Schema
   """
 
   @behaviour Plug.Parsers

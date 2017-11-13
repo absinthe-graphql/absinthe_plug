@@ -2,7 +2,10 @@ defmodule Absinthe.Plug.GraphiQL do
   @moduledoc """
   Provides a GraphiQL interface.
 
+
   ## Examples
+
+  The examples here are shown in
 
   Serve the GraphiQL "advanced" interface at `/graphiql`, but only in
   development:
@@ -10,18 +13,28 @@ defmodule Absinthe.Plug.GraphiQL do
       if Mix.env == :dev do
         forward "/graphiql",
           to: Absinthe.Plug.GraphiQL,
-          init_opts: [schema: MyApp.Schema]
+          init_opts: [schema: MyAppWeb.Schema]
       end
 
   Use the "simple" interface (original GraphiQL) instead:
 
-      if Mix.env == :dev do
-        forward "/graphiql",
-          to: Absinthe.Plug.GraphiQL,
-          init_opts: [
-            schema: MyApp.Schema,
-            interface: :simple
-          ]
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyAppWeb.Schema,
+          interface: :simple
+        ]
+
+  Finally there is also support for GraphiQL Playground
+  https://github.com/graphcool/graphql-playground
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyAppWeb.Schema,
+          interface: :playground
+        ]
+
 
   ## Interface Selection
 
@@ -40,7 +53,7 @@ defmodule Absinthe.Plug.GraphiQL do
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
         init_opts: [
-          schema: MyApp.Schema,
+          schema: MyAppWeb.Schema,
           default_headers: {__MODULE__, :graphiql_headers}
         ]
 
@@ -67,7 +80,7 @@ defmodule Absinthe.Plug.GraphiQL do
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
         init_opts: [
-          schema: MyApp.Schema,
+          schema: MyAppWeb.Schema,
           default_url: "https://api.mydomain.com/graphql"
         ]
 
@@ -76,7 +89,7 @@ defmodule Absinthe.Plug.GraphiQL do
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
         init_opts: [
-          schema: MyApp.Schema,
+          schema: MyAppWeb.Schema,
           default_url: {__MODULE__, :graphiql_default_url}
         ]
 
