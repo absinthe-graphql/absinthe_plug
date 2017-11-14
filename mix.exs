@@ -12,6 +12,7 @@ defmodule Absinthe.Plug.Mixfile do
      elixirc_paths: elixirc_paths(Mix.env),
      package: package(),
      docs: [source_ref: "v#{@version}", main: "Absinthe.Plug"],
+     aliases: aliases(),
      deps: deps()]
   end
 
@@ -38,10 +39,32 @@ defmodule Absinthe.Plug.Mixfile do
   defp deps do
     [
       {:plug, "~> 1.3.2 or ~> 1.4"},
-      {:absinthe, "~> 1.4.0-rc.3 or ~> 1.4"},
-      {:poison, ">= 0.0.0", only: [:dev, :test]},
+      # {:absinthe, "~> 1.4.0-rc.3 or ~> 1.4"},
+      {:absinthe, git: "git://github.com/MartinKavik/absinthe", branch: "fix-result-fields-order", override: true},
+      {:ord_map_encoder_poison, "~> 0.1.0"},
+      {:poison, ">= 0.0.0"},
       {:ex_doc, "~> 0.14.0", only: :dev},
       {:earmark, "~> 1.1.0", only: :dev},
     ]
+  end
+
+  defp aliases do
+    [
+      "test.all": [&run_tests_unordered/1, &run_tests_ordered/1]
+    ]
+  end
+
+  defp run_tests_unordered(_) do
+    Mix.shell.cmd(
+      "mix test", 
+      env: [{"MIX_ENV", "test"}, {"ABSINTHE_ORDERED", "false"}]
+    )
+  end
+
+  defp run_tests_ordered(_) do
+    Mix.shell.cmd(
+      "mix test", 
+      env: [{"MIX_ENV", "test"}, {"ABSINTHE_ORDERED", "true"}]
+    )
   end
 end

@@ -1,6 +1,10 @@
-%{"absinthe": {:hex, :absinthe, "1.4.0-rc.3", "6224f17dfc079fc0d9cd74d3524894c1c934c28374b889b8411f72b85ea183b8", [:mix], [{:dataloader, "~> 0.1.0", [hex: :dataloader, repo: "hexpm", optional: true]}, {:decimal, "~> 1.0", [hex: :decimal, repo: "hexpm", optional: true]}], "hexpm"},
+%{
+  "absinthe": {:git, "git://github.com/MartinKavik/absinthe", "d886999bfc7e94a3fc3b4ead4992ee2ae0148a67", [branch: "fix-result-fields-order"]},
   "earmark": {:hex, :earmark, "1.1.1", "433136b7f2e99cde88b745b3a0cfc3fbc81fe58b918a09b40fce7f00db4d8187", [:mix], [], "hexpm"},
   "ex_doc": {:hex, :ex_doc, "0.14.5", "c0433c8117e948404d93ca69411dd575ec6be39b47802e81ca8d91017a0cf83c", [:mix], [{:earmark, "~> 1.0", [hex: :earmark, repo: "hexpm", optional: false]}], "hexpm"},
   "mime": {:hex, :mime, "1.1.0", "01c1d6f4083d8aa5c7b8c246ade95139620ef8effb009edde934e0ec3b28090a", [:mix], [], "hexpm"},
+  "ord_map": {:hex, :ord_map, "0.1.0", "6c958f53e38934a2f60d4b0050e3bdfcc498071769f93887372ae4db5cb21d3c", [], [], "hexpm"},
+  "ord_map_encoder_poison": {:hex, :ord_map_encoder_poison, "0.1.0", "a389a0dc4ac4676f3afd7316e7992822cf76bffa04e93b771a1e61f5f6d04741", [:mix], [{:ord_map, "~> 0.1.0", [hex: :ord_map, repo: "hexpm", optional: false]}, {:poison, "~> 3.1", [hex: :poison, repo: "hexpm", optional: false]}], "hexpm"},
   "plug": {:hex, :plug, "1.3.4", "b4ef3a383f991bfa594552ded44934f2a9853407899d47ecc0481777fb1906f6", [:mix], [{:cowboy, "~> 1.0.1 or ~> 1.1", [hex: :cowboy, repo: "hexpm", optional: true]}, {:mime, "~> 1.0", [hex: :mime, repo: "hexpm", optional: false]}], "hexpm"},
-  "poison": {:hex, :poison, "3.1.0", "d9eb636610e096f86f25d9a46f35a9facac35609a7591b3be3326e99a0484665", [:mix], [], "hexpm"}}
+  "poison": {:hex, :poison, "3.1.0", "d9eb636610e096f86f25d9a46f35a9facac35609a7591b3be3326e99a0484665", [:mix], [], "hexpm"},
+}
