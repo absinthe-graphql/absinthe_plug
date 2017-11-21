@@ -6,7 +6,7 @@ If you wish to receive JSON, provide the header "Accept: application/json" or
 add "&raw" to the end of the URL within a browser.
 -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,15 +16,12 @@ add "&raw" to the end of the URL within a browser.
   <link rel="stylesheet" media="screen" href="<%= assets["bootstrap/css/bootstrap.css"] %>">
   <link rel="stylesheet" media="screen" href="<%= assets["graphiql/graphiql.css"] %>">
   <link rel="stylesheet" media="screen" href="<%= assets["@absinthe/graphiql-workspace/graphiql-workspace.css"] %>">
-
+</head>
+<body>
   <script src="<%= assets["react/react.js"] %>"></script>
   <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
   <script src="<%= assets["@absinthe/graphiql-workspace/graphiql-workspace.js"] %>"></script>
   <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>"></script>
-</head>
-<body>
-  <div id="workspace" class="graphiql-workspace"></div>
-
   <script type="text/javascript">
     function absintheSubscriptionsClientBuilder(url, connectionParams) {
       return new AbsintheSocketGraphiql.SubscriptionsClient(url, {params: connectionParams});
@@ -44,7 +41,7 @@ add "&raw" to the end of the URL within a browser.
 
     ReactDOM.render(
       React.createElement(graphiqlWorkspace.GraphiQLWorkspace, {config: config}),
-      document.getElementById('workspace')
+      document.body
     );
   </script>
 </body>

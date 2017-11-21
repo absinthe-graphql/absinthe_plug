@@ -6,9 +6,13 @@ If you wish to receive JSON, provide the header "Accept: application/json" or
 add "&raw" to the end of the URL within a browser.
 -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="referrer" content="no-referrer" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <title>GraphiQL</title>
+  
   <style>
     html, body {
       height: 100%;
@@ -18,14 +22,13 @@ add "&raw" to the end of the URL within a browser.
     }
   </style>
   <link href="<%= assets["graphiql/graphiql.css"] %>" rel="stylesheet" />
+</head>
+<body>
   <script src="<%= assets["whatwg-fetch/fetch.js"] %>"></script>
   <script src="<%= assets["react/react.js"] %>"></script>
   <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
   <script src="<%= assets["graphiql/graphiql.js"] %>"></script>
   <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>"></script>
-</head>
-<body>
-
   <script>
     // Collect the URL parameters
     var parameters = {};
