@@ -7,17 +7,16 @@ add "&raw" to the end of the URL within a browser.
 -->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="shortcut icon" href="https://graphcool-playground.netlify.com/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <title>GraphiQL Playground</title>
+
   <link href="<%= assets["typeface-open-sans/index.css"] %>" rel="stylesheet">
   <link href="<%= assets["typeface-source-code-pro/index.css"] %>" rel="stylesheet">
-  <title>Playground</title>
   <link rel="stylesheet" media="screen" href="<%= assets["@absinthe/graphql-playground/playground.css"] %>">
 </head>
-
 <body>
   <div id="root">
     <style>
@@ -60,9 +59,8 @@ add "&raw" to the end of the URL within a browser.
     var options = {
       subscriptionEndpoint: <%= if socket_url do %> <%= socket_url %><% else %>'ws://localhost:4000/socket'<% end %>
     };
-    window.addEventListener("load", function (n) { GraphQLPlayground.init(document.getElementById("root"),options) })
+    window.addEventListener("load", function (n) { GraphQLPlayground.init(document.getElementById("root"), options) })
   </script>
   <script type="text/javascript" src="<%= assets["@absinthe/graphql-playground/playground.js"] %>"></script>
 </body>
-
-</html
+</html>
