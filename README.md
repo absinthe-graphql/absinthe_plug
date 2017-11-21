@@ -53,7 +53,7 @@ plug Absinthe.Plug,
   schema: MyAppWeb.Schema
 ```
 
-If you want only `Absinthe.Plug` to serve a particular route, configure your
+If you want `Absinthe.Plug` to serve only a particular route, configure your
 router like:
 
 ```elixir
