@@ -38,6 +38,20 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
       "graphiql-workspace.css",
       {"graphiql-workspace.min.js", "graphiql-workspace.js"}
     ]},
+    # Used by graphql-playground
+    {"typeface-source-code-pro", "0.0.44", [
+      {"index.css", "index.css"},
+      {"files/source-code-pro-latin-400.woff2", "files/source-code-pro-latin-400.woff2"},
+      {"files/source-code-pro-latin-700.woff2", "files/source-code-pro-latin-700.woff2"},
+    ]},
+    # Used by graphql-playground
+    {"typeface-open-sans", "0.0.44", [
+      {"index.css", "index.css"},
+      {"files/open-sans-latin-300.woff2", "files/open-sans-latin-300.woff2"},
+      {"files/open-sans-latin-400.woff2", "files/open-sans-latin-400.woff2"},
+      {"files/open-sans-latin-600.woff2", "files/open-sans-latin-600.woff2"},
+      {"files/open-sans-latin-700.woff2", "files/open-sans-latin-700.woff2"},
+    ]},
     {"@absinthe/graphql-playground", "1.1.3", [
       {"build/static/css/middleware.css", "playground.css"},
       {"build/static/js/middleware.js", "playground.js"}
