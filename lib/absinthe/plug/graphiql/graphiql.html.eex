@@ -1,0 +1,93 @@
+<!--
+The request to this GraphQL server provided the header "Accept: text/html"
+and as a result has been presented GraphiQL - an in-browser IDE for
+exploring GraphQL.
+If you wish to receive JSON, provide the header "Accept: application/json" or
+add "&raw" to the end of the URL within a browser.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="referrer" content="no-referrer" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      width: 100%;
+    }
+  </style>
+  <link href="<%= assets["graphiql/graphiql.css"] %>" rel="stylesheet" />
+  <script src="<%= assets["whatwg-fetch/fetch.js"] %>"></script>
+  <script src="<%= assets["react/react.js"] %>"></script>
+  <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
+  <script src="<%= assets["graphiql/graphiql.js"] %>"></script>
+  <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>"></script>
+</head>
+<body>
+
+  <script>
+    // Collect the URL parameters
+    var parameters = {};
+    window.location.search.substr(1).split('&').forEach(function (entry) {
+      var eq = entry.indexOf('=');
+      if (eq >= 0) {
+        parameters[decodeURIComponent(entry.slice(0, eq))] =
+          decodeURIComponent(entry.slice(eq + 1));
+      }
+    });
+    // Produce a Location query string from a parameter object.
+    function locationQuery(params) {
+      return '?' + Object.keys(params).map(function (key) {
+        return encodeURIComponent(key) + '=' +
+          encodeURIComponent(params[key]);
+      }).join('&');
+    }
+    // Derive a fetch URL from the current URL, sans the GraphQL parameters.
+    var graphqlParamNames = {
+      query: true,
+      variables: true,
+      operationName: true
+    };
+    var otherParams = {};
+    for (var k in parameters) {
+      if (parameters.hasOwnProperty(k) && graphqlParamNames[k] !== true) {
+        otherParams[k] = parameters[k];
+      }
+    }
+
+    var fetchURL = locationQuery(otherParams);
+    var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    var wsUrl = <%= if socket_url do %> <%= socket_url %><% else %>'ws://localhost:4000/socket'<% end %>;
+
+    var subscriptionsClient = new AbsintheSocketGraphiql.SubscriptionsClient(wsUrl, {});
+    var fetcher = AbsintheSocketGraphiql.createFetcher(fetchURL, subscriptionsClient, 'Your subscription data will appear here after server publication!');
+
+    // When the query and variables string is edited, update the URL bar so
+    // that it can be easily shared.
+    function onEditQuery(newQuery) {
+      parameters.query = newQuery;
+      updateURL();
+    }
+    function onEditVariables(newVariables) {
+      parameters.variables = newVariables;
+      updateURL();
+    }
+    function updateURL() {
+      history.replaceState(null, null, locationQuery(parameters));
+    }
+    // Render <GraphiQL /> into the body.
+    ReactDOM.render(
+      React.createElement(GraphiQL, {
+        fetcher,
+        onEditQuery: onEditQuery,
+        onEditVariables: onEditVariables,
+        query: '<%= query_string %>',
+        response: '<%= result_string %>',
+        variables: '<%= variables_string %>',
+      }),
+      document.body
+    );
+  </script>
+</body>
+</html>

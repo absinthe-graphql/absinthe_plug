@@ -12,7 +12,7 @@ defmodule Absinthe.Plug do
         json_decoder: Poison
 
       plug Absinthe.Plug,
-        schema: MyApp.Schema
+        schema: MyAppWeb.Schema
 
   If you want only `Absinthe.Plug` to serve a particular route, configure your
   router like:
@@ -24,7 +24,7 @@ defmodule Absinthe.Plug do
 
       forward "/api",
         to: Absinthe.Plug,
-        init_opts: [schema: MyApp.Schema]
+        init_opts: [schema: MyAppWeb.Schema]
 
   See the documentation on `Absinthe.Plug.init/1` and the `Absinthe.Plug.opts`
   type for information on the available options.
@@ -34,7 +34,7 @@ defmodule Absinthe.Plug do
 
     forward "/graphiql",
       to: Absinthe.Plug.GraphiQL,
-      init_opts: [schema: MyApp.Schema]
+      init_opts: [schema: MyAppWeb.Schema]
 
   For more information, see the API documentation for `Absinthe.Plug`.
 
@@ -47,7 +47,7 @@ defmodule Absinthe.Plug do
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
         init_opts: [
-          schema: MyApp.Schema,
+          schema: MyAppWeb.Schema,
           interface: :simple
         ]
 
@@ -55,7 +55,7 @@ defmodule Absinthe.Plug do
 
       forward "/graphiql",
         Absinthe.Plug.GraphiQL,
-         schema: MyApp.Schema,
+         schema: MyAppWeb.Schema,
          interface: :simple
 
   For more information see [Phoenix.Router.forward/4](https://hexdocs.pm/phoenix/Phoenix.Router.html#forward/4).
@@ -180,6 +180,7 @@ defmodule Absinthe.Plug do
   """
   @spec call(Plug.Conn.t, map) :: Plug.Conn.t | no_return
   def call(conn, config) do
+    config = update_config(conn, config)
     {conn, result} = conn |> execute(config)
 
     case result do
@@ -214,25 +215,45 @@ defmodule Absinthe.Plug do
     end
   end
 
-  def subscribe(conn, topic, %{pubsub: pubsub} = config) do
+  defp update_config(conn, config) do
+    pubsub = config[:pubsub] || config.context[:pubsub] || conn.private[:phoenix_endpoint]
+    if pubsub do
+      put_in(config, [:context, :pubsub], pubsub)
+    else
+      config
+    end
+  end
+
+  def subscribe(conn, topic, %{context: %{pubsub: pubsub}} = config) do
     pubsub.subscribe(topic)
     conn
     |> put_resp_header("content-type", "text/event-stream")
     |> send_chunked(200)
-    |> subscribe_loop(config)
+    |> subscribe_loop(topic, config)
   end
 
-  def subscribe_loop(conn, config) do
+  def subscribe_loop(conn, topic, config) do
     receive do
-      %{event: "subscription:data", result: result, topic: _topic} ->
+      %{event: "subscription:data", payload: %{result: result}} ->
         case chunk(conn, "#{encode_json!(result, config)}\n\n") do
           {:ok, conn} ->
-            subscribe_loop(conn, config)
+            subscribe_loop(conn, topic, config)
           {:error, :closed} ->
+            Absinthe.Subscription.unsubscribe(config.context.pubsub, topic)
             conn
         end
       :close ->
+        Absinthe.Subscription.unsubscribe(config.context.pubsub, topic)
         conn
+    after
+      30_000 ->
+        case chunk(conn, ":ping\n\n") do
+          {:ok, conn} ->
+            subscribe_loop(conn, topic, config)
+          {:error, :closed} ->
+            Absinthe.Subscription.unsubscribe(config.context.pubsub, topic)
+            conn
+        end
     end
   end
 
@@ -259,12 +280,6 @@ defmodule Absinthe.Plug do
     conn_info = %{
       conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
     }
-
-    pubsub = config[:pubsub] || config.context[:pubsub] || conn.private[:phoenix_endpoint]
-    config = case pubsub do
-      nil -> config
-      pubsub -> put_in(config, [:context, :pubsub], pubsub)
-    end
 
     with {:ok, conn, request} <- Request.parse(conn, config),
          {:ok, request} <- ensure_processable(request, config) do

@@ -5,7 +5,7 @@ defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.Remove do
 
   def run(args) do
     opts = Mix.Absinthe.Plug.GraphiQL.AssetsTask.run(args)
-    destroy_directory(opts[:directory])
+    destroy_directory(opts[:local_directory])
   end
 
   defp destroy_directory(path) when is_binary(path) do

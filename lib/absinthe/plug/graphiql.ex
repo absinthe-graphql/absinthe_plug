@@ -2,7 +2,10 @@ defmodule Absinthe.Plug.GraphiQL do
   @moduledoc """
   Provides a GraphiQL interface.
 
+
   ## Examples
+
+  The examples here are shown in
 
   Serve the GraphiQL "advanced" interface at `/graphiql`, but only in
   development:
@@ -10,18 +13,28 @@ defmodule Absinthe.Plug.GraphiQL do
       if Mix.env == :dev do
         forward "/graphiql",
           to: Absinthe.Plug.GraphiQL,
-          init_opts: [schema: MyApp.Schema]
+          init_opts: [schema: MyAppWeb.Schema]
       end
 
   Use the "simple" interface (original GraphiQL) instead:
 
-      if Mix.env == :dev do
-        forward "/graphiql",
-          to: Absinthe.Plug.GraphiQL,
-          init_opts: [
-            schema: MyApp.Schema,
-            interface: :simple
-          ]
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyAppWeb.Schema,
+          interface: :simple
+        ]
+
+  Finally there is also support for GraphiQL Playground
+  https://github.com/graphcool/graphql-playground
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyAppWeb.Schema,
+          interface: :playground
+        ]
+
 
   ## Interface Selection
 
@@ -40,7 +53,7 @@ defmodule Absinthe.Plug.GraphiQL do
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
         init_opts: [
-          schema: MyApp.Schema,
+          schema: MyAppWeb.Schema,
           default_headers: {__MODULE__, :graphiql_headers}
         ]
 
@@ -67,7 +80,7 @@ defmodule Absinthe.Plug.GraphiQL do
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
         init_opts: [
-          schema: MyApp.Schema,
+          schema: MyAppWeb.Schema,
           default_url: "https://api.mydomain.com/graphql"
         ]
 
@@ -76,7 +89,7 @@ defmodule Absinthe.Plug.GraphiQL do
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
         init_opts: [
-          schema: MyApp.Schema,
+          schema: MyAppWeb.Schema,
           default_url: {__MODULE__, :graphiql_default_url}
         ]
 
@@ -86,11 +99,17 @@ defmodule Absinthe.Plug.GraphiQL do
   """
 
   require EEx
-  EEx.function_from_file :defp, :graphiql_html, Path.join(__DIR__, "graphiql.html.eex"),
+
+  @graphiql_template_path Path.join(__DIR__, "graphiql")
+
+  EEx.function_from_file :defp, :graphiql_html, Path.join(@graphiql_template_path, "graphiql.html.eex"),
     [:query_string, :variables_string, :result_string, :socket_url, :assets]
 
-  EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(__DIR__, "graphiql_workspace.html.eex"),
+  EEx.function_from_file :defp, :graphiql_workspace_html, Path.join(@graphiql_template_path, "graphiql_workspace.html.eex"),
     [:query_string, :variables_string, :default_headers, :default_url, :socket_url, :assets]
+
+  EEx.function_from_file :defp, :graphiql_playground_html, Path.join(@graphiql_template_path, "graphiql_playground.html.eex"),
+  [:socket_url, :assets]
 
   @behaviour Plug
 
@@ -102,7 +121,7 @@ defmodule Absinthe.Plug.GraphiQL do
     path: binary,
     context: map,
     json_codec: atom | {atom, Keyword.t},
-    interface: :advanced | :simple,
+    interface: :playground | :advanced | :simple,
     default_headers: {module, atom},
     default_url: binary,
     assets: Keyword.t,
@@ -113,7 +132,7 @@ defmodule Absinthe.Plug.GraphiQL do
   @doc false
   @spec init(opts :: opts) :: map
   def init(opts) do
-    assets = Absinthe.Plug.GraphiQL.Assets.get_assets(:local)
+    assets = Absinthe.Plug.GraphiQL.Assets.get_assets()
 
     opts
     |> Absinthe.Plug.init
@@ -123,6 +142,7 @@ defmodule Absinthe.Plug.GraphiQL do
     |> Map.put(:assets, assets)
     |> Map.put(:socket, Keyword.get(opts, :socket))
     |> Map.put(:socket_url, Keyword.get(opts, :socket_url))
+    |> set_pipeline
   end
 
   @doc false
@@ -247,6 +267,24 @@ defmodule Absinthe.Plug.GraphiQL do
     end
   end
 
+  defp set_pipeline(config) do
+    config
+    |> Map.put(:additional_pipeline, config.pipeline)
+    |> Map.put(:pipeline, {__MODULE__, :pipeline})
+  end
+
+  @doc false
+  def pipeline(config, opts) do
+    {module, fun} = config.additional_pipeline
+
+    apply(module, fun, [config, opts])
+    |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
+      [
+        Absinthe.GraphiQL.Validation.NoSubscriptionOnHTTP,
+      ]
+    )
+  end
+
   @spec call_exported_function(boolean, module, (() -> map) | ((Plug.Conn.t) -> map), Plug.Conn.t | nil) :: map
   defp call_exported_function(true, module, fun, conn), do: apply(module, fun, [conn])
   defp call_exported_function(false, module, fun, _conn), do: apply(module, fun, [])
@@ -282,10 +320,19 @@ defmodule Absinthe.Plug.GraphiQL do
   defp render_interface(conn, :advanced, opts) do
     opts = Map.merge(@render_defaults, opts)
       |> with_socket_url(conn, opts)
-    
+
     graphiql_workspace_html(
       opts[:query], opts[:var_string], opts[:default_headers],
       default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
+    )
+    |> rendered(conn)
+  end
+  defp render_interface(conn, :playground, opts) do
+    opts = Map.merge(@render_defaults, opts)
+      |> with_socket_url(conn, opts)
+
+    graphiql_playground_html(
+      opts[:socket_url], opts[:assets]
     )
     |> rendered(conn)
   end
