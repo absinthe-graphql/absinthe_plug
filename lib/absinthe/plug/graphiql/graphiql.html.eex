@@ -20,6 +20,10 @@ add "&raw" to the end of the URL within a browser.
       overflow: hidden;
       width: 100%;
     }
+
+    #root {
+      height: 100%;
+    }
   </style>
   <link href="<%= assets["graphiql/graphiql.css"] %>" rel="stylesheet" />
 </head>
