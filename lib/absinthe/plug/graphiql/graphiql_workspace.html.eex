@@ -18,6 +18,7 @@ add "&raw" to the end of the URL within a browser.
   <link rel="stylesheet" media="screen" href="<%= assets["@absinthe/graphiql-workspace/graphiql-workspace.css"] %>">
 </head>
 <body>
+  <div id="root" class="graphiql-workspace"></div>
   <script src="<%= assets["react/react.js"] %>"></script>
   <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
   <script src="<%= assets["@absinthe/graphiql-workspace/graphiql-workspace.js"] %>"></script>
@@ -41,7 +42,7 @@ add "&raw" to the end of the URL within a browser.
 
     ReactDOM.render(
       React.createElement(graphiqlWorkspace.GraphiQLWorkspace, {config: config}),
-      document.body
+      document.getElementById("root")
     );
   </script>
 </body>

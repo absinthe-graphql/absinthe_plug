@@ -20,10 +20,15 @@ add "&raw" to the end of the URL within a browser.
       overflow: hidden;
       width: 100%;
     }
+
+    #root {
+      height: 100%;
+    }
   </style>
   <link href="<%= assets["graphiql/graphiql.css"] %>" rel="stylesheet" />
 </head>
 <body>
+  <div id="root"></div>
   <script src="<%= assets["whatwg-fetch/fetch.js"] %>"></script>
   <script src="<%= assets["react/react.js"] %>"></script>
   <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
@@ -79,7 +84,7 @@ add "&raw" to the end of the URL within a browser.
     function updateURL() {
       history.replaceState(null, null, locationQuery(parameters));
     }
-    // Render <GraphiQL /> into the body.
+    // Render <GraphiQL />
     ReactDOM.render(
       React.createElement(GraphiQL, {
         fetcher,
@@ -89,7 +94,7 @@ add "&raw" to the end of the URL within a browser.
         response: '<%= result_string %>',
         variables: '<%= variables_string %>',
       }),
-      document.body
+      document.getElementById("root")
     );
   </script>
 </body>
