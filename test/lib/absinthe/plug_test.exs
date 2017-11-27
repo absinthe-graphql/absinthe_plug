@@ -394,6 +394,24 @@ defmodule Absinthe.PlugTest do
     end
   end
 
+  test "before_send" do
+    opts = Absinthe.Plug.init(schema: TestSchema, before_send: {__MODULE__, :test_before_send})
+
+    assert %{status: 200} = conn(:post, "/", "{item(id: 1) { name }}")
+    |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert_receive({:before_send, val})
+
+    assert %Absinthe.Blueprint{} = val
+  end
+
+  def test_before_send(conn, val) do
+    send self(), {:before_send, val}
+    conn
+  end
+
   defp basic_opts(context) do
     Map.put(context, :opts, Absinthe.Plug.init(schema: TestSchema))
   end
