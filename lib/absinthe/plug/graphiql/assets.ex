@@ -34,7 +34,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
       "graphiql.css",
       {"graphiql.min.js", "graphiql.js"},
     ]},
-    {"@absinthe/graphiql-workspace", "1.1.5", [
+    {"graphiql-workspace", "1.1.4", [
       "graphiql-workspace.css",
       {"graphiql-workspace.min.js", "graphiql-workspace.js"}
     ]},

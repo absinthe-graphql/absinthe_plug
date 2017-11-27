@@ -15,13 +15,13 @@ add "&raw" to the end of the URL within a browser.
 
   <link rel="stylesheet" media="screen" href="<%= assets["bootstrap/css/bootstrap.css"] %>">
   <link rel="stylesheet" media="screen" href="<%= assets["graphiql/graphiql.css"] %>">
-  <link rel="stylesheet" media="screen" href="<%= assets["@absinthe/graphiql-workspace/graphiql-workspace.css"] %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["graphiql-workspace/graphiql-workspace.css"] %>">
 </head>
 <body>
   <div id="root" class="graphiql-workspace"></div>
   <script src="<%= assets["react/react.js"] %>"></script>
   <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
-  <script src="<%= assets["@absinthe/graphiql-workspace/graphiql-workspace.js"] %>"></script>
+  <script src="<%= assets["graphiql-workspace/graphiql-workspace.js"] %>"></script>
   <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>"></script>
   <script type="text/javascript">
     function absintheSubscriptionsClientBuilder(url, connectionParams) {
