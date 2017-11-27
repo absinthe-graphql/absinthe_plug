@@ -60,6 +60,49 @@ defmodule Absinthe.Plug do
 
   For more information see [Phoenix.Router.forward/4](https://hexdocs.pm/phoenix/Phoenix.Router.html#forward/4).
 
+  ## Before Send
+
+  If you need to set a value (like a cookie) on the connection after resolution
+  but before values are sent to the client, use the `:before_send` option:
+
+  ```
+  plug Absinthe.Plug,
+    schema: MyApp.Schema,
+    before_send: {__MODULE__, :absinthe_before_send}
+
+  def absinthe_before_send(conn, %Absinthe.Blueprint{} = blueprint}) do
+    if auth_token = blueprint.execution.context[:auth_token] do
+      put_session(conn, :auth_token, auth_token)
+    else
+      conn
+    end
+  end
+  def absinthe_before_send(conn, _) do
+    conn
+  end
+  ```
+
+  The `auth_token` can be placed in the context by using middleware after your
+  mutation resolve:
+
+  ```
+  # mutation resolver
+  resolve fn args, _ ->
+    case authenticate(args) do
+      {:ok, token} -> {:ok, %{token: token}}
+      error -> error
+    end
+  end
+  # middleware afterward
+  middleware fn resolution, _ ->
+    with %{value: %{token: token}} <- resolution do
+      Map.update!(resolution, :context, fn ctx ->
+        Map.put(ctx, :auth_token, token)
+      end)
+    end
+  end)
+  ```
+
   ## Included GraphQL Types
 
   This package includes additional types for use in Absinthe GraphQL schema and
@@ -147,6 +190,8 @@ defmodule Absinthe.Plug do
 
     pubsub = Keyword.get(opts, :pubsub, nil)
 
+    before_send = Keyword.get(opts, :before_send)
+
     %{
       adapter: adapter,
       context: context,
@@ -160,6 +205,7 @@ defmodule Absinthe.Plug do
       content_type: content_type,
       log_level: log_level,
       pubsub: pubsub,
+      before_send: before_send,
     }
   end
 
@@ -173,6 +219,16 @@ defmodule Absinthe.Plug do
         raise ArgumentError, "The supplied schema: #{inspect schema} is not a valid Absinthe Schema"
     end
     schema
+  end
+
+  @doc false
+  def apply_before_send(conn, bps, %{before_send: {mod, fun}}) do
+    Enum.reduce(bps, conn, fn bp, conn ->
+      apply(mod, fun, [conn, bp])
+    end)
+  end
+  def apply_before_send(conn, _, _) do
+    conn
   end
 
   @doc """
@@ -283,7 +339,7 @@ defmodule Absinthe.Plug do
 
     with {:ok, conn, request} <- Request.parse(conn, config),
          {:ok, request} <- ensure_processable(request, config) do
-      {conn, run_request(request, conn_info, config)}
+      run_request(request, conn, conn_info, config)
     else
       result ->
         {conn, result}
@@ -333,11 +389,12 @@ defmodule Absinthe.Plug do
     end
   end
 
-  def run_request(%{batch: true, queries: queries} = request, conn, config) do
+  @doc false
+  def run_request(%{batch: true, queries: queries} = request, conn, conn_info, config) do
     Request.log(request, config.log_level)
+    {conn, results} = Absinthe.Plug.Batch.Runner.run(queries, conn, conn_info, config)
     results =
-      queries
-      |> Absinthe.Plug.Batch.Runner.run(conn, config)
+      results
       |> Enum.zip(request.extra_keys)
       |> Enum.map(fn {result, extra_keys} ->
         Map.merge(extra_keys, %{
@@ -345,18 +402,21 @@ defmodule Absinthe.Plug do
         })
       end)
 
-    {:ok, results}
+    {conn, {:ok, results}}
   end
-  def run_request(%{batch: false, queries: [query]} = request, conn_info, config) do
+  def run_request(%{batch: false, queries: [query]} = request, conn, conn_info, config) do
     Request.log(request, config.log_level)
-    run_query(query, conn_info, config)
+    run_query(query, conn, conn_info, config)
   end
 
-  def run_query(query, conn_info, config) do
+  defp run_query(query, conn ,conn_info, config) do
     %{document: document, pipeline: pipeline} = Request.Query.add_pipeline(query, conn_info, config)
-
-    with {:ok, %{result: result}, _} <- Absinthe.Pipeline.run(document, pipeline) do
-      {:ok, result}
+    case Absinthe.Pipeline.run(document, pipeline) do
+      {:ok, %{result: result} = bp, _} ->
+        conn = apply_before_send(conn, [bp], config)
+        {conn, {:ok, result}}
+      val ->
+        {conn, val}
     end
   end
 
@@ -412,6 +472,7 @@ defmodule Absinthe.Plug do
     |> send_resp(status, mod.encode!(body, opts))
   end
 
+  @doc false
   def encode_json!(value, %{json_codec: json_codec}) do
     json_codec.module.encode!(value, json_codec.opts)
   end

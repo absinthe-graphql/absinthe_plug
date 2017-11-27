@@ -203,7 +203,8 @@ defmodule Absinthe.Plug.GraphiQL do
         conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
       }
 
-      case Absinthe.Plug.run_request(request, conn_info, config) do
+      {conn, result} = Absinthe.Plug.run_request(request, conn, conn_info, config)
+      case result do
         {:ok, result} ->
           query = hd(request.queries) # GraphiQL doesn't batch requests, so the first query is the only one
           {:ok, conn, result, query.variables, query.document || ""}
