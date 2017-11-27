@@ -71,8 +71,11 @@ defmodule Absinthe.Plug do
     before_send: {__MODULE__, :absinthe_before_send}
 
   def absinthe_before_send(conn, %Absinthe.Blueprint{} = blueprint}) do
-    auth_token = blueprint.execution.context[:auth_token]
-    put_session(conn, :auth_token, auth_token)
+    if auth_token = blueprint.execution.context[:auth_token] do
+      put_session(conn, :auth_token, auth_token)
+    else
+      conn
+    end
   end
   def absinthe_before_send(conn, _) do
     conn
