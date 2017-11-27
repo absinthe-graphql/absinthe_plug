@@ -1,3 +1,8 @@
+v1.4.1
+
+- Feature: `before_send:` option. Run a function that can alter the `conn` based on the GraphQL result.
+- Chore: Update GraphiQL Workspace and Playground.
+
 v1.4.0
 
 Status: RC

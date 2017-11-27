@@ -378,7 +378,31 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert [%{"id" => "1", "payload" => %{"data" => %{"uploadTest" => "file_a"}}}, %{"id" => "2", "payload" => %{"data" => %{"uploadTest" => "file_a"}}}] == resp_body
   end
 
+  test "before_send with batched query" do
+    opts = Absinthe.Plug.init(schema: TestSchema, before_send: {__MODULE__, :test_before_send})
+
+    assert %{status: 200, resp_body: resp_body} = conn = conn(:post, "/", @relay_query)
+    |> put_req_header("content-type", "application/json")
+    |> plug_parser
+    |> absinthe_plug(opts)
+
+    assert @relay_foo_result == resp_body
+
+    # two docs so it should run twice, one for each doc
+    assert_receive({:before_send, _})
+    assert_receive({:before_send, _})
+
+    assert conn.private[:user_id] == 1
+  end
+
+  def test_before_send(conn, val) do
+    send self(), {:before_send, val} # just for easy testing
+    conn
+    |> put_private(:user_id, 1)
+  end
+
   defp absinthe_plug(conn, opts) do
+    opts = Map.put(opts, :before_send, {__MODULE__, :test_before_send})
     %{resp_body: body} = conn = Absinthe.Plug.call(conn, opts)
 
     case Poison.decode(body) do

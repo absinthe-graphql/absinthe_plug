@@ -394,10 +394,10 @@ defmodule Absinthe.PlugTest do
     end
   end
 
-  test "before_send" do
+  test "before_send with single query" do
     opts = Absinthe.Plug.init(schema: TestSchema, before_send: {__MODULE__, :test_before_send})
 
-    assert %{status: 200} = conn(:post, "/", "{item(id: 1) { name }}")
+    assert %{status: 200} = conn = conn(:post, "/", "{item(id: 1) { name }}")
     |> put_req_header("content-type", "application/graphql")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
@@ -405,11 +405,13 @@ defmodule Absinthe.PlugTest do
     assert_receive({:before_send, val})
 
     assert %Absinthe.Blueprint{} = val
+    assert conn.private[:user_id] == 1
   end
 
   def test_before_send(conn, val) do
-    send self(), {:before_send, val}
+    send self(), {:before_send, val} # just for easy testing
     conn
+    |> put_private(:user_id, 1)
   end
 
   defp basic_opts(context) do
