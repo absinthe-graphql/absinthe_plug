@@ -71,12 +71,33 @@ defmodule Absinthe.Plug do
     before_send: {__MODULE__, :absinthe_before_send}
 
   def absinthe_before_send(conn, %Absinthe.Blueprint{} = blueprint}) do
-    current_user_id = blueprint.execution.context[:current_user_id]
-    put_session(conn, :current_user_id, current_user_id)
+    auth_token = blueprint.execution.context[:auth_token]
+    put_session(conn, :auth_token, auth_token)
   end
   def absinthe_before_send(conn, _) do
     conn
   end
+  ```
+
+  The `auth_token` can be placed in the context by using middleware after your
+  mutation resolve:
+
+  ```
+  # mutation resolver
+  resolve fn args, _ ->
+    case authenticate(args) do
+      {:ok, token} -> {:ok, %{token: token}}
+      error -> error
+    end
+  end
+  # middleware afterward
+  middleware fn resolution, _ ->
+    with %{value: %{token: token}} <- resolution do
+      Map.update!(resolution, :context, fn ctx ->
+        Map.put(ctx, :auth_token, token)
+      end)
+    end
+  end)
   ```
 
   ## Included GraphQL Types
