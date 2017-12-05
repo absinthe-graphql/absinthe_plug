@@ -56,7 +56,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
       {"build/static/css/middleware.css", "playground.css"},
       {"build/static/js/middleware.js", "playground.js"}
     ]},
-    {"@absinthe/socket-graphiql", "0.1.1", [
+    {"@absinthe/socket-graphiql", "0.1.3", [
       {"compat/umd/index.js", "socket-graphiql.js"},
     ]},
   ]
