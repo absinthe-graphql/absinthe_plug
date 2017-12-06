@@ -109,7 +109,7 @@ defmodule Absinthe.Plug.GraphiQL do
     [:query_string, :variables_string, :default_headers, :default_url, :socket_url, :assets]
 
   EEx.function_from_file :defp, :graphiql_playground_html, Path.join(@graphiql_template_path, "graphiql_playground.html.eex"),
-  [:socket_url, :assets]
+  [:default_url, :socket_url, :assets]
 
   @behaviour Plug
 
@@ -333,7 +333,7 @@ defmodule Absinthe.Plug.GraphiQL do
       |> with_socket_url(conn, opts)
 
     graphiql_playground_html(
-      opts[:socket_url], opts[:assets]
+      default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
     )
     |> rendered(conn)
   end
