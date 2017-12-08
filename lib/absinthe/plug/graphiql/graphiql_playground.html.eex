@@ -10,7 +10,7 @@ add "&raw" to the end of the URL within a browser.
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  
+
   <title>GraphiQL Playground</title>
 
   <link href="<%= assets["typeface-open-sans/index.css"] %>" rel="stylesheet">
@@ -55,10 +55,16 @@ add "&raw" to the end of the URL within a browser.
     </div>
   </div>
   <script>
-    var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    var options = {
-      subscriptionEndpoint: <%= if socket_url do %> <%= socket_url %><% else %>'ws://localhost:4000/socket'<% end %>
-    };
+    var options = {};
+
+    <% if default_url do %>
+      options.endpoint = '<%= default_url %>';
+    <% end %>
+
+    <% if socket_url do %>
+      options.subscriptionEndpoint = '<%= socket_url %>';
+    <% end %>
+
     window.addEventListener("load", function (n) { GraphQLPlayground.init(document.getElementById("root"), options) })
   </script>
   <script type="text/javascript" src="<%= assets["@absinthe/graphql-playground/playground.js"] %>"></script>

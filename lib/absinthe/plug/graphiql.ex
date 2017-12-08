@@ -42,6 +42,7 @@ defmodule Absinthe.Plug.GraphiQL do
 
   - `:advanced` (default) will serve the [GraphiQL Workspace](https://github.com/OlegIlyenko/graphiql-workspace) interface from Oleg Ilyenko.
   - `:simple` will serve the original [GraphiQL](https://github.com/graphql/graphiql) interface from Facebook.
+  - `:playground` will serve the [GraphQL Playground](https://github.com/graphcool/graphql-playground) interface from Graphcool.
 
   See `Absinthe.Plug` for the other  options.
 
@@ -75,7 +76,8 @@ defmodule Absinthe.Plug.GraphiQL do
 
   ## Default URL
 
-  You can also optionally set the default URL to be used for sending the queries to. This only applies to the advanced interface (GraphiQL Workspace).
+  You can also optionally set the default URL to be used for sending the queries to.
+  This only applies to the advanced interface (GraphiQL Workspace) and the GraphQL Playground.
 
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
@@ -96,6 +98,31 @@ defmodule Absinthe.Plug.GraphiQL do
       def graphiql_default_url(conn) do
         conn.assigns[:graphql_url]
       end
+
+  ## Socket URL
+
+  You can also optionally set the default websocket URL to be used for subscriptions.
+  This only applies to the advanced interface (GraphiQL Workspace) and the GraphQL Playground.
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyAppWeb.Schema,
+          socket_url: "wss://api.mydomain.com/socket"
+        ]
+
+  This option also accepts a function:
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyAppWeb.Schema,
+          socket_url: {__MODULE__, :graphiql_socket_url}
+        ]
+
+      def graphiql_socket_url(conn) do
+        conn.assigns[:graphql_socket_url]
+      end
   """
 
   require EEx
@@ -109,7 +136,7 @@ defmodule Absinthe.Plug.GraphiQL do
     [:query_string, :variables_string, :default_headers, :default_url, :socket_url, :assets]
 
   EEx.function_from_file :defp, :graphiql_playground_html, Path.join(@graphiql_template_path, "graphiql_playground.html.eex"),
-  [:socket_url, :assets]
+  [:default_url, :socket_url, :assets]
 
   @behaviour Plug
 
@@ -333,7 +360,7 @@ defmodule Absinthe.Plug.GraphiQL do
       |> with_socket_url(conn, opts)
 
     graphiql_playground_html(
-      opts[:socket_url], opts[:assets]
+      default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
     )
     |> rendered(conn)
   end
