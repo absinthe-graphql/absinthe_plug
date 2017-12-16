@@ -1,3 +1,7 @@
+v1.4.2
+
+- Reverted some problematic javascript updates added in v1.4.1.
+
 v1.4.1
 
 - Feature: `before_send:` option. Run a function that can alter the `conn` based on the GraphQL result.
