@@ -1,3 +1,7 @@
+v1.4.3
+
+- Improve socket handling with GraphiQL playground
+
 v1.4.2
 
 - Reverted some problematic javascript updates added in v1.4.1.
