@@ -32,7 +32,7 @@ add "&raw" to the end of the URL within a browser.
     var config = new graphiqlWorkspace.AppConfig("graphiql", {
       defaultUrl: <%= default_url %>,
       <%= if socket_url do %>
-        defaultWebsocketUrl: <%= socket_url %>,
+        defaultWebsocketUrl: '<%= socket_url %>',
         subscriptionsClientBuilder: absintheSubscriptionsClientBuilder,
       <% end %>
       defaultQuery: '<%= query_string %>',
