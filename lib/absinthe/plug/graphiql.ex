@@ -191,34 +191,48 @@ defmodule Absinthe.Plug.GraphiQL do
     end
   end
 
+  defp function_arity(module, fun) do
+    Enum.find([1, 0], nil, &function_exported?(module, fun, &1))
+  end
+
+  defp get_config_val(config, key, conn) do
+    case Map.get(config, key) do
+      {module, fun} when is_atom(fun) ->
+        case function_arity(module, fun) do
+          1 -> apply(module, fun, [conn])
+          0 -> apply(module, fun, [])
+          _ ->
+            raise "function for #{key}: {#{module}, #{fun}} is not exported with arity 1 or 0"
+        end
+      val -> val
+    end
+  end
+
   defp do_call(conn, %{json_codec: json_codec, interface: interface} = config) do
-    config = case config[:default_headers] do
+    config = case get_config_val(config, :default_headers, conn) do
         nil -> Map.put(config, :default_headers, "[]")
-        {module, fun} when is_atom(fun) ->
-          header_string =
-            module
-            |> function_exported?(fun, 1)
-            |> call_exported_function(module, fun, conn)
-            |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
-            |> json_codec.module.encode!(pretty: true)
+        val when is_map(val) ->
+          header_string = val
+          |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
+          |> json_codec.module.encode!(pretty: true)
 
           Map.put(config, :default_headers, header_string)
         val ->
           raise "invalid default headers: #{inspect val}"
       end
 
-     config = case config[:default_url] do
+     config = case get_config_val(config, :default_url, conn) do
         nil -> config
         val when is_binary(val) -> Map.put(config, :default_url, val)
-        {module, fun} when is_atom(fun) ->
-          url =
-            module
-            |> function_exported?(fun, 1)
-            |> call_exported_function(module, fun, conn)
-
-          Map.put(config, :default_url, url)
         val ->
           raise "invalid default url: #{inspect val}"
+       end
+
+     config = case get_config_val(config, :socket_url, conn) do
+        nil -> config
+        val when is_binary(val) -> Map.put(config, :socket_url, val)
+        val ->
+          raise "invalid socket url: #{inspect val}"
        end
 
     with {:ok, conn, request} <- Absinthe.Plug.Request.parse(conn, config),
@@ -313,10 +327,6 @@ defmodule Absinthe.Plug.GraphiQL do
     )
   end
 
-  @spec call_exported_function(boolean, module, (() -> map) | ((Plug.Conn.t) -> map), Plug.Conn.t | nil) :: map
-  defp call_exported_function(true, module, fun, conn), do: apply(module, fun, [conn])
-  defp call_exported_function(false, module, fun, _conn), do: apply(module, fun, [])
-
   @spec select_mode(request :: Absinthe.Plug.Request.t) :: :start_interface | {:process, Absinthe.Plug.Request.t}
   defp select_mode(%{queries: [%Absinthe.Plug.Request.Query{document: nil}]}), do: :start_interface
   defp select_mode(request), do: {:process, request}
@@ -338,43 +348,39 @@ defmodule Absinthe.Plug.GraphiQL do
   defp render_interface(conn, interface, opts)
   defp render_interface(conn, :simple, opts) do
     opts = Map.merge(@render_defaults, opts)
-      |> with_socket_url(conn, opts)
 
     graphiql_html(
-      opts[:query], opts[:var_string], opts[:result], opts[:socket_url], opts[:assets]
+      opts[:query], opts[:var_string], opts[:result], socket_url(opts, conn), opts[:assets]
     )
     |> rendered(conn)
   end
   defp render_interface(conn, :advanced, opts) do
     opts = Map.merge(@render_defaults, opts)
-      |> with_socket_url(conn, opts)
 
     graphiql_workspace_html(
       opts[:query], opts[:var_string], opts[:default_headers],
-      default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
+      default_url(opts[:default_url]), socket_url(opts, conn), opts[:assets]
     )
     |> rendered(conn)
   end
   defp render_interface(conn, :playground, opts) do
     opts = Map.merge(@render_defaults, opts)
-      |> with_socket_url(conn, opts)
 
     graphiql_playground_html(
-      default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
+      default_url(opts[:default_url]), socket_url(opts, conn), opts[:assets]
     )
     |> rendered(conn)
   end
 
-  defp with_socket_url(map, conn, opts) do
-    with {:ok, socket} <- Map.fetch(opts, :socket),
-         %{private: %{phoenix_endpoint: endpoint}} <- conn,
-         {:ok, socket_path} <- find_socket_path(endpoint, socket) do
-      socket_url = "`${protocol}//${window.location.host}#{socket_path}`"
-      Map.put(opts, :socket_url, socket_url)
+  defp socket_url(%{socket_url: url}, _conn), do: "'#{url}'"
+  defp socket_url(%{socket: socket}, %{phoenix_endpoint: endpoint}) do
+    with {:ok, socket_path} <- find_socket_path(endpoint, socket) do
+      "`${protocol}//${window.location.host}#{socket_path}`"
     else
-      _ -> map
+      _ -> nil
     end
   end
+  defp socket_url(_, _), do: nil
 
   defp default_url(nil), do: "window.location.origin + window.location.pathname"
   defp default_url(url), do: "'#{url}'"

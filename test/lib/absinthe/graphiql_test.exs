@@ -113,6 +113,59 @@ defmodule Absinthe.Plug.GraphiQLTest do
       "defaultUrl: window.location.origin + window.location.pathname")
   end
 
+  test "socket_url option works a function of arity 0" do
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema,
+      socket_url: {__MODULE__, :graphiql_socket_url})
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body, "defaultWebsocketUrl: '#{graphiql_socket_url()}'")
+  end
+
+  test "socket_url option works a function of arity 1" do
+    url = "http://myapp.com/graphql"
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema,
+      socket_url: {__MODULE__, :graphiql_socket_url_with_conn})
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> assign(:graphql_socket_url, url)
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body, "defaultWebsocketUrl: '#{url}'")
+  end
+
+  test "socket_url option works with a string" do
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema,
+      socket_url: graphiql_socket_url())
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body, "defaultWebsocketUrl: '#{graphiql_socket_url()}'")
+  end
+
+  test "socket_url and socket unspecified" do
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema)
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body, "defaultWebsocketUrl: ''")
+  end
+
   defp plug_parser(conn) do
     opts = Plug.Parsers.init(
       parsers: [:urlencoded, :multipart, :json],
@@ -135,11 +188,9 @@ defmodule Absinthe.Plug.GraphiQLTest do
     }
   end
 
-  def graphiql_default_url do
-    "https://api.foobarbaz.test"
-  end
+  def graphiql_default_url, do: "https://api.foobarbaz.test"
+  def graphiql_default_url_with_conn(conn), do: conn.assigns[:graphql_url]
 
-  def graphiql_default_url_with_conn(conn) do
-    conn.assigns[:graphql_url]
-  end
+  def graphiql_socket_url, do: "wss://socket.foobarbaz.test"
+  def graphiql_socket_url_with_conn(conn), do: conn.assigns[:graphql_socket_url]
 end
