@@ -191,49 +191,12 @@ defmodule Absinthe.Plug.GraphiQL do
     end
   end
 
-  defp function_arity(module, fun) do
-    Enum.find([1, 0], nil, &function_exported?(module, fun, &1))
-  end
-
-  defp get_config_val(config, key, conn) do
-    case Map.get(config, key) do
-      {module, fun} when is_atom(fun) ->
-        case function_arity(module, fun) do
-          1 -> apply(module, fun, [conn])
-          0 -> apply(module, fun, [])
-          _ ->
-            raise "function for #{key}: {#{module}, #{fun}} is not exported with arity 1 or 0"
-        end
-      val -> val
-    end
-  end
-
-  defp do_call(conn, %{json_codec: json_codec, interface: interface} = config) do
-    config = case get_config_val(config, :default_headers, conn) do
-        nil -> Map.put(config, :default_headers, "[]")
-        val when is_map(val) ->
-          header_string = val
-          |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
-          |> json_codec.module.encode!(pretty: true)
-
-          Map.put(config, :default_headers, header_string)
-        val ->
-          raise "invalid default headers: #{inspect val}"
-      end
-
-     config = case get_config_val(config, :default_url, conn) do
-        nil -> config
-        val when is_binary(val) -> Map.put(config, :default_url, val)
-        val ->
-          raise "invalid default url: #{inspect val}"
-       end
-
-     config = case get_config_val(config, :socket_url, conn) do
-        nil -> config
-        val when is_binary(val) -> Map.put(config, :socket_url, val)
-        val ->
-          raise "invalid socket url: #{inspect val}"
-       end
+  defp do_call(conn, %{interface: interface} = config) do
+    config =
+      config
+      |> handle_default_headers(conn)
+      |> put_config_value(:default_url, conn)
+      |> handle_socket_url(conn)
 
     with {:ok, conn, request} <- Absinthe.Plug.Request.parse(conn, config),
          {:process, request} <- select_mode(request),
@@ -331,14 +294,18 @@ defmodule Absinthe.Plug.GraphiQL do
   defp select_mode(%{queries: [%Absinthe.Plug.Request.Query{document: nil}]}), do: :start_interface
   defp select_mode(request), do: {:process, request}
 
-  defp find_socket_path(endpoint, socket) do
-    endpoint.__sockets__
-    |> Enum.find(fn {_, module} ->
-      module == socket
-    end)
-    |> case do
-      {path, _} -> {:ok, path}
-      _ -> :error
+  defp find_socket_path(conn, socket) do
+    if endpoint = conn.private[:phoenix_endpoint] do
+      endpoint.__sockets__
+      |> Enum.find(fn {_, module} ->
+        module == socket
+      end)
+      |> case do
+        {path, _} -> {:ok, path}
+        _ -> :error
+      end
+    else
+      :error
     end
   end
 
@@ -350,7 +317,7 @@ defmodule Absinthe.Plug.GraphiQL do
     opts = Map.merge(@render_defaults, opts)
 
     graphiql_html(
-      opts[:query], opts[:var_string], opts[:result], socket_url(opts, conn), opts[:assets]
+      opts[:query], opts[:var_string], opts[:result], opts[:socket_url], opts[:assets]
     )
     |> rendered(conn)
   end
@@ -359,7 +326,7 @@ defmodule Absinthe.Plug.GraphiQL do
 
     graphiql_workspace_html(
       opts[:query], opts[:var_string], opts[:default_headers],
-      default_url(opts[:default_url]), socket_url(opts, conn), opts[:assets]
+      default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
     )
     |> rendered(conn)
   end
@@ -367,20 +334,10 @@ defmodule Absinthe.Plug.GraphiQL do
     opts = Map.merge(@render_defaults, opts)
 
     graphiql_playground_html(
-      default_url(opts[:default_url]), socket_url(opts, conn), opts[:assets]
+      default_url(opts[:default_url]), opts[:socket_url], opts[:assets]
     )
     |> rendered(conn)
   end
-
-  defp socket_url(%{socket_url: url}, _conn), do: "'#{url}'"
-  defp socket_url(%{socket: socket}, %{phoenix_endpoint: endpoint}) do
-    with {:ok, socket_path} <- find_socket_path(endpoint, socket) do
-      "`${protocol}//${window.location.host}#{socket_path}`"
-    else
-      _ -> nil
-    end
-  end
-  defp socket_url(_, _), do: nil
 
   defp default_url(nil), do: "window.location.origin + window.location.pathname"
   defp default_url(url), do: "'#{url}'"
@@ -397,4 +354,71 @@ defmodule Absinthe.Plug.GraphiQL do
     |> String.replace(~r/\n/, "\\n")
     |> String.replace(~r/'/, "\\'")
   end
+
+  defp handle_default_headers(config, conn) do
+    case get_config_val(config, :default_headers, conn) do
+      nil ->
+        Map.put(config, :default_headers, "[]")
+
+      val when is_map(val) ->
+        header_string =
+          val
+          |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
+          |> config.json_codec.module.encode!(pretty: true)
+
+        Map.put(config, :default_headers, header_string)
+
+      val ->
+        raise "invalid default headers: #{inspect val}"
+    end
+  end
+
+  defp function_arity(module, fun) do
+    Enum.find([1, 0], nil, &function_exported?(module, fun, &1))
+  end
+
+  defp put_config_value(config, key, conn) do
+    case get_config_val(config, key, conn) do
+      nil ->
+        config
+      val when is_binary(val) ->
+        Map.put(config, key, val)
+      val ->
+        raise "invalid #{key}: #{inspect val}"
+    end
+  end
+
+  defp get_config_val(config, key, conn) do
+    case Map.get(config, key) do
+      {module, fun} when is_atom(fun) ->
+        case function_arity(module, fun) do
+          1 -> apply(module, fun, [conn])
+          0 -> apply(module, fun, [])
+          _ ->
+            raise "function for #{key}: {#{module}, #{fun}} is not exported with arity 1 or 0"
+        end
+      val ->
+        val
+    end
+  end
+
+  defp handle_socket_url(config, conn) do
+    config
+    |> put_config_value(:socket_url, conn)
+    |> normalize_socket_url(conn)
+  end
+
+  defp normalize_socket_url(%{socket_url: nil, socket: socket} = config, conn) do
+    url =
+      with {:ok, socket_path} <- find_socket_path(conn, socket) do
+        "`${protocol}//${window.location.host}#{socket_path}`"
+      else
+        _ -> "''"
+      end
+    %{config | socket_url: url}
+  end
+  defp normalize_socket_url(%{socket_url: url} = config, _) do
+    %{config | socket_url: "'#{url}'"}
+  end
+
 end
