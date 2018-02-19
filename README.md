@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/absinthe-graphql/absinthe_plug.svg?branch=master
 "Build Status")](https://travis-ci.org/absinthe-graphql/absinthe_plug)[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Open Source Helpers](https://www.codetriage.com/absinthe-graphql/absinthe_plug/badges/users.svg)](https://www.codetriage.com/absinthe-graphql/absinthe_plug)
 
 [Plug](https://hex.pm/packages/plug) support for [Absinthe](https://hex.pm/packages/absinthe),
 the GraphQL toolkit for Elixir.
