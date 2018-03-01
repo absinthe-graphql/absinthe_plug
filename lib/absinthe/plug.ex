@@ -32,9 +32,9 @@ defmodule Absinthe.Plug do
   To add support for a GraphiQL interface, add a configuration for
   `Absinthe.Plug.GraphiQL`:
 
-    forward "/graphiql",
-      to: Absinthe.Plug.GraphiQL,
-      init_opts: [schema: MyAppWeb.Schema]
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [schema: MyAppWeb.Schema]
 
   For more information, see the API documentation for `Absinthe.Plug`.
 
