@@ -42,7 +42,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
 
       use Absinthe.Plug.DocumentProvider.Compiled, key_param: "lookup_key"
 
- ## Configuring
+  ## Configuring
 
   You need to configure `Absinthe.Plug` to use any document providers that you create.
   (Only `Absinthe.Plug.DocumentProviders.Default` is configured by default.)
