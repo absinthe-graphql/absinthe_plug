@@ -113,7 +113,7 @@ defmodule Absinthe.Plug do
   ## More Information
 
   For more on configuring `Absinthe.Plug` and how GraphQL requests are made,
-  see [the guide](http://absinthe-graphql.org/guides/plug-phoenix/) at
+  see [the guide](https://hexdocs.pm/absinthe/plug-phoenix.html) at
   <http://absinthe-graphql.org>.
 
   """
