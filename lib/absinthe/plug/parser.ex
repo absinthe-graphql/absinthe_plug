@@ -21,6 +21,9 @@ defmodule Absinthe.Plug.Parser do
   alias Plug.Conn
 
   @doc false
+  def init(opts), do: opts
+
+  @doc false
   def parse(conn, "application", "graphql", _headers, opts) do
     case Conn.read_body(conn, opts) do
       {:ok, body, conn} ->
