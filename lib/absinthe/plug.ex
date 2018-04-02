@@ -239,35 +239,39 @@ defmodule Absinthe.Plug do
     config = update_config(conn, config)
     {conn, result} = conn |> execute(config)
 
-    case result do
-      {:input_error, msg} ->
-        conn
-        |> send_resp(400, msg)
+    if conn.state == :unset do
+      case result do
+        {:input_error, msg} ->
+          conn
+          |> send_resp(400, msg)
 
-      {:ok, %{"subscribed" => topic}} ->
-        conn
-        |> subscribe(topic, config)
+        {:ok, %{"subscribed" => topic}} ->
+          conn
+          |> subscribe(topic, config)
 
-      {:ok, %{data: _} = result} ->
-        conn
-        |> encode(200, result, config)
+        {:ok, %{data: _} = result} ->
+          conn
+          |> encode(200, result, config)
 
-      {:ok, %{errors: _} = result} ->
-        conn
-        |> encode(400, result, config)
+        {:ok, %{errors: _} = result} ->
+          conn
+          |> encode(400, result, config)
 
-      {:ok, result} when is_list(result) ->
-        conn
-        |> encode(200, result, config)
+        {:ok, result} when is_list(result) ->
+          conn
+          |> encode(200, result, config)
 
-      {:error, {:http_method, text}, _} ->
-        conn
-        |> send_resp(405, text)
+        {:error, {:http_method, text}, _} ->
+          conn
+          |> send_resp(405, text)
 
-      {:error, error, _} when is_binary(error) ->
-        conn
-        |> send_resp(500, error)
+        {:error, error, _} when is_binary(error) ->
+          conn
+          |> send_resp(500, error)
 
+      end
+    else
+      conn
     end
   end
 
