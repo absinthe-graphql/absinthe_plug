@@ -14,6 +14,11 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
     }
     """
 
+    provide "2", """
+    query GetUser {
+      user
+    }
+    """
   end
 
   defmodule ExtractedDocuments do
@@ -45,6 +50,35 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
     |> Absinthe.Plug.call(opts)
 
     assert resp_body == @result
+  end
+
+  test "context passed correctly to resolvers with the default document provider" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    query = """
+    query GetUser {
+      user
+    }
+    """
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"query" => query})
+    |> Absinthe.Plug.put_options(context: %{user: "Foo"})
+    |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == ~s({"data":{"user":"Foo"}})
+  end
+
+  test "context passed correctly to resolvers with documents provided as literals" do
+    opts = Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.LiteralDocuments])
+
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"id" => "2"})
+    |> Absinthe.Plug.put_options(context: %{user: "Foo"})
+    |> put_req_header("content-type", "application/graphql")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+
+    assert resp_body == ~s({"data":{"user":"Foo"}})
   end
 
   test "works using documents loaded from an extracted_queries.json" do
