@@ -37,6 +37,17 @@ defmodule Absinthe.Plug.TestSchema do
         {:ok, arg_keys |> Enum.join(", ")}
       end
     end
+
+    field :user, :string do
+      resolve fn _, %{
+        context: %{
+          user: user
+        }
+      } ->
+        {:ok, user}
+      end
+    end
+
     field :item,
       type: :item,
       args: [
