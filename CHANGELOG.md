@@ -1,3 +1,7 @@
+v1.4.4
+
+- Bug Fix: Document providers will properly get context now.
+
 v1.4.3
 
 - Improve socket handling with GraphiQL playground
