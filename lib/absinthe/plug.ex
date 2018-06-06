@@ -254,7 +254,7 @@ defmodule Absinthe.Plug do
 
       {:ok, %{errors: _} = result} ->
         conn
-        |> encode(400, result, config)
+        |> encode(200, result, config)
 
       {:ok, result} when is_list(result) ->
         conn
