@@ -1,3 +1,7 @@
+v1.4.5
+
+- Fixes support for newer Phoenix versions.
+
 v1.4.4
 
 - Bug Fix: Document providers will properly get context now.
