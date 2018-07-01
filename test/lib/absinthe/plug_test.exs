@@ -148,7 +148,7 @@ defmodule Absinthe.PlugTest do
   test "document with error returns validation errors" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
-    assert %{status: 400, resp_body: resp_body} = conn(:get, "/", query: @query)
+    assert %{status: 200, resp_body: resp_body} = conn(:get, "/", query: @query)
     |> put_req_header("content-type", "application/x-www-form-urlencoded")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
@@ -165,7 +165,7 @@ defmodule Absinthe.PlugTest do
   test "document with too much complexity returns analysis errors" do
     opts = Absinthe.Plug.init(schema: TestSchema, analyze_complexity: true, max_complexity: 99)
 
-    assert %{status: 400, resp_body: resp_body} = conn(:get, "/", query: @complex_query)
+    assert %{status: 200, resp_body: resp_body} = conn(:get, "/", query: @complex_query)
     |> put_req_header("content-type", "application/x-www-form-urlencoded")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
@@ -296,7 +296,7 @@ defmodule Absinthe.PlugTest do
 
       upload = %Plug.Upload{}
 
-      assert %{status: 400, resp_body: resp_body} = conn(:post, "/", %{"query" => query, "a" => upload})
+      assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"query" => query, "a" => upload})
       |> put_req_header("content-type", "multipart/form-data")
       |> call(opts)
 
@@ -309,7 +309,7 @@ defmodule Absinthe.PlugTest do
       {uploadTest(fileA: "a")}
       """
 
-      assert %{status: 400, resp_body: resp_body} = conn(:post, "/", %{"query" => query})
+      assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"query" => query})
       |> put_req_header("content-type", "multipart/form-data")
       |> call(opts)
 
@@ -322,7 +322,7 @@ defmodule Absinthe.PlugTest do
 
     query = "{expensive}"
 
-    assert %{status: 400, resp_body: resp_body} = conn(:post, "/", %{"query" => query})
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"query" => query})
     |> put_req_header("content-type", "multipart/form-data")
     |> call(opts)
 
