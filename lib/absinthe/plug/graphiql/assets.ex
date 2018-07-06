@@ -52,7 +52,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
       {"files/open-sans-latin-600.woff2", "files/open-sans-latin-600.woff2"},
       {"files/open-sans-latin-700.woff2", "files/open-sans-latin-700.woff2"},
     ]},
-    {"@absinthe/graphql-playground", "1.3.4", [
+    {"@absinthe/graphql-playground", "1.3.5", [
       {"dist/main.js", "playground.js"}
     ]},
     {"@absinthe/socket-graphiql", "0.1.1", [
