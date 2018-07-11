@@ -25,7 +25,21 @@ add "&raw" to the end of the URL within a browser.
   <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>"></script>
   <script type="text/javascript">
     function absintheSubscriptionsClientBuilder(url, connectionParams) {
-      return new AbsintheSocketGraphiql.SubscriptionsClient(url, {params: connectionParams});
+
+      const urlObject = new URL(url);
+
+      const urlParams = urlObject.search
+                          .slice(1)
+                          .split('&')
+                          .filter(s => s !== '')
+                          .map(p => p.split('='))
+                          .reduce((obj, [key, value]) => {
+                            obj[key] = value;
+                            return obj;
+                          }, {});
+
+      return new AbsintheSocketGraphiql.SubscriptionsClient(`${urlObject.origin}${urlObject.pathname}`,
+                                                            {params: Object.assign(urlParams, connectionParams)});
     }
 
     var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
