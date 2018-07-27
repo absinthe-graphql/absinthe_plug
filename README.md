@@ -61,7 +61,9 @@ plug Plug.Parsers,
   parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
   pass: ["*/*"],
   json_decoder: Poison
-
+```
+Then in your router file:
+```elixir
 forward "/api",
   to: Absinthe.Plug,
   init_opts: [schema: MyAppWeb.Schema]
