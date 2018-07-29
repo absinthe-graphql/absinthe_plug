@@ -12,6 +12,7 @@ defmodule Absinthe.Plug.Mixfile do
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       package: package(),
+      source_url: "https://github.com/absinthe-graphql/absinthe_plug",
       docs: [source_ref: "v#{@version}", main: "Absinthe.Plug"],
       deps: deps()
     ]
