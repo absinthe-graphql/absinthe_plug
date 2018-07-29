@@ -109,6 +109,11 @@ forward "/graphiql",
 
 See the API documentation for `Absinthe.Plug.GraphiQL` for more information.
 
+
+## Documentation
+
+See [HexDocs](https://hexdocs.pm/absinthe_plug).
+
 ## More Help
 
 - For the tutorial, guides, and general information about Absinthe-related
