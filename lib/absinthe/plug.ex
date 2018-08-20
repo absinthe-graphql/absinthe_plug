@@ -137,7 +137,9 @@ defmodule Absinthe.Plug do
   - `:document_providers` -- (Optional) A `{module, atom}` reference to a 1-arity function that will be called to determine the document providers that will be used to process the request. (default: `{Absinthe.Plug, :default_document_providers}`, which configures `Absinthe.Plug.DocumentProvider.Default` as the lone document provider). A simple list of document providers can also be given. See `Absinthe.Plug.DocumentProvider` for more information about document providers, their role in procesing requests, and how you can define and configure your own.
   - `:schema` -- (Required, if not handled by Mix.Config) The Absinthe schema to use. If a module name is not provided, `Application.get_env(:absinthe, :schema)` will be attempt to find one.
   - `:serializer` -- (Optional) Similar to `:json_codec` but allows the use of serialization formats other than JSON, like MessagePack or Erlang Term Format. Defaults to whatever is set in `:json_codec`.
-  - `content_type` -- (Optional) The content type of the response. Should probably be set if `:serializer` option is used. Defaults to `"application/json"`.
+  - `:content_type` -- (Optional) The content type of the response. Should probably be set if `:serializer` option is used. Defaults to `"application/json"`.
+  - `:before_send` -- (Optional) Set a value(s) on the connection after resolution but before values are sent to the client`.
+  - `:log_level` -- (Optional) Set the logger level for Absinthe Logger. Defaults to `:debug`.
   """
   @type opts :: [
     schema: module,
@@ -151,6 +153,8 @@ defmodule Absinthe.Plug do
     max_complexity: non_neg_integer | :infinity,
     serializer: module | {module, Keyword.t},
     content_type: String.t,
+    before_send: {module, atom},
+    log_level: Logger.level(),
   ]
 
   @doc """
