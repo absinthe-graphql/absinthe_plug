@@ -70,7 +70,7 @@ defmodule Absinthe.Plug do
     schema: MyApp.Schema,
     before_send: {__MODULE__, :absinthe_before_send}
 
-  def absinthe_before_send(conn, %Absinthe.Blueprint{} = blueprint}) do
+  def absinthe_before_send(conn, %Absinthe.Blueprint{} = blueprint) do
     if auth_token = blueprint.execution.context[:auth_token] do
       put_session(conn, :auth_token, auth_token)
     else
@@ -100,7 +100,7 @@ defmodule Absinthe.Plug do
         Map.put(ctx, :auth_token, token)
       end)
     end
-  end)
+  end
   ```
 
   ## Included GraphQL Types
