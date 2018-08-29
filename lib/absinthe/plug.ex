@@ -140,6 +140,9 @@ defmodule Absinthe.Plug do
   - `:content_type` -- (Optional) The content type of the response. Should probably be set if `:serializer` option is used. Defaults to `"application/json"`.
   - `:before_send` -- (Optional) Set a value(s) on the connection after resolution but before values are sent to the client`.
   - `:log_level` -- (Optional) Set the logger level for Absinthe Logger. Defaults to `:debug`.
+  - `:analyze_complexity` -- (Optional) Set whether to calculate the complexity of incoming GraphQL queries.
+  - `:max_complexity` -- (Optional) Set the maximum allowed complexity of the GraphQL query. If a document’s calculated complexity exceeds the maximum, resolution will be skipped and an error will be returned in the result detailing the calculated and maximum complexities.
+  
   """
   @type opts :: [
     schema: module,
