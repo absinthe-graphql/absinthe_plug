@@ -107,19 +107,17 @@ defmodule Absinthe.PlugTest do
     assert resp_body == @foo_result
   end
 
-
-  test "content-type application/json works with error" do
+  test "content-type application/json _json query works" do
     opts = Absinthe.Plug.init(schema: TestSchema)
-    bad_query = Poison.encode!(%{"_json" => "{\"query\": \"\"}"})
+    json_query = Poison.encode!(%{"_json" => %{"query" => @query}})
 
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", bad_query)
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", json_query)
     |> put_req_header("content-type", "application/json")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    # raises a BadMapError
+    assert resp_body == @foo_result
   end
-
 
   @mutation """
   mutation AddItem {
