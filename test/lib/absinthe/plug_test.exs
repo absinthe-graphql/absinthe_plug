@@ -107,7 +107,7 @@ defmodule Absinthe.PlugTest do
     assert resp_body == @foo_result
   end
 
-  test "content-type application/json fails with JSON encoded query strings" do
+  test "content-type application/json fails with improperly encoded query strings" do
     opts = Absinthe.Plug.init(schema: TestSchema)
     query = """
     { "query": "{ item(id: \\"foo\\") { name } }" }
