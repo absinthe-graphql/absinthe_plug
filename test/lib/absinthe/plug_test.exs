@@ -107,18 +107,18 @@ defmodule Absinthe.PlugTest do
     assert resp_body == @foo_result
   end
 
-  test "content-type application/json _json query works" do
+  test "content-type application/json fails with JSON encoded query strings" do
     opts = Absinthe.Plug.init(schema: TestSchema)
     query = """
     { "query": "{ item(id: \\"foo\\") { name } }" }
     """
 
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Poison.encode!(query))
+    assert %{status: 400, resp_body: resp_body} = conn(:post, "/", Poison.encode!(query))
     |> put_req_header("content-type", "application/json")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == @foo_result
+    assert resp_body ==  "Could not parse JSON."
   end
 
   @mutation """

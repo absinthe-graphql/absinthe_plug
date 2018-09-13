@@ -66,18 +66,6 @@ defmodule Absinthe.Plug.Request do
     }
   end
 
-  defp build_request(body, %{"_json" => query}, config, batch?: false) do
-    queries =
-      body
-      |> Query.parse(query, config)
-      |> List.wrap
-
-    %__MODULE__{
-      queries: queries,
-      batch: false,
-    }
-  end
-
   defp build_request(body, params, config, batch?: false) do
     queries =
       body
@@ -122,11 +110,12 @@ defmodule Absinthe.Plug.Request do
       |> convert_operations_param()
 
     with %{"_json" => string} = params when is_binary(string) <- conn.params,
-         {:ok, decoded} <- config.json_codec.module.decode(string) do
-         {:ok, conn, body, %{params | "_json" => decoded}}
+        {:ok, decoded} when is_list(decoded) <- config.json_codec.module.decode(string) do
+          {:ok, conn, body, %{params | "_json" => decoded}}
     else
       {:error, {:invalid, token, pos}} ->
         {:input_error, "Could not parse JSON. Invalid token `#{token}` at position #{pos}"}
+      {:ok, _invalid_decoded} -> {:input_error, "Could not parse JSON."}
       %{} ->
         {:ok, conn, body, conn.params}
     end
