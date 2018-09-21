@@ -9,7 +9,7 @@ defmodule Absinthe.Plug do
       plug Plug.Parsers,
         parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
         pass: ["*/*"],
-        json_codec: Poison
+        json_decoder: Poison
 
       plug Absinthe.Plug,
         schema: MyAppWeb.Schema
@@ -20,7 +20,7 @@ defmodule Absinthe.Plug do
       plug Plug.Parsers,
         parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
         pass: ["*/*"],
-        json_codec: Poison
+        json_decoder: Poison
 
       forward "/api",
         to: Absinthe.Plug,

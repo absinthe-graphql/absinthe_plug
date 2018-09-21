@@ -167,13 +167,11 @@ defmodule Absinthe.Plug.GraphiQLTest do
   end
 
   defp plug_parser(conn) do
-    opts =
-      Plug.Parsers.init(
-        parsers: [:urlencoded, :multipart, :json],
-        pass: ["*/*"],
-        json_codec: Poison
-      )
-
+    opts = Plug.Parsers.init(
+      parsers: [:urlencoded, :multipart, :json],
+      pass: ["*/*"],
+      json_decoder: Poison
+    )
     Plug.Parsers.call(conn, opts)
   end
 
