@@ -11,7 +11,7 @@ defmodule Absinthe.Plug.Parser do
       plug Plug.Parsers,
         parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
         pass: ["*/*"],
-        json_decoder: Poison
+        json_codec: Poison
 
       plug Absinthe.Plug,
         schema: MyAppWeb.Schema
