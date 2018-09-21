@@ -17,10 +17,12 @@ defmodule Absinthe.Plug.TestCase do
   end
 
   def plug_parser(conn) do
-    opts = Plug.Parsers.init(
-      parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
-      json_decoder: Poison
-    )
+    opts =
+      Plug.Parsers.init(
+        parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+        json_codec: Poison
+      )
+
     Plug.Parsers.call(conn, opts)
   end
 
