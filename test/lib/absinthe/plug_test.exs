@@ -315,6 +315,23 @@ defmodule Absinthe.PlugTest do
 
       assert resp_body == %{"errors" => [%{"locations" => [%{"column" => 0, "line" => 1}], "message" => "Argument \"fileA\" has invalid value \"a\"."}]}
     end
+
+    test "file upload works with null input", %{opts: opts} do
+      query = """
+      {uploadTest(fileB: null, fileA: "a")}
+      """
+
+      upload = %Plug.Upload{}
+
+      assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{
+        "query" => query,
+        "a" => upload
+      })
+      |> put_req_header("content-type", "multipart/form-data")
+      |> call(opts)
+
+      assert resp_body == %{"data" => %{"uploadTest" => "file_a, file_b"}}
+    end
   end
 
   test "it works with basic documents and complexity limits" do
