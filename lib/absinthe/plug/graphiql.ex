@@ -296,14 +296,13 @@ defmodule Absinthe.Plug.GraphiQL do
 
   defp find_socket_path(conn, socket) do
     if endpoint = conn.private[:phoenix_endpoint] do
-      endpoint.__sockets__
-      |> Enum.find(fn socket_info ->
-        elem(socket_info, 1) == socket
+      Enum.find_value(endpoint.__sockets__, :error, fn
+        # Phoenix 1.4
+        {path, ^socket, _opts} -> {:ok, path}
+        # Phoenix <= 1.3
+        {path, ^socket} -> {:ok, path}
+        _ -> false
       end)
-      |> case do
-        {path, _} -> {:ok, path}
-        _ -> :error
-      end
     else
       :error
     end
