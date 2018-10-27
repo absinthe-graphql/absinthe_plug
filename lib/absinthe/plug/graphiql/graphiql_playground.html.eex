@@ -9,15 +9,51 @@ add "&raw" to the end of the URL within a browser.
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>GraphQL Playground</title>
+  <title>GraphiQL Playground</title>
 
   <link href="<%= assets["typeface-open-sans/index.css"] %>" rel="stylesheet">
   <link href="<%= assets["typeface-source-code-pro/index.css"] %>" rel="stylesheet">
+  <link rel="stylesheet" media="screen" href="<%= assets["@absinthe/graphql-playground/playground.css"] %>">
 </head>
 <body>
-  <div id="app"></div>
+  <div id="root">
+    <style>
+      body {
+        background-color: #172a3a;
+        font-family: Open Sans, sans-serif;
+        height: 90vh
+      }
+
+      #root {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center
+      }
+
+      .loading {
+        font-size: 32px;
+        font-weight: 200;
+        color: rgba(255, 255, 255, .6);
+        margin-left: 20px
+      }
+
+      img {
+        width: 78px;
+        height: 78px
+      }
+
+      .title {
+        font-weight: 400
+      }
+    </style>
+    <div class="loading">Loading
+      <span class="title">GraphQL Playground</span>
+    </div>
+  </div>
   <script>
     var options = {};
     var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -30,7 +66,7 @@ add "&raw" to the end of the URL within a browser.
       options.subscriptionEndpoint = <%= socket_url %>;
     <% end %>
 
-    window.addEventListener("load", function (n) { GraphQLPlayground.init(options) });
+    window.addEventListener("load", function (n) { GraphQLPlayground.init(document.getElementById("root"), options) })
   </script>
   <script type="text/javascript" src="<%= assets["@absinthe/graphql-playground/playground.js"] %>"></script>
 </body>
