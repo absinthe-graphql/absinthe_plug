@@ -173,6 +173,27 @@ defmodule Absinthe.PlugTest do
     assert %{"errors" => [%{"message" => "Field complex is too complex" <> _} | _]} = resp_body |> Poison.decode!
   end
 
+  @query """
+  {
+    item(id: "foo") {
+      name
+    }
+  }
+  """
+  test "Handle an accidentally double encoded JSON body" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    double_encoded_query =
+    %{query: @query}
+    |> Poison.encode!()
+    |> Poison.encode!()
+
+    assert %{status: 400} = conn(:post, "/", double_encoded_query)
+    |> put_req_header("content-type", "application/json")
+    |> plug_parser
+    |> Absinthe.Plug.call(opts)
+  end
+
   @fragment_query """
   query Q {
     item(id: "foo") {

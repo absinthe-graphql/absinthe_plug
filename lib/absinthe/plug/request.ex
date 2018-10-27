@@ -42,10 +42,10 @@ defmodule Absinthe.Plug.Request do
     })
 
     with {:ok, conn, body, params} <- extract_body_and_params(conn, config) do
-      # Phoenix puts parsed params under the "_json" key when the
-      # structure is an array; otherwise it's just the keys themselves,
+      # Plug puts parsed params under the "_json" key when the
+      # structure is not a map; otherwise it's just the keys themselves,
       # and they may sit in the body or in the params
-      batch? = Map.has_key?(params, "_json")
+      batch? = Map.has_key?(params, "_json") && is_list(params["_json"])
       {:ok, conn, build_request(body, params, config, batch?: batch?)}
     end
   end
