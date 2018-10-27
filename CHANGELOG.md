@@ -1,4 +1,4 @@
-v1.4.5
+v1.4.6
 
 - Fixes support for newer Phoenix versions.
 - Misc bug fixes.
