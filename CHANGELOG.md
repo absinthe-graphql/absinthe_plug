@@ -1,6 +1,7 @@
 v1.4.5
 
 - Fixes support for newer Phoenix versions.
+- Misc bug fixes.
 
 v1.4.4
 
