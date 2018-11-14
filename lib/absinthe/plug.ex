@@ -249,7 +249,7 @@ defmodule Absinthe.Plug do
     case result do
       {:input_error, msg} ->
         conn
-        |> send_resp(400, msg)
+        |> encode(400, error_result(msg), config)
 
       {:ok, %{"subscribed" => topic}} ->
         conn
@@ -269,11 +269,11 @@ defmodule Absinthe.Plug do
 
       {:error, {:http_method, text}, _} ->
         conn
-        |> send_resp(405, text)
+        |> encode(405, error_result(text), config)
 
       {:error, error, _} when is_binary(error) ->
         conn
-        |> send_resp(500, error)
+        |> encode(500, error_result(error), config)
 
     end
   end
@@ -484,4 +484,6 @@ defmodule Absinthe.Plug do
     json_codec.module.encode!(value, json_codec.opts)
   end
 
+  @doc false
+  def error_result(message), do: %{"errors" => [%{"message" => message}]}
 end
