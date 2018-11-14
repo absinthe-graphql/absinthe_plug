@@ -123,7 +123,8 @@ defmodule Absinthe.PlugTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == "Can only perform a mutation from a POST request"
+    message = "Can only perform a mutation from a POST request"
+    assert %{"errors" => [%{"message" => ^message}]} = resp_body |> Poison.decode!
   end
 
   @query """
@@ -142,7 +143,8 @@ defmodule Absinthe.PlugTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert resp_body == opts[:no_query_message]
+    message = opts[:no_query_message]
+    assert %{"errors" => [%{"message" => ^message}]} = resp_body |> Poison.decode!
   end
 
   test "document with error returns validation errors" do
