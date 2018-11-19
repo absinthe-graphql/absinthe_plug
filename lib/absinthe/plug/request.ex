@@ -114,6 +114,8 @@ defmodule Absinthe.Plug.Request do
     else
       {:error, {:invalid, token, pos}} ->
         {:input_error, "Could not parse JSON. Invalid token `#{token}` at position #{pos}"}
+      {:error, %{__exception__: true} = exception} ->
+        {:input_error, "Could not parse JSON. #{Exception.message(exception)}"}
       %{} ->
         {:ok, conn, body, conn.params}
     end

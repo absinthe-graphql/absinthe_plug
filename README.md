@@ -27,7 +27,7 @@ def application do
 end
 ```
 
-`Absinthe.Plug` also requires a JSON codec. Poison works out of the box.
+`Absinthe.Plug` also requires a JSON codec. `Jason` and `Poison` work out of the box.
 
 ```elixir
 def deps do
