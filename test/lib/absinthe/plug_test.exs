@@ -77,7 +77,7 @@ defmodule Absinthe.PlugTest do
   test "content-type application/json works" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Poison.encode!(%{query: @query}))
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Jason.encode!(%{query: @query}))
     |> put_req_header("content-type", "application/json")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
@@ -88,7 +88,7 @@ defmodule Absinthe.PlugTest do
   test "content-type application/json works with variables" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Poison.encode!(%{query: @variable_query, variables: %{id: "foo"}}))
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Jason.encode!(%{query: @variable_query, variables: %{id: "foo"}}))
     |> put_req_header("content-type", "application/json")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
@@ -99,7 +99,7 @@ defmodule Absinthe.PlugTest do
   test "content-type application/json works with empty operation name" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Poison.encode!(%{query: @query, operationName: ""}))
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Jason.encode!(%{query: @query, operationName: ""}))
     |> put_req_header("content-type", "application/json")
     |> plug_parser
     |> Absinthe.Plug.call(opts)
@@ -124,7 +124,7 @@ defmodule Absinthe.PlugTest do
     |> Absinthe.Plug.call(opts)
 
     message = "Can only perform a mutation from a POST request"
-    assert %{"errors" => [%{"message" => ^message}]} = resp_body |> Poison.decode!
+    assert %{"errors" => [%{"message" => ^message}]} = resp_body |> Jason.decode!
   end
 
   @query """
@@ -144,7 +144,7 @@ defmodule Absinthe.PlugTest do
     |> Absinthe.Plug.call(opts)
 
     message = opts[:no_query_message]
-    assert %{"errors" => [%{"message" => ^message}]} = resp_body |> Poison.decode!
+    assert %{"errors" => [%{"message" => ^message}]} = resp_body |> Jason.decode!
   end
 
   test "document with error returns validation errors" do
@@ -155,7 +155,7 @@ defmodule Absinthe.PlugTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert %{"errors" => [%{"message" => _}]} = resp_body |> Poison.decode!
+    assert %{"errors" => [%{"message" => _}]} = resp_body |> Jason.decode!
   end
 
   @complex_query """
@@ -172,7 +172,7 @@ defmodule Absinthe.PlugTest do
     |> plug_parser
     |> Absinthe.Plug.call(opts)
 
-    assert %{"errors" => [%{"message" => "Field complex is too complex" <> _} | _]} = resp_body |> Poison.decode!
+    assert %{"errors" => [%{"message" => "Field complex is too complex" <> _} | _]} = resp_body |> Jason.decode!
   end
 
   @query """
@@ -187,8 +187,8 @@ defmodule Absinthe.PlugTest do
 
     double_encoded_query =
     %{query: @query}
-    |> Poison.encode!()
-    |> Poison.encode!()
+    |> Jason.encode!()
+    |> Jason.encode!()
 
     assert %{status: 400} = conn(:post, "/", double_encoded_query)
     |> put_req_header("content-type", "application/json")
@@ -258,7 +258,7 @@ defmodule Absinthe.PlugTest do
 
     query = "{field_on_root_value}"
 
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Poison.encode!(%{query: query, operationName: ""}))
+    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", Jason.encode!(%{query: query, operationName: ""}))
     |> put_req_header("content-type", "application/json")
     |> plug_parser
     |> Absinthe.Plug.put_options(root_value: %{field_on_root_value: "foo"})
@@ -304,7 +304,7 @@ defmodule Absinthe.PlugTest do
       """
 
       upload = %Plug.Upload{}
-      variables = Poison.encode!(%{auth: "foo"})
+      variables = Jason.encode!(%{auth: "foo"})
       assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"query" => query, "a" => upload, "b" => upload, "variables" => variables})
       |> put_req_header("content-type", "multipart/form-data")
       |> call(opts)
@@ -398,7 +398,7 @@ defmodule Absinthe.PlugTest do
     events =
       state.chunks
       |> String.split
-      |> Enum.map(&Poison.decode!/1)
+      |> Enum.map(&Jason.decode!/1)
 
     assert length(events) == 2
     assert Enum.member?(events, %{"data" => %{"update" => "FOO"}})

@@ -27,7 +27,7 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
     @fixture Path.join([File.cwd!, "test/support/fixtures/extracted_queries.json"])
 
     provide File.read!(@fixture)
-    |> Poison.decode!
+    |> Jason.decode!
     |> Map.new(fn {k, v} -> {v, k} end)
 
   end

@@ -116,25 +116,11 @@ defmodule Absinthe.Plug.TransportBatchingTest do
   @fragment_query """
   [{
     "id": "1",
-    "query": "query Q {
-        item(id: \\"foo\\") {
-          ...Named
-        }
-      }
-      fragment Named on Item {
-        name
-      }",
+    "query": "query Q { item(id: \\"foo\\") { ...Named } } fragment Named on Item { name }",
     "variables": {}
   }, {
     "id": "2",
-    "query": "query P {
-        item(id: \\"bar\\") {
-          ...Named
-        }
-      }
-      fragment Named on Item {
-        name
-      }",
+    "query": "query P { item(id: \\"bar\\") { ...Named } } fragment Named on Item { name }",
     "variables": {}
   }]
   """
@@ -153,25 +139,11 @@ defmodule Absinthe.Plug.TransportBatchingTest do
   @fragment_query_with_undefined_field """
   [{
     "id": "1",
-    "query": "query Q {
-        item(id: \\"foo\\") {
-          ...Named
-        }
-      }
-      fragment Named on Item {
-        name
-      }",
+    "query": "query Q { item(id: \\"foo\\") { ...Named } } fragment Named on Item { name }",
     "variables": {}
   }, {
     "id": "2",
-    "query": "query P {
-        item(id: \\"foo\\") {
-          ...Named
-        }
-      }
-      fragment Named on Item {
-        namep
-      }",
+    "query": "query P { item(id: \\"foo\\") { ...Named } } fragment Named on Item { namep }",
     "variables": {}
   }]
   """
@@ -179,7 +151,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     %{"id" => "1", "payload" => %{"data" => %{"item" => %{"name" => "Foo"}}}},
     %{"id" => "2", "payload" => %{"errors" => [
       %{
-        "locations" => [%{"column" => 0, "line" => 7}],
+        "locations" => [%{"column" => 0, "line" => 1}],
         "message" => "Cannot query field \"namep\" on type \"Item\". Did you mean \"name\"?"
       }
     ]}}
@@ -199,25 +171,11 @@ defmodule Absinthe.Plug.TransportBatchingTest do
   @fragment_query_with_undefined_variable """
   [{
     "id": "1",
-    "query": "query Q {
-        item(id: \\"foo\\") {
-          ...Named
-        }
-      }
-      fragment Named on Item {
-        name
-      }",
+    "query": "query Q { item(id: \\"foo\\") { ...Named } } fragment Named on Item { name }",
     "variables": {}
   }, {
     "id": "2",
-    "query": "query P($id: ID!) {
-        item(id: $id) {
-          ...Named
-        }
-      }
-      fragment Named on Item {
-        name
-      }",
+    "query": "query P($id: ID!) { item(id: $id) { ...Named } } fragment Named on Item { name }",
     "variables": {"idx": "foo"}
   }]
   """
@@ -226,7 +184,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
      "payload" => %{"data" => %{"item" => %{"name" => "Foo"}}}},
    %{"id" => "2",
      "payload" => %{"errors" => [%{"locations" => [%{"column" => 0,
-             "line" => 2}],
+             "line" => 1}],
           "message" => "In argument \"id\": Expected type \"ID!\", found null."}, %{"locations" => [%{"column" => 0, "line" => 1}], "message" => "Variable \"id\": Expected non-null, found null."}]}}]
 
   test "can include fragments with undefined variable" do
@@ -350,7 +308,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
       query: "query Upload($file: Upload) {uploadTest(fileA: $file)}",
       variables: %{"file" => "a"},
     },
-  ] |> Poison.encode!
+  ] |> Jason.encode!
 
   test "single batched query in relay-network-layer format works with variables and uploads" do
     opts = Absinthe.Plug.init(schema: TestSchema)
@@ -405,7 +363,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     opts = Map.put(opts, :before_send, {__MODULE__, :test_before_send})
     %{resp_body: body} = conn = Absinthe.Plug.call(conn, opts)
 
-    case Poison.decode(body) do
+    case Jason.decode(body) do
       {:ok, parsed} -> %{conn | resp_body: parsed}
       _ -> conn
     end
