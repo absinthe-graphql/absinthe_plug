@@ -34,7 +34,7 @@ def deps do
   [
     ...,
     {:absinthe_plug, "~> 1.4.0"},
-    {:poison, "~> 3.1.0"}
+    {:jason, "~> 1.1.0"}
   ]
 end
 ```
@@ -47,7 +47,7 @@ Basic Usage:
 plug Plug.Parsers,
   parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
   pass: ["*/*"],
-  json_decoder: Poison
+  json_decoder: Jason
 
 plug Absinthe.Plug,
   schema: MyAppWeb.Schema
@@ -60,7 +60,7 @@ router like:
 plug Plug.Parsers,
   parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
   pass: ["*/*"],
-  json_decoder: Poison
+  json_decoder: Jason
 
 forward "/api",
   to: Absinthe.Plug,

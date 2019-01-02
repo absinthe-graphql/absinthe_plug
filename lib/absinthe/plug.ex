@@ -9,7 +9,7 @@ defmodule Absinthe.Plug do
       plug Plug.Parsers,
         parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
         pass: ["*/*"],
-        json_decoder: Poison
+        json_decoder: Jason
 
       plug Absinthe.Plug,
         schema: MyAppWeb.Schema
@@ -20,7 +20,7 @@ defmodule Absinthe.Plug do
       plug Plug.Parsers,
         parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
         pass: ["*/*"],
-        json_decoder: Poison
+        json_decoder: Jason
 
       forward "/api",
         to: Absinthe.Plug,
@@ -132,7 +132,7 @@ defmodule Absinthe.Plug do
   - `:adapter` -- (Optional) Absinthe adapter to use (default: `Absinthe.Adapter.LanguageConventions`).
   - `:context` -- (Optional) Initial value for the Absinthe context, available to resolvers. (default: `%{}`).
   - `:no_query_message` -- (Optional) Message to return to the client if no query is provided (default: "No query document supplied").
-  - `:json_codec` -- (Optional) A `module` or `{module, Keyword.t}` dictating which JSON codec should be used (default: `Poison`). The codec module should implement `encode!/2` (e.g., `module.encode!(body, opts)`).
+  - `:json_codec` -- (Optional) A `module` or `{module, Keyword.t}` dictating which JSON codec should be used (default: `Jason`). The codec module should implement `encode!/2` (e.g., `module.encode!(body, opts)`).
   - `:pipeline` -- (Optional) `{module, atom}` reference to a 2-arity function that will be called to generate the processing pipeline. (default: `{Absinthe.Plug, :default_pipeline}`).
   - `:document_providers` -- (Optional) A `{module, atom}` reference to a 1-arity function that will be called to determine the document providers that will be used to process the request. (default: `{Absinthe.Plug, :default_document_providers}`, which configures `Absinthe.Plug.DocumentProvider.Default` as the lone document provider). A simple list of document providers can also be given. See `Absinthe.Plug.DocumentProvider` for more information about document providers, their role in procesing requests, and how you can define and configure your own.
   - `:schema` -- (Required, if not handled by Mix.Config) The Absinthe schema to use. If a module name is not provided, `Application.get_env(:absinthe, :schema)` will be attempt to find one.
@@ -142,7 +142,7 @@ defmodule Absinthe.Plug do
   - `:log_level` -- (Optional) Set the logger level for Absinthe Logger. Defaults to `:debug`.
   - `:analyze_complexity` -- (Optional) Set whether to calculate the complexity of incoming GraphQL queries.
   - `:max_complexity` -- (Optional) Set the maximum allowed complexity of the GraphQL query. If a document’s calculated complexity exceeds the maximum, resolution will be skipped and an error will be returned in the result detailing the calculated and maximum complexities.
-  
+
   """
   @type opts :: [
     schema: module,
@@ -177,7 +177,7 @@ defmodule Absinthe.Plug do
     pipeline = Keyword.get(opts, :pipeline, {__MODULE__, :default_pipeline})
     document_providers = Keyword.get(opts, :document_providers, {__MODULE__, :default_document_providers})
 
-    json_codec = case Keyword.get(opts, :json_codec, Poison) do
+    json_codec = case Keyword.get(opts, :json_codec, Jason) do
       module when is_atom(module) -> %{module: module, opts: []}
       other -> other
     end
