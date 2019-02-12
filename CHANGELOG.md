@@ -2,6 +2,7 @@ v1.5.0
 
 - Basically no changes in Absinthe.Plug, but required for Absinthe 1.5 pre-release support
 - Chore: Update Plug. Get rid of plug compilation warnings
+- Feature: allow to pass a default query to GraphiQL interface
 
 v1.4.6
 

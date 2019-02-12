@@ -75,6 +75,21 @@ defmodule Absinthe.Plug.GraphiQLTest do
     assert body |> String.contains?("defaultHeaders: " <> header_json)
   end
 
+  test "default_query option is rendered" do
+    default_query = "default_query"
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema,
+      default_query: default_query)
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body, "defaultQuery: '#{default_query}'")
+
+  end
+
   test "default_url option works a function of arity 0" do
     opts =
       Absinthe.Plug.GraphiQL.init(
