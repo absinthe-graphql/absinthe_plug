@@ -34,7 +34,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
   parsing the file and inverting the key/value pairs.
 
       provide File.read!("/path/to/extracted_queries.json")
-      |> Poison.decode!
+      |> Jason.decode!
       |> Map.new(fn {k, v} -> {v, k} end)
 
   By default, the request parameter that will be used to lookup documents is
