@@ -35,7 +35,7 @@ defmodule Absinthe.Plug.GraphiQLTest do
     header_json = [
       %{"name" => "Authorization", "value" => "Basic Zm9vOmJhcg=="},
       %{"name" => "X-CSRF-Token", "value" => "foobarbaz"}
-    ] |> Poison.encode!(pretty: true)
+    ] |> Jason.encode!(pretty: true)
 
     assert body |> String.contains?("defaultHeaders: " <> header_json)
   end
@@ -54,7 +54,7 @@ defmodule Absinthe.Plug.GraphiQLTest do
 
     header_json = [
       %{"name" => "Authorization", "value" => "Bearer Zm9vOmJhcg=="}
-    ] |> Poison.encode!(pretty: true)
+    ] |> Jason.encode!(pretty: true)
 
     assert body |> String.contains?("defaultHeaders: " <> header_json)
   end
@@ -170,7 +170,7 @@ defmodule Absinthe.Plug.GraphiQLTest do
     opts = Plug.Parsers.init(
       parsers: [:urlencoded, :multipart, :json],
       pass: ["*/*"],
-      json_decoder: Poison
+      json_decoder: Jason
     )
     Plug.Parsers.call(conn, opts)
   end

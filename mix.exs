@@ -43,8 +43,8 @@ defmodule Absinthe.Plug.Mixfile do
     [
       {:plug, "~> 1.3.2 or ~> 1.4"},
       {:absinthe, "~> 1.4.11"},
-      {:poison, ">= 0.0.0", only: [:dev, :test]},
-      {:ex_doc, "~> 0.18", only: :dev}
+      {:jason, ">= 0.0.0", only: [:dev, :test]},
+      {:ex_doc, "~> 0.18.0", only: :dev}
     ]
   end
 end
