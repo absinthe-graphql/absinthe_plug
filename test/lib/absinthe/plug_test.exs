@@ -298,6 +298,25 @@ defmodule Absinthe.PlugTest do
       assert resp_body == %{"data" => %{"uploadTest" => "file_a, file_b"}}
     end
 
+    test "work with list_of multiple uploads", %{opts: opts} do
+      query = """
+      {listOfUploadTest(files: "[]files")}
+      """
+
+      upload1 = %Plug.Upload{
+        filename: "file1.ex",
+      }
+      upload2 = %Plug.Upload{
+        filename: "file2.ex",
+      }
+
+      assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"query" => query, "files[0]" => upload1, "files[1]" => upload2})
+      |> put_req_header("content-type", "multipart/form-data")
+      |> call(opts)
+
+      assert resp_body == %{"data" => %{"listOfUploadTest" => "file1.ex, file2.ex"}}
+    end
+
     test "work with variables", %{opts: opts} do
       query = """
       query ($auth: String){uploadTest(fileA: "a", fileB: "b", auth: $auth)}

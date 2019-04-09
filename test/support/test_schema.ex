@@ -38,6 +38,20 @@ defmodule Absinthe.Plug.TestSchema do
       end
     end
 
+    field :list_of_upload_test, :string do
+      arg :files, non_null(list_of(non_null(:upload)))
+
+      resolve fn args, _ ->
+        file_names =
+          args
+          |> Map.get(:files, [])
+          |> List.first
+          |> Enum.map(fn %{filename: filename} -> filename end)
+
+        {:ok, file_names |> Enum.join(", ")}
+      end
+    end
+
     field :user, :string do
       resolve fn _, %{
         context: %{

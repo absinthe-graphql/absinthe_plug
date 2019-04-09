@@ -60,6 +60,12 @@ defmodule Absinthe.Plug.Types do
   """
   scalar :upload do
     parse fn
+      %Blueprint.Input.String{:value => "[]" <> value}, context ->
+        uploads = (context[:__absinthe_plug__][:uploads] || %{})
+        |> Enum.filter(& match_uploads_by_name?(value, &1))
+        |> Enum.map(& elem(&1, 1))
+
+        {:ok, uploads}
       %Blueprint.Input.String{value: value}, context ->
         Map.fetch(context[:__absinthe_plug__][:uploads] || %{}, value)
       %Blueprint.Input.Null{}, _ ->
@@ -71,5 +77,13 @@ defmodule Absinthe.Plug.Types do
     serialize fn _ ->
       raise "The `:upload` scalar cannot be returned!"
     end
+  end
+
+  @spec match_uploads_by_name?(String.t, {String.t, Plug.Upload.t}) :: boolean()
+  defp match_uploads_by_name?(name, {request_upload_name, _}) do
+    request_escaped_name = Regex.escape(name)
+
+    request_upload_name
+    |> String.match?(~r/^#{request_escaped_name}\[\d+\]$/)
   end
 end
