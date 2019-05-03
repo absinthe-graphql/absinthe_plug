@@ -14,7 +14,7 @@ defmodule Absinthe.Plug.DocumentProviderTest do
     @behaviour Absinthe.Plug.DocumentProvider
 
     @doc false
-    @spec pipeline(Absinthe.Plug.Request.t) :: Absinthe.Pipeline.t
+    @spec pipeline(Absinthe.Plug.Request.Query.t) :: Absinthe.Pipeline.t
     def pipeline(%{pipeline: as_configured}), do: as_configured
 
     @doc false
