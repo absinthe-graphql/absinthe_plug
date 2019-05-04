@@ -1,5 +1,4 @@
 defmodule Absinthe.Plug.TestCase do
-
   defmacro __using__(_) do
     quote do
       use ExUnit.Case, async: true
@@ -17,11 +16,12 @@ defmodule Absinthe.Plug.TestCase do
   end
 
   def plug_parser(conn) do
-    opts = Plug.Parsers.init(
-      parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
-      json_decoder: Jason
-    )
+    opts =
+      Plug.Parsers.init(
+        parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+        json_decoder: Jason
+      )
+
     Plug.Parsers.call(conn, opts)
   end
-
 end

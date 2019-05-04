@@ -31,12 +31,12 @@ defmodule Absinthe.Plug.DocumentProvider.Default do
   @behaviour Absinthe.Plug.DocumentProvider
 
   @doc false
-  @spec pipeline(Absinthe.Plug.Request.Query.t) :: Absinthe.Pipeline.t
+  @spec pipeline(Absinthe.Plug.Request.Query.t()) :: Absinthe.Pipeline.t()
   def pipeline(%{pipeline: as_configured}), do: as_configured
 
   @doc false
-  @spec process(Absinthe.Plug.Request.Query.t, Keyword.t) :: Absinthe.DocumentProvider.result
+  @spec process(Absinthe.Plug.Request.Query.t(), Keyword.t()) ::
+          Absinthe.DocumentProvider.result()
   def process(%{document: nil} = query, _), do: {:cont, query}
   def process(%{document: _} = query, _), do: {:halt, query}
-
 end

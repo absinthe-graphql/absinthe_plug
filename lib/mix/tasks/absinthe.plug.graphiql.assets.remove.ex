@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.Remove do
   end
 
   defp destroy_directory(path) when is_binary(path) do
-    Mix.shell.info([:red, "* removing ", :reset, Path.relative_to_cwd(path)])
+    Mix.shell().info([:red, "* removing ", :reset, Path.relative_to_cwd(path)])
     File.rm_rf!(path)
   end
 end

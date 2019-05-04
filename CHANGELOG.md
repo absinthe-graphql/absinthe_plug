@@ -1,3 +1,7 @@
+v1.5.0
+
+- Basically no changes in Absinthe.Plug, but required for Absinthe 1.5 pre-release support
+
 v1.4.6
 
 - Fixes support for newer Phoenix versions.

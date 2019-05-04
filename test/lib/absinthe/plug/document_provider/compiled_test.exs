@@ -6,30 +6,31 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
   defmodule LiteralDocuments do
     use Absinthe.Plug.DocumentProvider.Compiled
 
-    provide "1", """
+    provide("1", """
     query FooQuery($id: ID!) {
       item(id: $id) {
         name
       }
     }
-    """
+    """)
 
-    provide "2", """
+    provide("2", """
     query GetUser {
       user
     }
-    """
+    """)
   end
 
   defmodule ExtractedDocuments do
     use Absinthe.Plug.DocumentProvider.Compiled
 
-    @fixture Path.join([File.cwd!, "test/support/fixtures/extracted_queries.json"])
+    @fixture Path.join([File.cwd!(), "test/support/fixtures/extracted_queries.json"])
 
-    provide File.read!(@fixture)
-    |> Jason.decode!
-    |> Map.new(fn {k, v} -> {v, k} end)
-
+    provide(
+      File.read!(@fixture)
+      |> Jason.decode!()
+      |> Map.new(fn {k, v} -> {v, k} end)
+    )
   end
 
   @query """
@@ -42,12 +43,14 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
   @result ~s({"data":{"item":{"name":"Foo"}}})
 
   test "works using documents provided as literals" do
-    opts = Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.LiteralDocuments])
+    opts =
+      Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.LiteralDocuments])
 
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"id" => "1", "variables" => %{"id" => "foo"}})
-    |> put_req_header("content-type", "application/graphql")
-    |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", %{"id" => "1", "variables" => %{"id" => "foo"}})
+             |> put_req_header("content-type", "application/graphql")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
 
     assert resp_body == @result
   end
@@ -60,34 +63,40 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
       user
     }
     """
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"query" => query})
-    |> Absinthe.Plug.put_options(context: %{user: "Foo"})
-    |> put_req_header("content-type", "application/graphql")
-    |> plug_parser
-    |> Absinthe.Plug.call(opts)
+
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", %{"query" => query})
+             |> Absinthe.Plug.put_options(context: %{user: "Foo"})
+             |> put_req_header("content-type", "application/graphql")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
 
     assert resp_body == ~s({"data":{"user":"Foo"}})
   end
 
   test "context passed correctly to resolvers with documents provided as literals" do
-    opts = Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.LiteralDocuments])
+    opts =
+      Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.LiteralDocuments])
 
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"id" => "2"})
-    |> Absinthe.Plug.put_options(context: %{user: "Foo"})
-    |> put_req_header("content-type", "application/graphql")
-    |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", %{"id" => "2"})
+             |> Absinthe.Plug.put_options(context: %{user: "Foo"})
+             |> put_req_header("content-type", "application/graphql")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
 
     assert resp_body == ~s({"data":{"user":"Foo"}})
   end
 
   test "works using documents loaded from an extracted_queries.json" do
-    opts = Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.ExtractedDocuments])
+    opts =
+      Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.ExtractedDocuments])
 
-    assert %{status: 200, resp_body: resp_body} = conn(:post, "/", %{"id" => "1", "variables" => %{"id" => "foo"}})
-    |> put_req_header("content-type", "application/graphql")
-    |> plug_parser
-    |> Absinthe.Plug.call(opts)
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", %{"id" => "1", "variables" => %{"id" => "foo"}})
+             |> put_req_header("content-type", "application/graphql")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
 
     assert resp_body == @result
   end
@@ -100,5 +109,4 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
   test ".get source" do
     assert @query == Compiled.get(LiteralDocuments, "1", :source)
   end
-
 end

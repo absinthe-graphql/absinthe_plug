@@ -145,20 +145,23 @@ defmodule Absinthe.Plug do
 
   """
   @type opts :: [
-    schema: module,
-    adapter: module,
-    context: map,
-    json_codec: module | {module, Keyword.t},
-    pipeline: {module, atom},
-    no_query_message: String.t,
-    document_providers: [Absinthe.Plug.DocumentProvider.t, ...] | Absinthe.Plug.DocumentProvider.t | {module, atom},
-    analyze_complexity: boolean,
-    max_complexity: non_neg_integer | :infinity,
-    serializer: module | {module, Keyword.t},
-    content_type: String.t,
-    before_send: {module, atom},
-    log_level: Logger.level(),
-  ]
+          schema: module,
+          adapter: module,
+          context: map,
+          json_codec: module | {module, Keyword.t()},
+          pipeline: {module, atom},
+          no_query_message: String.t(),
+          document_providers:
+            [Absinthe.Plug.DocumentProvider.t(), ...]
+            | Absinthe.Plug.DocumentProvider.t()
+            | {module, atom},
+          analyze_complexity: boolean,
+          max_complexity: non_neg_integer | :infinity,
+          serializer: module | {module, Keyword.t()},
+          content_type: String.t(),
+          before_send: {module, atom},
+          log_level: Logger.level()
+        ]
 
   @doc """
   Serve an Absinthe GraphQL schema with the specified options.
@@ -175,18 +178,22 @@ defmodule Absinthe.Plug do
     no_query_message = Keyword.get(opts, :no_query_message, "No query document supplied")
 
     pipeline = Keyword.get(opts, :pipeline, {__MODULE__, :default_pipeline})
-    document_providers = Keyword.get(opts, :document_providers, {__MODULE__, :default_document_providers})
 
-    json_codec = case Keyword.get(opts, :json_codec, Jason) do
-      module when is_atom(module) -> %{module: module, opts: []}
-      other -> other
-    end
+    document_providers =
+      Keyword.get(opts, :document_providers, {__MODULE__, :default_document_providers})
 
-    serializer = case Keyword.get(opts, :serializer, json_codec) do
-      module when is_atom(module) -> %{module: module, opts: []}
-      {mod, opts} -> %{module: mod, opts: opts}
-      other -> other
-    end
+    json_codec =
+      case Keyword.get(opts, :json_codec, Jason) do
+        module when is_atom(module) -> %{module: module, opts: []}
+        other -> other
+      end
+
+    serializer =
+      case Keyword.get(opts, :serializer, json_codec) do
+        module when is_atom(module) -> %{module: module, opts: []}
+        {mod, opts} -> %{module: mod, opts: opts}
+        other -> other
+      end
 
     content_type = Keyword.get(opts, :content_type, "application/json")
 
@@ -212,19 +219,22 @@ defmodule Absinthe.Plug do
       content_type: content_type,
       log_level: log_level,
       pubsub: pubsub,
-      before_send: before_send,
+      before_send: before_send
     }
   end
 
   defp get_schema(opts) do
     default = Application.get_env(:absinthe, :schema)
     schema = Keyword.get(opts, :schema, default)
+
     try do
       Absinthe.Schema.types(schema)
     rescue
       UndefinedFunctionError ->
-        raise ArgumentError, "The supplied schema: #{inspect schema} is not a valid Absinthe Schema"
+        raise ArgumentError,
+              "The supplied schema: #{inspect(schema)} is not a valid Absinthe Schema"
     end
+
     schema
   end
 
@@ -234,6 +244,7 @@ defmodule Absinthe.Plug do
       apply(mod, fun, [conn, bp])
     end)
   end
+
   def apply_before_send(conn, _, _) do
     conn
   end
@@ -241,7 +252,7 @@ defmodule Absinthe.Plug do
   @doc """
   Parses, validates, resolves, and executes the given Graphql Document
   """
-  @spec call(Plug.Conn.t, map) :: Plug.Conn.t | no_return
+  @spec call(Plug.Conn.t(), map) :: Plug.Conn.t() | no_return
   def call(conn, config) do
     config = update_config(conn, config)
     {conn, result} = conn |> execute(config)
@@ -274,12 +285,12 @@ defmodule Absinthe.Plug do
       {:error, error, _} when is_binary(error) ->
         conn
         |> encode(500, error_result(error), config)
-
     end
   end
 
   defp update_config(conn, config) do
     pubsub = config[:pubsub] || config.context[:pubsub] || conn.private[:phoenix_endpoint]
+
     if pubsub do
       put_in(config, [:context, :pubsub], pubsub)
     else
@@ -289,6 +300,7 @@ defmodule Absinthe.Plug do
 
   def subscribe(conn, topic, %{context: %{pubsub: pubsub}} = config) do
     pubsub.subscribe(topic)
+
     conn
     |> put_resp_header("content-type", "text/event-stream")
     |> send_chunked(200)
@@ -301,10 +313,12 @@ defmodule Absinthe.Plug do
         case chunk(conn, "#{encode_json!(result, config)}\n\n") do
           {:ok, conn} ->
             subscribe_loop(conn, topic, config)
+
           {:error, :closed} ->
             Absinthe.Subscription.unsubscribe(config.context.pubsub, topic)
             conn
         end
+
       :close ->
         Absinthe.Subscription.unsubscribe(config.context.pubsub, topic)
         conn
@@ -313,6 +327,7 @@ defmodule Absinthe.Plug do
         case chunk(conn, ":ping\n\n") do
           {:ok, conn} ->
             subscribe_loop(conn, topic, config)
+
           {:error, :closed} ->
             Absinthe.Subscription.unsubscribe(config.context.pubsub, topic)
             conn
@@ -328,20 +343,21 @@ defmodule Absinthe.Plug do
       iex> Absinthe.Plug.put_options(conn, context: %{current_user: user})
       %Plug.Conn{}
   """
-  @spec put_options(Plug.Conn.t, Keyword.t) :: Plug.Conn.t
+  @spec put_options(Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
   def put_options(%Plug.Conn{private: %{absinthe: absinthe}} = conn, opts) do
     opts = Map.merge(absinthe, Enum.into(opts, %{}))
     Plug.Conn.put_private(conn, :absinthe, opts)
   end
+
   def put_options(conn, opts) do
     Plug.Conn.put_private(conn, :absinthe, Enum.into(opts, %{}))
   end
 
   @doc false
-  @spec execute(Plug.Conn.t, map) :: {Plug.Conn.t, any}
+  @spec execute(Plug.Conn.t(), map) :: {Plug.Conn.t(), any}
   def execute(conn, config) do
     conn_info = %{
-      conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method),
+      conn_private: (conn.private[:absinthe] || %{}) |> Map.put(:http_method, conn.method)
     }
 
     with {:ok, conn, request} <- Request.parse(conn, config),
@@ -354,23 +370,25 @@ defmodule Absinthe.Plug do
   end
 
   @doc false
-  @spec ensure_processable(Request.t, map) :: {:ok, Request.t} | {:input_error, String.t}
+  @spec ensure_processable(Request.t(), map) :: {:ok, Request.t()} | {:input_error, String.t()}
   def ensure_processable(request, config) do
     with {:ok, request} <- ensure_documents(request, config) do
       ensure_document_provider(request)
     end
   end
 
-  @spec ensure_documents(Request.t, map) :: {:ok, Request.t} | {:input_error, String.t}
+  @spec ensure_documents(Request.t(), map) :: {:ok, Request.t()} | {:input_error, String.t()}
   defp ensure_documents(%{queries: []}, config) do
     {:input_error, config.no_query_message}
   end
+
   defp ensure_documents(%{queries: queries} = request, config) do
     Enum.reduce_while(queries, {:ok, request}, fn query, _acc ->
-      query_status = case query do
-        {:input_error, error_msg} -> {:input_error, error_msg}
-        query -> ensure_document(query, config)
-      end
+      query_status =
+        case query do
+          {:input_error, error_msg} -> {:input_error, error_msg}
+          query -> ensure_document(query, config)
+        end
 
       case query_status do
         {:ok, _query} -> {:cont, {:ok, request}}
@@ -379,15 +397,16 @@ defmodule Absinthe.Plug do
     end)
   end
 
-  @spec ensure_document(Request.t, map) :: {:ok, Request.t} | {:input_error, String.t}
+  @spec ensure_document(Request.t(), map) :: {:ok, Request.t()} | {:input_error, String.t()}
   defp ensure_document(%{document: nil}, config) do
     {:input_error, config.no_query_message}
   end
+
   defp ensure_document(%{document: _} = query, _) do
     {:ok, query}
   end
 
-  @spec ensure_document_provider(Request.t) :: {:ok, Request.t} | {:input_error, String.t}
+  @spec ensure_document_provider(Request.t()) :: {:ok, Request.t()} | {:input_error, String.t()}
   defp ensure_document_provider(%{queries: queries} = request) do
     if Enum.all?(queries, &Map.has_key?(&1, :document_provider)) do
       {:ok, request}
@@ -400,6 +419,7 @@ defmodule Absinthe.Plug do
   def run_request(%{batch: true, queries: queries} = request, conn, conn_info, config) do
     Request.log(request, config.log_level)
     {conn, results} = Absinthe.Plug.Batch.Runner.run(queries, conn, conn_info, config)
+
     results =
       results
       |> Enum.zip(request.extra_keys)
@@ -411,17 +431,21 @@ defmodule Absinthe.Plug do
 
     {conn, {:ok, results}}
   end
+
   def run_request(%{batch: false, queries: [query]} = request, conn, conn_info, config) do
     Request.log(request, config.log_level)
     run_query(query, conn, conn_info, config)
   end
 
-  defp run_query(query, conn ,conn_info, config) do
-    %{document: document, pipeline: pipeline} = Request.Query.add_pipeline(query, conn_info, config)
+  defp run_query(query, conn, conn_info, config) do
+    %{document: document, pipeline: pipeline} =
+      Request.Query.add_pipeline(query, conn_info, config)
+
     case Absinthe.Pipeline.run(document, pipeline) do
       {:ok, %{result: result} = bp, _} ->
         conn = apply_before_send(conn, [bp], config)
         {conn, {:ok, result}}
+
       val ->
         {conn, val}
     end
@@ -438,13 +462,14 @@ defmodule Absinthe.Plug do
   with the `Absinthe.Plug.Validation.HTTPMethod` phase inserted to ensure that the correct
   HTTP verb is being used for the GraphQL operation type.
   """
-  @spec default_pipeline(map, Keyword.t) :: Absinthe.Pipeline.t
+  @spec default_pipeline(map, Keyword.t()) :: Absinthe.Pipeline.t()
   def default_pipeline(config, pipeline_opts) do
     config.schema_mod
     |> Absinthe.Pipeline.for_document(pipeline_opts)
-    |> Absinthe.Pipeline.insert_after(Absinthe.Phase.Document.CurrentOperation,
+    |> Absinthe.Pipeline.insert_after(
+      Absinthe.Phase.Document.CurrentOperation,
       [
-        {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method},
+        {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
       ]
     )
   end
@@ -452,7 +477,6 @@ defmodule Absinthe.Plug do
   #
   # DOCUMENT PROVIDERS
   #
-
 
   @doc """
   The default list of document providers that are enabled.
@@ -462,7 +486,7 @@ defmodule Absinthe.Plug do
 
   For more information about document providers, see `Absinthe.Plug.DocumentProvider`.
   """
-  @spec default_document_providers(map) :: [Absinthe.Plug.DocumentProvider.t]
+  @spec default_document_providers(map) :: [Absinthe.Plug.DocumentProvider.t()]
   def default_document_providers(_) do
     [Absinthe.Plug.DocumentProvider.Default]
   end
@@ -472,8 +496,11 @@ defmodule Absinthe.Plug do
   #
 
   @doc false
-  @spec encode(Plug.Conn.t, 200 | 400 | 405 | 500, String.t, map) :: Plug.Conn.t | no_return
-  def encode(conn, status, body, %{serializer: %{module: mod, opts: opts}, content_type: content_type}) do
+  @spec encode(Plug.Conn.t(), 200 | 400 | 405 | 500, String.t(), map) :: Plug.Conn.t() | no_return
+  def encode(conn, status, body, %{
+        serializer: %{module: mod, opts: opts},
+        content_type: content_type
+      }) do
     conn
     |> put_resp_content_type(content_type)
     |> send_resp(status, mod.encode!(body, opts))

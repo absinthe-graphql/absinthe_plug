@@ -14,11 +14,11 @@ defmodule Absinthe.Plug.DocumentProviderTest do
     @behaviour Absinthe.Plug.DocumentProvider
 
     @doc false
-    @spec pipeline(Absinthe.Plug.Request.Query.t) :: Absinthe.Pipeline.t
+    @spec pipeline(Absinthe.Plug.Request.Query.t()) :: Absinthe.Pipeline.t()
     def pipeline(%{pipeline: as_configured}), do: as_configured
 
     @doc false
-    @spec process(Absinthe.Plug.Request.t, Keyword.t) :: Absinthe.DocumentProvider.result
+    @spec process(Absinthe.Plug.Request.t(), Keyword.t()) :: Absinthe.DocumentProvider.result()
     def process(%{document: nil} = request, _), do: {:cont, request}
     def process(%{document: _} = request, _), do: {:halt, request}
   end
@@ -39,7 +39,12 @@ defmodule Absinthe.Plug.DocumentProviderTest do
   end
 
   test "can process with document providers specified as a function reference" do
-    opts = Absinthe.Plug.init(schema: TestSchema, document_providers: {__MODULE__, :calculate_document_providers})
+    opts =
+      Absinthe.Plug.init(
+        schema: TestSchema,
+        document_providers: {__MODULE__, :calculate_document_providers}
+      )
+
     assert %{status: 200} = request(opts)
   end
 
@@ -49,7 +54,7 @@ defmodule Absinthe.Plug.DocumentProviderTest do
   end
 
   defp request(opts) do
-    conn(:get, "/",  %{"query" => @query, "variables" => %{"id" => "foo"}})
+    conn(:get, "/", %{"query" => @query, "variables" => %{"id" => "foo"}})
     |> plug_parser
     |> Absinthe.Plug.call(opts)
   end
@@ -57,5 +62,4 @@ defmodule Absinthe.Plug.DocumentProviderTest do
   def calculate_document_providers(_) do
     [OtherDocumentProvider]
   end
-
 end

@@ -39,11 +39,12 @@ defmodule Absinthe.Plug.TestSchema do
     end
 
     field :user, :string do
-      resolve fn _, %{
-        context: %{
-          user: user
-        }
-      } ->
+      resolve fn _,
+                 %{
+                   context: %{
+                     user: user
+                   }
+                 } ->
         {:ok, user}
       end
     end
@@ -61,6 +62,7 @@ defmodule Absinthe.Plug.TestSchema do
 
     field :complex, :string do
       complexity 100
+
       resolve fn _, _ ->
         raise "complex string must not be resolved"
       end
@@ -97,5 +99,4 @@ defmodule Absinthe.Plug.TestSchema do
     field :isbn, :string
     field :authors, list_of(:author)
   end
-
 end
