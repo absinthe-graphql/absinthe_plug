@@ -2,7 +2,7 @@ defmodule Absinthe.Plug.TestPubSub do
   @behaviour Absinthe.Subscription.Pubsub
 
   def node_name() do
-    node()
+    to_string(node())
   end
 
   def start_link() do
