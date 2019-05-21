@@ -170,7 +170,7 @@ defmodule Absinthe.Plug do
 
   See the documentation for the `Absinthe.Plug.opts` type for details on the available options.
   """
-  @spec init(opts :: opts) :: map
+  @spec init(opts :: opts) :: Plug.opts()
   def init(opts) do
     adapter = Keyword.get(opts, :adapter, Absinthe.Adapter.LanguageConventions)
     context = Keyword.get(opts, :context, %{})
@@ -397,7 +397,8 @@ defmodule Absinthe.Plug do
     end)
   end
 
-  @spec ensure_document(Request.t(), map) :: {:ok, Request.t()} | {:input_error, String.t()}
+  @spec ensure_document(Request.Query.t(), map) ::
+          {:ok, Request.Query.t()} | {:input_error, String.t()}
   defp ensure_document(%{document: nil}, config) do
     {:input_error, config.no_query_message}
   end
@@ -496,7 +497,7 @@ defmodule Absinthe.Plug do
   #
 
   @doc false
-  @spec encode(Plug.Conn.t(), 200 | 400 | 405 | 500, String.t(), map) :: Plug.Conn.t() | no_return
+  @spec encode(Plug.Conn.t(), 200 | 400 | 405 | 500, map | list, map) :: Plug.Conn.t() | no_return
   def encode(conn, status, body, %{
         serializer: %{module: mod, opts: opts},
         content_type: content_type

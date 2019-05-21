@@ -36,7 +36,7 @@ defmodule Absinthe.Plug.DocumentProvider.Default do
 
   @doc false
   @spec process(Absinthe.Plug.Request.Query.t(), Keyword.t()) ::
-          Absinthe.DocumentProvider.result()
+          Absinthe.Plug.DocumentProvider.result()
   def process(%{document: nil} = query, _), do: {:cont, query}
   def process(%{document: _} = query, _), do: {:halt, query}
 end

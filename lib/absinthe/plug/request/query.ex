@@ -154,14 +154,14 @@ defmodule Absinthe.Plug.Request.Query do
     List.wrap(simple_value)
   end
 
-  @spec ensure_document_providers!(providers) :: providers
+  @spec ensure_document_providers!([] | providers) :: providers | no_return
         when providers: [Absinthe.Plug.DocumentProvider.t(), ...]
   defp ensure_document_providers!([]) do
     raise "No document providers found to process request"
   end
 
-  defp ensure_document_providers!(provided) do
-    provided
+  defp ensure_document_providers!(providers) do
+    providers
   end
 
   @spec provide_document(t, map) :: t
