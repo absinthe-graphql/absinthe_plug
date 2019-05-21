@@ -35,16 +35,17 @@ defmodule Absinthe.Plug.DocumentProvider do
   When the request is not handled by this document provider (so processing should
   continue to the next one):
 
-      {:cont, Absinthe.Plug.Request.t}
+      {:cont, Absinthe.Plug.Request.Query.t}
 
   When the request has been processed by this document provider:
 
-      {:halt, Absinthe.Plug.Request.t}
+      {:halt, Absinthe.Plug.Request.Query.t}
 
   Note that if no document providers set the request `document`, no document execution
   will occur and an error will be returned to the client.
   """
-  @type result :: {:halt, Absinthe.Plug.Request.t()} | {:cont, Absinthe.Plug.Request.t()}
+  @type result ::
+          {:halt, Absinthe.Plug.Request.Query.t()} | {:cont, Absinthe.Plug.Request.Query.t()}
 
   @doc """
   Given a request, determine what part of its configured pipeline

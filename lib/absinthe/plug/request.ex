@@ -22,7 +22,7 @@ defmodule Absinthe.Plug.Request do
           extra_keys: list(map())
         }
 
-  @spec parse(Plug.Conn.t(), map) :: {:ok, t} | {:input_error, String.t()}
+  @spec parse(Plug.Conn.t(), map) :: {:ok, Plug.Conn.t(), t} | {:input_error, String.t()}
   def parse(conn, config) do
     root_value =
       config
@@ -83,7 +83,7 @@ defmodule Absinthe.Plug.Request do
   # BODY / PARAMS
   #
 
-  @spec extract_body_and_params(Plug.Conn.t(), %{}) :: {Plug.Conn.t(), {String.t(), map}}
+  @spec extract_body_and_params(Plug.Conn.t(), map()) :: {:ok, Plug.Conn.t(), String.t(), map()}
   defp extract_body_and_params(%{body_params: %{"query" => _}} = conn, _config) do
     conn = fetch_query_params(conn)
     {:ok, conn, "", conn.params}

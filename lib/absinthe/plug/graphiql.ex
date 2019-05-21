@@ -334,8 +334,8 @@ defmodule Absinthe.Plug.GraphiQL do
 
   @render_defaults %{query: "", var_string: "", results: ""}
 
-  @spec render_interface(conn :: Conn.t(), interface :: :advanced | :simple, opts :: Keyword.t()) ::
-          Conn.t()
+  @spec render_interface(Plug.Conn.t(), :advanced | :simple | :playground, map()) ::
+          Plug.Conn.t()
   defp render_interface(conn, interface, opts)
 
   defp render_interface(conn, :simple, opts) do
@@ -379,7 +379,7 @@ defmodule Absinthe.Plug.GraphiQL do
   defp default_url(nil), do: "window.location.origin + window.location.pathname"
   defp default_url(url), do: "'#{url}'"
 
-  @spec rendered(String.t(), Plug.Conn.t()) :: Conn.t()
+  @spec rendered(String.t(), Plug.Conn.t()) :: Plug.Conn.t()
   defp rendered(html, conn) do
     conn
     |> put_resp_content_type("text/html")
