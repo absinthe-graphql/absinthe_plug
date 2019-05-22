@@ -63,6 +63,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
       # Can be overridden in the document provider module
       @compilation_pipeline Absinthe.Pipeline.for_document(nil, jump_phases: false)
                             |> Absinthe.Pipeline.before(Absinthe.Phase.Document.Variables)
+                            |> Absinthe.Pipeline.without(Absinthe.Phase.Telemetry)
 
       import unquote(__MODULE__), only: [provide: 2, provide: 1]
 
