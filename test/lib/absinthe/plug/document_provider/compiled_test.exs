@@ -99,4 +99,38 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
   test ".get source" do
     assert @query == Compiled.get(Absinthe.Plug.TestLiteralDocuments, "1", :source)
   end
+
+  test "telemetry events executed", context do
+    :telemetry.attach_many(
+      context.test,
+      [
+        [:absinthe, :execute, :operation, :start],
+        [:absinthe, :execute, :operation]
+      ],
+      fn event, measurements, metadata, config ->
+        send(self(), {event, measurements, metadata, config})
+      end,
+      %{}
+    )
+
+    opts =
+      Absinthe.Plug.init(
+        schema: TestSchema,
+        document_providers: [Absinthe.Plug.TestLiteralDocuments]
+      )
+
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", %{"id" => "2"})
+             |> Absinthe.Plug.put_options(context: %{user: "Foo"})
+             |> put_req_header("content-type", "application/graphql")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
+
+    assert_receive {[:absinthe, :execute, :operation, :start], _, %{id: id}, _config}
+    assert_receive {[:absinthe, :execute, :operation], measurements, %{id: ^id}, _config}
+
+    assert is_number(measurements[:duration])
+
+    :telemetry.detach(context.test)
+  end
 end

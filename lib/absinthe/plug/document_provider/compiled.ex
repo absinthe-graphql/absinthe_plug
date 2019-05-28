@@ -94,8 +94,12 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
       phase is not a subset of the full pipeline.
       """
       def pipeline(%{pipeline: as_configured}) do
+        remaining_pipeline_marker = __absinthe_plug_doc__(:remaining_pipeline)
+        telemetry_phase = {Absinthe.Phase.Telemetry, [:execute, :operation, :start]}
+
         as_configured
-        |> Absinthe.Pipeline.from(__absinthe_plug_doc__(:remaining_pipeline))
+        |> Absinthe.Pipeline.from(remaining_pipeline_marker)
+        |> Absinthe.Pipeline.insert_before(remaining_pipeline_marker, telemetry_phase)
       end
 
       defoverridable pipeline: 1
