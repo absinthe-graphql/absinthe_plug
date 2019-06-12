@@ -160,7 +160,8 @@ defmodule Absinthe.Plug do
           serializer: module | {module, Keyword.t()},
           content_type: String.t(),
           before_send: {module, atom},
-          log_level: Logger.level()
+          log_level: Logger.level(),
+          use_batch_http_link_format: Boolean.t(),
         ]
 
   @doc """
@@ -206,6 +207,8 @@ defmodule Absinthe.Plug do
 
     before_send = Keyword.get(opts, :before_send)
 
+    use_batch_http_link_format = Keyword.get(opts, :use_batch_http_link_format, false)
+
     %{
       adapter: adapter,
       context: context,
@@ -219,7 +222,8 @@ defmodule Absinthe.Plug do
       content_type: content_type,
       log_level: log_level,
       pubsub: pubsub,
-      before_send: before_send
+      before_send: before_send,
+      use_batch_http_link_format: use_batch_http_link_format
     }
   end
 
@@ -425,7 +429,9 @@ defmodule Absinthe.Plug do
       results
       |> Enum.zip(request.extra_keys)
       |> Enum.map(fn {result, extra_keys} ->
-        Map.merge(extra_keys, result)
+          Map.merge(extra_keys, (if config.use_batch_http_link_format, do: result, else: %{
+            payload: result	
+          }))
       end)
 
     {conn, {:ok, results}}
