@@ -1,8 +1,12 @@
 defmodule Absinthe.Plug.TestPubSub do
   @behaviour Absinthe.Subscription.Pubsub
 
+  def node_name() do
+    to_string(node())
+  end
+
   def start_link() do
-    Registry.start_link(:unique, __MODULE__)
+    Registry.start_link(name: __MODULE__, keys: :unique)
   end
 
   def subscribe(topic) do
@@ -12,6 +16,7 @@ defmodule Absinthe.Plug.TestPubSub do
 
   def publish_subscription(topic, data) do
     message = %{topic: topic, event: "subscription:data", payload: %{result: data}}
+
     Registry.dispatch(__MODULE__, topic, fn entries ->
       for {pid, _} <- entries, do: send(pid, message)
     end)
