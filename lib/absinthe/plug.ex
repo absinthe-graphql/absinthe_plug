@@ -161,7 +161,7 @@ defmodule Absinthe.Plug do
           content_type: String.t(),
           before_send: {module, atom},
           log_level: Logger.level(),
-          use_batch_http_link_format: Boolean.t(),
+          use_batch_http_link_format: Boolean.t()
         ]
 
   @doc """
@@ -429,9 +429,15 @@ defmodule Absinthe.Plug do
       results
       |> Enum.zip(request.extra_keys)
       |> Enum.map(fn {result, extra_keys} ->
-          Map.merge(extra_keys, (if config.use_batch_http_link_format, do: result, else: %{
-            payload: result	
-          }))
+        Map.merge(
+          extra_keys,
+          if(config.use_batch_http_link_format,
+            do: result,
+            else: %{
+              payload: result
+            }
+          )
+        )
       end)
 
     {conn, {:ok, results}}
