@@ -3,24 +3,6 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
   alias Absinthe.Plug.TestSchema
   alias Absinthe.Plug.DocumentProvider.Compiled
 
-  defmodule LiteralDocuments do
-    use Absinthe.Plug.DocumentProvider.Compiled
-
-    provide("1", """
-    query FooQuery($id: ID!) {
-      item(id: $id) {
-        name
-      }
-    }
-    """)
-
-    provide("2", """
-    query GetUser {
-      user
-    }
-    """)
-  end
-
   defmodule ExtractedDocuments do
     use Absinthe.Plug.DocumentProvider.Compiled
 
@@ -44,7 +26,10 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
 
   test "works using documents provided as literals" do
     opts =
-      Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.LiteralDocuments])
+      Absinthe.Plug.init(
+        schema: TestSchema,
+        document_providers: [Absinthe.Plug.TestLiteralDocuments]
+      )
 
     assert %{status: 200, resp_body: resp_body} =
              conn(:post, "/", %{"id" => "1", "variables" => %{"id" => "foo"}})
@@ -76,7 +61,10 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
 
   test "context passed correctly to resolvers with documents provided as literals" do
     opts =
-      Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.LiteralDocuments])
+      Absinthe.Plug.init(
+        schema: TestSchema,
+        document_providers: [Absinthe.Plug.TestLiteralDocuments]
+      )
 
     assert %{status: 200, resp_body: resp_body} =
              conn(:post, "/", %{"id" => "2"})
@@ -102,11 +90,47 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
   end
 
   test ".get compiled" do
-    assert %Absinthe.Blueprint{} = Compiled.get(LiteralDocuments, "1")
-    assert %Absinthe.Blueprint{} = Compiled.get(LiteralDocuments, "1", :compiled)
+    assert %Absinthe.Blueprint{} = Compiled.get(Absinthe.Plug.TestLiteralDocuments, "1")
+
+    assert %Absinthe.Blueprint{} =
+             Compiled.get(Absinthe.Plug.TestLiteralDocuments, "1", :compiled)
   end
 
   test ".get source" do
-    assert @query == Compiled.get(LiteralDocuments, "1", :source)
+    assert @query == Compiled.get(Absinthe.Plug.TestLiteralDocuments, "1", :source)
+  end
+
+  test "telemetry events executed", context do
+    :telemetry.attach_many(
+      context.test,
+      [
+        [:absinthe, :execute, :operation, :start],
+        [:absinthe, :execute, :operation]
+      ],
+      fn event, measurements, metadata, config ->
+        send(self(), {event, measurements, metadata, config})
+      end,
+      %{}
+    )
+
+    opts =
+      Absinthe.Plug.init(
+        schema: TestSchema,
+        document_providers: [Absinthe.Plug.TestLiteralDocuments]
+      )
+
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", %{"id" => "2"})
+             |> Absinthe.Plug.put_options(context: %{user: "Foo"})
+             |> put_req_header("content-type", "application/graphql")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
+
+    assert_receive {[:absinthe, :execute, :operation, :start], _, %{id: id}, _config}
+    assert_receive {[:absinthe, :execute, :operation], measurements, %{id: ^id}, _config}
+
+    assert is_number(measurements[:duration])
+
+    :telemetry.detach(context.test)
   end
 end
