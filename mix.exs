@@ -25,9 +25,9 @@ defmodule Absinthe.Plug.Mixfile do
       maintainers: ["Ben Wilson", "Bruce Williams"],
       licenses: ["MIT"],
       links: %{
-        "Website": "https://absinthe-graphql.org",
-        "Changelog": "https://github.com/absinthe-graphql/absinthe_plug/blob/master/CHANGELOG.md", 
-        "GitHub": "https://github.com/absinthe-graphql/absinthe_plug"
+        Website: "https://absinthe-graphql.org",
+        Changelog: "https://github.com/absinthe-graphql/absinthe_plug/blob/master/CHANGELOG.md",
+        GitHub: "https://github.com/absinthe-graphql/absinthe_plug"
       }
     ]
   end
