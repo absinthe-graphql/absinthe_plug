@@ -142,6 +142,7 @@ defmodule Absinthe.Plug do
   - `:log_level` -- (Optional) Set the logger level for Absinthe Logger. Defaults to `:debug`.
   - `:analyze_complexity` -- (Optional) Set whether to calculate the complexity of incoming GraphQL queries.
   - `:max_complexity` -- (Optional) Set the maximum allowed complexity of the GraphQL query. If a document’s calculated complexity exceeds the maximum, resolution will be skipped and an error will be returned in the result detailing the calculated and maximum complexities.
+  - `:websocket_subscriptions` -- (Optional) Whether to assume subscriptions are sent through and receive updates from a WebSocket. (default: `true`).
 
   """
   @type opts :: [
@@ -160,7 +161,8 @@ defmodule Absinthe.Plug do
           serializer: module | {module, Keyword.t()},
           content_type: String.t(),
           before_send: {module, atom},
-          log_level: Logger.level()
+          log_level: Logger.level(),
+          websocket_subscriptions: boolean
         ]
 
   @doc """
@@ -206,6 +208,8 @@ defmodule Absinthe.Plug do
 
     before_send = Keyword.get(opts, :before_send)
 
+    websocket_subscriptions = Keyword.get(opts, :websocket_subscriptions, true)
+
     %{
       adapter: adapter,
       context: context,
@@ -219,7 +223,8 @@ defmodule Absinthe.Plug do
       content_type: content_type,
       log_level: log_level,
       pubsub: pubsub,
-      before_send: before_send
+      before_send: before_send,
+      websocket_subscriptions: websocket_subscriptions
     }
   end
 
@@ -300,11 +305,15 @@ defmodule Absinthe.Plug do
 
   def subscribe(conn, topic, %{context: %{pubsub: pubsub}} = config) do
     pubsub.subscribe(topic)
-
-    conn
-    |> put_resp_header("content-type", "text/event-stream")
-    |> send_chunked(200)
-    |> subscribe_loop(topic, config)
+    if config[:websocket_subscriptions] do
+      conn
+      |> put_resp_header("content-type", "text/event-stream")
+      |> send_chunked(200)
+      |> subscribe_loop(topic, config)
+    else
+      conn
+      |> encode(200, %{ meta: %{ subscriptionId: topic } }, config)
+    end
   end
 
   def subscribe_loop(conn, topic, config) do
