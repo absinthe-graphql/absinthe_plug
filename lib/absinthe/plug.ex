@@ -305,6 +305,7 @@ defmodule Absinthe.Plug do
 
   def subscribe(conn, topic, %{context: %{pubsub: pubsub}} = config) do
     pubsub.subscribe(topic)
+
     if config[:websocket_subscriptions] do
       conn
       |> put_resp_header("content-type", "text/event-stream")
@@ -312,7 +313,7 @@ defmodule Absinthe.Plug do
       |> subscribe_loop(topic, config)
     else
       conn
-      |> encode(200, %{ meta: %{ subscriptionId: topic } }, config)
+      |> encode(200, %{meta: %{subscriptionId: topic}}, config)
     end
   end
 
