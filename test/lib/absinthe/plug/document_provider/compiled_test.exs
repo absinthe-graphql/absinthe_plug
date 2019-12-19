@@ -105,7 +105,7 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
       context.test,
       [
         [:absinthe, :execute, :operation, :start],
-        [:absinthe, :execute, :operation]
+        [:absinthe, :execute, :operation, :stop]
       ],
       fn event, measurements, metadata, config ->
         send(self(), {event, measurements, metadata, config})
@@ -127,7 +127,7 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
              |> Absinthe.Plug.call(opts)
 
     assert_receive {[:absinthe, :execute, :operation, :start], _, %{id: id}, _config}
-    assert_receive {[:absinthe, :execute, :operation], measurements, %{id: ^id}, _config}
+    assert_receive {[:absinthe, :execute, :operation, :stop], measurements, %{id: ^id}, _config}
 
     assert is_number(measurements[:duration])
 
