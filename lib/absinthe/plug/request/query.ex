@@ -116,10 +116,7 @@ defmodule Absinthe.Plug.Request.Query do
   defp decode_variables("null", _), do: {:ok, %{}}
   defp decode_variables(nil, _), do: {:ok, %{}}
 
-  defp decode_variables(variables, _) when is_list(variables),
-    do: {:input_error, "Variables must be a map."}
-
-  defp decode_variables(variables, codec) do
+  defp decode_variables(variables, codec) when is_binary(variables) do
     case codec.module.decode(variables) do
       {:ok, results} ->
         {:ok, results}
@@ -128,6 +125,9 @@ defmodule Absinthe.Plug.Request.Query do
         {:input_error, "The variable values could not be decoded"}
     end
   end
+
+  defp decode_variables(_variables, _),
+    do: {:input_error, "Variables must be a map."}
 
   #
   # DOCUMENT

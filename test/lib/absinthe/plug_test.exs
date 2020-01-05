@@ -24,9 +24,20 @@ defmodule Absinthe.PlugTest do
              |> Absinthe.Plug.call(opts)
   end
 
-  test "returns 400 with invalid variables structure" do
+  test "returns 400 with invalid variables list" do
     opts = Absinthe.Plug.init(schema: TestSchema)
     body = Jason.encode!(%{query: @variable_query, variables: [%{id: 123}]})
+
+    assert %{status: 400} =
+             conn(:post, "/", body)
+             |> put_req_header("content-type", "application/json")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
+  end
+
+  test "returns 400 with invalid variables content" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+    body = Jason.encode!(%{query: @variable_query, variables: 7})
 
     assert %{status: 400} =
              conn(:post, "/", body)
