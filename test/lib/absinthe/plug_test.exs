@@ -32,7 +32,6 @@ defmodule Absinthe.PlugTest do
              conn(:post, "/", body)
              |> put_req_header("content-type", "application/json")
              |> plug_parser
-             |> IO.inspect()
              |> Absinthe.Plug.call(opts)
   end
 
