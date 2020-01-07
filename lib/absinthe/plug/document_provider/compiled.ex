@@ -34,7 +34,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
   parsing the file and inverting the key/value pairs.
 
       provide File.read!("/path/to/extracted_queries.json")
-      |> Poison.decode!
+      |> Jason.decode!
       |> Map.new(fn {k, v} -> {v, k} end)
 
   By default, the request parameter that will be used to lookup documents is
@@ -53,6 +53,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
 
   defmacro __using__(opts) do
     key_param = Keyword.get(opts, :key_param, "id") |> to_string
+
     quote do
       @behaviour Absinthe.Plug.DocumentProvider
 
@@ -61,7 +62,8 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
 
       # Can be overridden in the document provider module
       @compilation_pipeline Absinthe.Pipeline.for_document(nil, jump_phases: false)
-      |> Absinthe.Pipeline.before(Absinthe.Phase.Document.Variables)
+                            |> Absinthe.Pipeline.before(Absinthe.Phase.Document.Variables)
+                            |> Absinthe.Pipeline.without(Absinthe.Phase.Telemetry)
 
       import unquote(__MODULE__), only: [provide: 2, provide: 1]
 
@@ -73,10 +75,12 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
         case __absinthe_plug_doc__(:compiled, document_key) do
           nil ->
             {:cont, request}
+
           document ->
             {:halt, %{request | document: document, document_provider_key: document_key}}
         end
       end
+
       defp do_process(request) do
         {:cont, request}
       end
@@ -90,12 +94,15 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
       phase is not a subset of the full pipeline.
       """
       def pipeline(%{pipeline: as_configured}) do
+        remaining_pipeline_marker = __absinthe_plug_doc__(:remaining_pipeline)
+        telemetry_phase = {Absinthe.Phase.Telemetry, [:execute, :operation, :start]}
+
         as_configured
-        |> Absinthe.Pipeline.from(__absinthe_plug_doc__(:remaining_pipeline))
+        |> Absinthe.Pipeline.from(remaining_pipeline_marker)
+        |> Absinthe.Pipeline.insert_before(remaining_pipeline_marker, telemetry_phase)
       end
 
-      defoverridable [pipeline: 1]
-
+      defoverridable pipeline: 1
     end
   end
 
@@ -115,10 +122,14 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
       \"""
 
   """
-  @spec provide(any, String.t) :: Macro.t
+  @spec provide(any, String.t()) :: Macro.t()
   defmacro provide(document_key, document_source) do
     quote do
-      @absinthe_documents_to_compile Map.put(@absinthe_documents_to_compile, to_string(unquote(document_key)), unquote(document_source))
+      @absinthe_documents_to_compile Map.put(
+                                       @absinthe_documents_to_compile,
+                                       to_string(unquote(document_key)),
+                                       unquote(document_source)
+                                     )
     end
   end
 
@@ -137,19 +148,18 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
       }
 
   """
-  @spec provide(%{any => String.t}) :: Macro.t
+  @spec provide(%{any => String.t()}) :: Macro.t()
   defmacro provide(documents) do
     quote do
       @absinthe_documents_to_compile Map.merge(
-        @absinthe_documents_to_compile,
-        Map.new(
-          unquote(documents),
-          &{to_string(elem(&1, 0)), elem(&1, 1)}
-        )
-      )
+                                       @absinthe_documents_to_compile,
+                                       Map.new(
+                                         unquote(documents),
+                                         &{to_string(elem(&1, 0)), elem(&1, 1)}
+                                       )
+                                     )
     end
   end
-
 
   @doc """
   Lookup a document by id.
@@ -177,11 +187,13 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
       nil
 
   """
-  @spec get(module, String.t, :compiled | :source) :: nil | Absinthe.Blueprint.t
+  @spec get(module, String.t(), :compiled | :source) :: nil | Absinthe.Blueprint.t()
   def get(dp, id, format \\ :compiled)
+
   def get(dp, id, :compiled) do
     dp.__absinthe_plug_doc__(:compiled, id)
   end
+
   def get(dp, id, :source) do
     dp.__absinthe_plug_doc__(:source, id)
   end

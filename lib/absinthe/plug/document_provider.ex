@@ -29,28 +29,29 @@ defmodule Absinthe.Plug.DocumentProvider do
   - `module` when options do not need to be passed to the document provider.
   - `{module, Keyword.t}` when options are needed by the document provider.
   """
-  @type t :: module | {module, Keyword.t}
+  @type t :: module | {module, Keyword.t()}
 
   @typedoc """
   When the request is not handled by this document provider (so processing should
   continue to the next one):
 
-      {:cont, Absinthe.Plug.Request.t}
+      {:cont, Absinthe.Plug.Request.Query.t}
 
   When the request has been processed by this document provider:
 
-      {:halt, Absinthe.Plug.Request.t}
+      {:halt, Absinthe.Plug.Request.Query.t}
 
   Note that if no document providers set the request `document`, no document execution
   will occur and an error will be returned to the client.
   """
-  @type result :: {:halt, Absinthe.Plug.Request.t} | {:cont, Absinthe.Plug.Request.t}
+  @type result ::
+          {:halt, Absinthe.Plug.Request.Query.t()} | {:cont, Absinthe.Plug.Request.Query.t()}
 
   @doc """
   Given a request, determine what part of its configured pipeline
   should be applied during execution.
   """
-  @callback pipeline(Absinthe.Plug.Request.t) :: Absinthe.Pipeline.t
+  @callback pipeline(Absinthe.Plug.Request.Query.t()) :: Absinthe.Pipeline.t()
 
   @doc """
   Given a request, attempt to process it with this document provider.
@@ -59,10 +60,10 @@ defmodule Absinthe.Plug.DocumentProvider do
 
   See the documentation for the `Absinthe.Plug.DocumentProvider.result` type.
   """
-  @callback process(Absinthe.Plug.Request.Query.t, Keyword.t) :: result
+  @callback process(Absinthe.Plug.Request.Query.t(), Keyword.t()) :: result
 
   @doc false
-  @spec process([t], Absinthe.Plug.Request.Query.t) :: Absinthe.Plug.Request.Query.t
+  @spec process([t], Absinthe.Plug.Request.Query.t()) :: Absinthe.Plug.Request.Query.t()
   # Attempt to process an request through the given list of valid document providers
   def process(document_providers, query) do
     document_providers
@@ -71,6 +72,7 @@ defmodule Absinthe.Plug.DocumentProvider do
       case mod.process(acc, opts) do
         {:halt, result} ->
           {:halt, %{result | document_provider: provider}}
+
         cont ->
           cont
       end
@@ -78,7 +80,7 @@ defmodule Absinthe.Plug.DocumentProvider do
   end
 
   @doc false
-  @spec pipeline(Absinthe.Plug.Request.t) :: Absinthe.Pipeline.t
+  @spec pipeline(Absinthe.Plug.Request.Query.t()) :: Absinthe.Pipeline.t()
   # Determine the remaining pipeline for request, based on the associated
   # document provider.
   def pipeline(%{document_provider: {mod, _}} = request) do
@@ -95,5 +97,4 @@ defmodule Absinthe.Plug.DocumentProvider do
   @spec do_normalize(t) :: t
   defp do_normalize(config) when is_tuple(config), do: config
   defp do_normalize(config), do: {config, []}
-
 end

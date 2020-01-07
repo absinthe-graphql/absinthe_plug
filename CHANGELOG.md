@@ -1,6 +1,16 @@
-v1.4.5
+v1.5.0
+
+- Basically no changes in Absinthe.Plug, but required for Absinthe 1.5 pre-release support
+- Chore: Update Plug. Get rid of plug compilation warnings
+- Feature: allow to pass a default query to GraphiQL interface
+
+v1.4.6
 
 - Fixes support for newer Phoenix versions.
+- Misc bug fixes.
+- Breaking Change: when an invalid argument is passed, the return value is now 200 instead of 400
+  - This change is to be in line with the GraphQL spec
+  - More info: https://github.com/absinthe-graphql/absinthe_plug/issues/195
 
 v1.4.4
 
