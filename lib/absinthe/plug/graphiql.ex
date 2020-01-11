@@ -25,6 +25,15 @@ defmodule Absinthe.Plug.GraphiQL do
           interface: :simple
         ]
 
+  Use the "altair" interface for Altair GraphQL instead:
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyAppWeb.Schema,
+          interface: :altair
+        ]
+
   Finally there is also support for GraphiQL Playground
   https://github.com/graphcool/graphql-playground
 
@@ -43,8 +52,9 @@ defmodule Absinthe.Plug.GraphiQL do
   - `:advanced` (default) will serve the [GraphiQL Workspace](https://github.com/OlegIlyenko/graphiql-workspace) interface from Oleg Ilyenko.
   - `:simple` will serve the original [GraphiQL](https://github.com/graphql/graphiql) interface from Facebook.
   - `:playground` will serve the [GraphQL Playground](https://github.com/graphcool/graphql-playground) interface from Graphcool.
+  - `:altair` will serve the [Altair GraphQL](https://altair.sirmuel.design/) interface.
 
-  See `Absinthe.Plug` for the other  options.
+  See `Absinthe.Plug` for the other options.
 
   ## Default Headers
 
@@ -77,7 +87,7 @@ defmodule Absinthe.Plug.GraphiQL do
   ## Default URL
 
   You can also optionally set the default URL to be used for sending the queries to.
-  This only applies to the advanced interface (GraphiQL Workspace) and the GraphQL Playground.
+  This only applies to the advanced interface (GraphiQL Workspace), the GraphQL Playground, and Altair GraphQL.
 
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
@@ -150,6 +160,13 @@ defmodule Absinthe.Plug.GraphiQL do
     [:default_url, :socket_url, :assets]
   )
 
+  EEx.function_from_file(
+    :defp,
+    :altair_graphql_html,
+    Path.join(@graphiql_template_path, "altair_graphql.html.eex"),
+    [:query_string, :variables_string, :default_url, :socket_url, :assets]
+  )
+
   @behaviour Plug
 
   import Plug.Conn
@@ -160,7 +177,7 @@ defmodule Absinthe.Plug.GraphiQL do
           path: binary,
           context: map,
           json_codec: atom | {atom, Keyword.t()},
-          interface: :playground | :advanced | :simple,
+          interface: :playground | :advanced | :simple | :altair,
           default_headers: {module, atom},
           default_url: binary,
           assets: Keyword.t(),
@@ -335,7 +352,7 @@ defmodule Absinthe.Plug.GraphiQL do
 
   @render_defaults %{var_string: "", results: ""}
 
-  @spec render_interface(Plug.Conn.t(), :advanced | :simple | :playground, map()) ::
+  @spec render_interface(Plug.Conn.t(), :advanced | :simple | :playground | :altair, map()) ::
           Plug.Conn.t()
   defp render_interface(conn, interface, opts)
 
@@ -370,6 +387,19 @@ defmodule Absinthe.Plug.GraphiQL do
     opts = opts_with_default(opts)
 
     graphiql_playground_html(
+      default_url(opts[:default_url]),
+      opts[:socket_url],
+      opts[:assets]
+    )
+    |> rendered(conn)
+  end
+
+  defp render_interface(conn, :altair, opts) do
+    opts = opts_with_default(opts)
+
+    altair_graphql_html(
+      opts[:query],
+      opts[:var_string],
       default_url(opts[:default_url]),
       opts[:socket_url],
       opts[:assets]

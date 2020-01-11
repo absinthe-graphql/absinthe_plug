@@ -45,6 +45,14 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
        "graphiql-workspace.css",
        {"graphiql-workspace.min.js", "graphiql-workspace.js"}
      ]},
+    {"altair-static", "2.4.3",
+     [
+       {"build/dist/", "base"},
+       {"build/dist/styles.css", "styles.css"},
+       {"build/dist/runtime.js", "runtime.js"},
+       {"build/dist/polyfills.js", "polyfills.js"},
+       {"build/dist/main.js", "main.js"},
+     ]},
     # Used by graphql-playground
     {"typeface-source-code-pro", "0.0.44",
      [

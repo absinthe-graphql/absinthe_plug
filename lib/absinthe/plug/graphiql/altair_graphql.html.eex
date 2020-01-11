@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Altair</title>
+  <base href="<%= assets["altair-static/base"] %>">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link href="<%= assets["altair-static/styles.css"] %>" rel="stylesheet" />
+</head>
+
+<body>
+  <app-root>
+    <style>
+      .loading-screen {
+        display: none;
+      }
+
+    </style>
+    <div class="loading-screen styled">
+      <div class="loading-screen-inner">
+        <div class="loading-screen-logo-container">
+          <img src="assets/img/logo_350.svg" alt="Altair">
+        </div>
+        <div class="loading-screen-loading-indicator">
+          <span class="loading-indicator-dot"></span>
+          <span class="loading-indicator-dot"></span>
+          <span class="loading-indicator-dot"></span>
+        </div>
+      </div>
+    </div>
+  </app-root>
+  <script rel="preload" as="script" type="text/javascript" src="<%= assets["altair-static/runtime.js"] %>"></script>
+  <script rel="preload" as="script" type="text/javascript" src="<%= assets["altair-static/polyfills.js"] %>"></script>
+  <script rel="preload" as="script" type="text/javascript" src="<%= assets["altair-static/main.js"] %>"></script>
+
+  <script>
+    var altairOptions = {};
+
+    <%= if default_url do %>
+      altairOptions.endpointURL = <%= default_url %>;
+    <% end %>
+
+    <%= if socket_url do %>
+      altairOptions.subscriptionsEndpoint = <%= socket_url %>;
+    <% end %>
+
+    <%= if query_string do %>
+      altairOptions.initialQuery = <%= query_string %>;
+    <% end %>
+
+    <%= if variables_string do %>
+      altairOptions.initialVariables = <%= variables_string %>;
+    <% end %>
+
+    window.addEventListener("load", function() {
+      AltairGraphQL.init(altairOptions);
+    });
+  </script>
+</body>
+
+</html>
