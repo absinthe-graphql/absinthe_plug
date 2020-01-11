@@ -27,7 +27,7 @@ defmodule Absinthe.Plug.GraphiQL do
 
   Use the "altair" interface for Altair GraphQL instead:
 
-      forward "/graphiql",
+      forward "/altair",
         to: Absinthe.Plug.GraphiQL,
         init_opts: [
           schema: MyAppWeb.Schema,
