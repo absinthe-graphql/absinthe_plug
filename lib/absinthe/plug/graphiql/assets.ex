@@ -51,7 +51,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
        {"build/dist/styles.css", "styles.css"},
        {"build/dist/runtime.js", "runtime.js"},
        {"build/dist/polyfills.js", "polyfills.js"},
-       {"build/dist/main.js", "main.js"},
+       {"build/dist/main.js", "main.js"}
      ]},
     # Used by graphql-playground
     {"typeface-source-code-pro", "0.0.44",
