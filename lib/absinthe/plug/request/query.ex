@@ -26,7 +26,6 @@ defmodule Absinthe.Plug.Request.Query do
     :adapter,
     :context,
     :schema,
-    document: nil,
     document_provider_key: nil,
     pipeline: [],
     document_provider: nil
