@@ -138,6 +138,27 @@ defmodule Absinthe.PlugTest do
     assert resp_body == @foo_result
   end
 
+  def test_before_exec(conn, request) do
+    conn
+    |> put_status(301)
+  end
+
+  test "before_exec can mess with the conn based on the document" do
+    opts = Absinthe.Plug.init(schema: TestSchema, before_exec: {__MODULE__, :test_before_exec})
+
+    query = """
+    {
+      field_on_root_value
+    }
+    """
+
+    assert %{status: 301} =
+             conn(:post, "/", %{query: query})
+             |> put_req_header("content-type", "application/json")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
+  end
+
   @mutation """
   mutation AddItem {
     addItem(name: "Baz") {
