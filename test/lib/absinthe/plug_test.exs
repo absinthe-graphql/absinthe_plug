@@ -139,8 +139,12 @@ defmodule Absinthe.PlugTest do
   end
 
   def test_before_exec(conn, request) do
-    conn
-    |> put_status(301)
+    conn =
+      conn
+      |> put_status(301)
+      |> halt
+
+    {conn, request}
   end
 
   test "before_exec can mess with the conn based on the document" do

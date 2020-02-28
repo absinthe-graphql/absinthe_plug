@@ -26,6 +26,7 @@ defmodule Absinthe.Plug.Request.Query do
     :adapter,
     :context,
     :schema,
+    :prepared,
     document_provider_key: nil,
     pipeline: [],
     document_provider: nil
@@ -43,7 +44,9 @@ defmodule Absinthe.Plug.Request.Query do
           params: map,
           adapter: Absinthe.Adapter.t(),
           context: map,
-          schema: Absinthe.Schema.t()
+          schema: Absinthe.Schema.t(),
+          prepared:
+            {:ok, Absinthe.Blueprint.t(), list()} | {:error, Absinthe.Blueprint.t(), list()}
         }
 
   def parse(body, params, config) do
@@ -78,6 +81,34 @@ defmodule Absinthe.Plug.Request.Query do
       |> Absinthe.Plug.DocumentProvider.pipeline()
 
     %{query | pipeline: pipeline}
+  end
+
+  def prepare(query, conn_info, config) do
+    query =
+      query
+      |> Map.update!(:raw_options, &([jump_phases: false] ++ &1))
+      |> add_pipeline(conn_info, config)
+
+    pipeline =
+      query.pipeline
+      |> Absinthe.Pipeline.before(Absinthe.Phase.Subscription.SubscribeSelf)
+
+    prepared =
+      case Absinthe.Pipeline.run(query.document, pipeline) do
+        {:ok, bp, phases} ->
+          case bp.execution.validation_errors do
+            [] ->
+              {:ok, bp, phases}
+
+            _ ->
+              {:error, bp, phases}
+          end
+
+        {:error, bp, phases} ->
+          {:error, bp, phases}
+      end
+
+    %{query | prepared: prepared}
   end
 
   #

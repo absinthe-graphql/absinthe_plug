@@ -205,6 +205,7 @@ defmodule Absinthe.Plug do
     pubsub = Keyword.get(opts, :pubsub, nil)
 
     before_send = Keyword.get(opts, :before_send)
+    before_exec = Keyword.get(opts, :before_exec)
 
     %{
       adapter: adapter,
@@ -219,7 +220,8 @@ defmodule Absinthe.Plug do
       content_type: content_type,
       log_level: log_level,
       pubsub: pubsub,
-      before_send: before_send
+      before_send: before_send,
+      before_exec: before_exec
     }
   end
 
@@ -236,6 +238,14 @@ defmodule Absinthe.Plug do
     end
 
     schema
+  end
+
+  def apply_before_exec(conn, request, %{before_exec: {mod, fun}}) do
+    apply(mod, fun, [conn, request])
+  end
+
+  def apply_before_exec(conn, request, _) do
+    {conn, request}
   end
 
   @doc false
@@ -258,6 +268,9 @@ defmodule Absinthe.Plug do
     {conn, result} = conn |> execute(config)
 
     case result do
+      :halted ->
+        conn
+
       {:input_error, msg} ->
         conn
         |> encode(400, error_result(msg), config)
@@ -416,10 +429,22 @@ defmodule Absinthe.Plug do
     end
   end
 
+  def run_request(request, conn, conn_info, config) do
+    request = Request.prepare(request, conn_info, config)
+
+    case apply_before_exec(conn, request, config) do
+      {%{halted: true} = conn, _} ->
+        {conn, :halted}
+
+      {conn, request} ->
+        do_run_request(request, conn, config)
+    end
+  end
+
   @doc false
-  def run_request(%{batch: true, queries: queries} = request, conn, conn_info, config) do
+  defp do_run_request(%{batch: true, queries: queries} = request, conn, config) do
     Request.log(request, config.log_level)
-    {conn, results} = Absinthe.Plug.Batch.Runner.run(queries, conn, conn_info, config)
+    {conn, results} = Absinthe.Plug.Batch.Runner.run(queries, conn, config)
 
     results =
       results
@@ -433,16 +458,33 @@ defmodule Absinthe.Plug do
     {conn, {:ok, results}}
   end
 
-  def run_request(%{batch: false, queries: [query]} = request, conn, conn_info, config) do
+  defp do_run_request(%{batch: false, queries: [query]} = request, conn, config) do
     Request.log(request, config.log_level)
-    run_query(query, conn, conn_info, config)
+    %{pipeline: pipeline} = query
+
+    case query.prepared do
+      {:ok, bp, _} ->
+        pipeline =
+          pipeline
+          |> Absinthe.Pipeline.from(Absinthe.Phase.Subscription.SubscribeSelf)
+
+        run_query(bp, conn, pipeline, config)
+
+      {:error, %Absinthe.Blueprint{} = bp, _} ->
+        pipeline =
+          pipeline
+          |> Absinthe.Pipeline.from(Absinthe.Phase.Document.Execution.Resolution)
+          |> Enum.drop(1)
+
+        run_query(bp, conn, pipeline, config)
+
+      {:error, _, _} = error ->
+        {conn, error}
+    end
   end
 
-  defp run_query(query, conn, conn_info, config) do
-    %{document: document, pipeline: pipeline} =
-      Request.Query.add_pipeline(query, conn_info, config)
-
-    case Absinthe.Pipeline.run(document, pipeline) do
+  defp run_query(bp, conn, pipeline, config) do
+    case Absinthe.Pipeline.run(bp, pipeline) do
       {:ok, %{result: result} = bp, _} ->
         conn = apply_before_send(conn, [bp], config)
         {conn, {:ok, result}}

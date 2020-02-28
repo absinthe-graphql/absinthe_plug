@@ -49,6 +49,12 @@ defmodule Absinthe.Plug.Request do
     end
   end
 
+  def prepare(request, conn_info, config) do
+    Map.update!(request, :queries, fn queries ->
+      Enum.map(queries, &__MODULE__.Query.prepare(&1, conn_info, config))
+    end)
+  end
+
   defp build_request(_body, params, config, batch?: true) do
     queries =
       Enum.map(params["_json"], fn query ->
