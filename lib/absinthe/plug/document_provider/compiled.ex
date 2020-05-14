@@ -95,7 +95,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
       """
       def pipeline(%{pipeline: as_configured}) do
         remaining_pipeline_marker = __absinthe_plug_doc__(:remaining_pipeline)
-        telemetry_phase = {Absinthe.Phase.Telemetry, [:execute, :operation, :start]}
+        telemetry_phase = {Absinthe.Phase.Telemetry, event: [:execute, :operation, :start]}
 
         as_configured
         |> Absinthe.Pipeline.from(remaining_pipeline_marker)
