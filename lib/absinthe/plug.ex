@@ -353,6 +353,36 @@ defmodule Absinthe.Plug do
     Plug.Conn.put_private(conn, :absinthe, Enum.into(opts, %{}))
   end
 
+  @doc """
+  Adds key-value pairs into Absinthe context.
+
+  ## Examples
+
+      iex> Absinthe.Plug.assign_context(conn, current_user: user)
+      %Plug.Conn{}
+  """
+  @spec assign_context(Plug.Conn.t(), Keyword.t() | map) :: Plug.Conn.t()
+  def assign_context(%Plug.Conn{private: %{absinthe: absinthe}} = conn, assigns) do
+    context =
+      absinthe
+      |> Map.get(:context, %{})
+      |> Map.merge(Map.new(assigns))
+
+    put_options(conn, context: context)
+  end
+
+  def assign_context(conn, assigns) do
+    put_options(conn, context: Map.new(assigns))
+  end
+
+  @doc """
+  Same as `assign_context/2` except one key-value pair is assigned.
+  """
+  @spec assign_context(Plug.Conn.t(), atom, any) :: Plug.Conn.t()
+  def assign_context(conn, key, value) do
+    assign_context(conn, [{key, value}])
+  end
+
   @doc false
   @spec execute(Plug.Conn.t(), map) :: {Plug.Conn.t(), any}
   def execute(conn, config) do
