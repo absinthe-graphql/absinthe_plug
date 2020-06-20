@@ -79,8 +79,6 @@ add "&raw" to the end of the URL within a browser.
       options.subscriptionEndpoint = <%= socket_url %>;
     <% end %>
 
-    console.log(options)
-
     window.addEventListener("load", function (n) { GraphQLPlayground.init(document.getElementById("root"), options) })
   </script>
   <script type="text/javascript" src="<%= assets["graphql-playground-react/playground.js"] %>"></script>

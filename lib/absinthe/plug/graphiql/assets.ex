@@ -11,24 +11,24 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     remote_source: "https://cdn.jsdelivr.net/npm/:package@:version/:file"
   ]
 
-  @react_version_previous "15.6.2" # 3 years old
-  @react_version "16.13.1" 
-
+  # 3 years old
+  @react_version_previous "15.6.2"
+  @react_version "16.13.1"
 
   @assets [
-    {"react@"<>@react_version_previous, nil,
-    [
-      {"dist/react.min.js", "react.js"}
-    ]},
-   {"react-dom@"<>@react_version_previous, nil,
-    [
-      {"dist/react-dom.min.js", "react-dom.js"}
-    ]},
+    {"react@" <> @react_version_previous, nil,
+     [
+       {"dist/react.min.js", "react.js"}
+     ]},
+    {"react-dom@" <> @react_version_previous, nil,
+     [
+       {"dist/react-dom.min.js", "react-dom.js"}
+     ]},
     {"whatwg-fetch", "3.0.0",
      [
        {"dist/fetch.umd.min.js", "fetch.js"}
      ]},
-     {"react", @react_version,
+    {"react", @react_version,
      [
        {"umd/react.production.min.js", "react.js"}
      ]},
@@ -50,12 +50,15 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
        "graphiql.css",
        {"graphiql.min.js", "graphiql.js"}
      ]},
-    {"graphiql-workspace", "1.1.4", 
-    # should probably deprecate this one, as the project is unmaintained for 2 years
-     [
-       "graphiql-workspace.css",
-       {"graphiql-workspace.min.js", "graphiql-workspace.js"}
-     ]},
+    {
+      "graphiql-workspace",
+      "1.1.4",
+      # should probably deprecate this one, as the project is unmaintained for 2 years
+      [
+        "graphiql-workspace.css",
+        {"graphiql-workspace.min.js", "graphiql-workspace.js"}
+      ]
+    },
     # Used by graphql-playground
     {"typeface-source-code-pro", "1.1.3",
      [
@@ -72,12 +75,15 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
        {"files/open-sans-latin-600.woff2", "files/open-sans-latin-600.woff2"},
        {"files/open-sans-latin-700.woff2", "files/open-sans-latin-700.woff2"}
      ]},
-     {"graphql-playground-react", "1.7.23", 
-     # should probably be deprecated eventually, as playground is being shut down in favour of GraphiQL: https://github.com/prisma-labs/graphql-playground/issues/1143 
+    {
+      "graphql-playground-react",
+      "1.7.23",
+      # should probably be deprecated eventually, as playground is being shut down in favour of GraphiQL: https://github.com/prisma-labs/graphql-playground/issues/1143 
       [
         {"build/static/css/index.css", "playground.css"},
         {"build/static/js/middleware.js", "playground.js"}
-      ]},
+      ]
+    },
     {"@absinthe/socket-graphiql", "0.2.1",
      [
        {"compat/umd/index.js", "socket-graphiql.js"}
@@ -151,7 +157,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     |> String.replace(":file", real_path)
     |> String.replace(":alias", aliased_path)
   end
-  
+
   defp build_asset_path(source, {package, version, {real_path, aliased_path}}) do
     assets_config()[source]
     |> String.replace(":package", package)
