@@ -11,22 +11,32 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     remote_source: "https://cdn.jsdelivr.net/npm/:package@:version/:file"
   ]
 
-  @react_version "15.6.1"
+  @react_version_previous "15.6.2" # 3 years old
+  @react_version "16.13.1" 
+
 
   @assets [
-    {"whatwg-fetch", "2.0.3",
+    {"react@"<>@react_version_previous, nil,
+    [
+      {"dist/react.min.js", "react.js"}
+    ]},
+   {"react-dom@"<>@react_version_previous, nil,
+    [
+      {"dist/react-dom.min.js", "react-dom.js"}
+    ]},
+    {"whatwg-fetch", "3.0.0",
      [
-       {"fetch.min.js", "fetch.js"}
+       {"dist/fetch.umd.min.js", "fetch.js"}
      ]},
-    {"react", @react_version,
+     {"react", @react_version,
      [
-       {"dist/react.min.js", "react.js"}
+       {"umd/react.production.min.js", "react.js"}
      ]},
     {"react-dom", @react_version,
      [
-       {"dist/react-dom.min.js", "react-dom.js"}
+       {"umd/react-dom.production.min.js", "react-dom.js"}
      ]},
-    {"bootstrap", "3.3.7",
+    {"bootstrap", "3.4.1",
      [
        {"dist/fonts/glyphicons-halflings-regular.eot", "fonts/glyphicons-halflings-regular.eot"},
        {"dist/fonts/glyphicons-halflings-regular.ttf", "fonts/glyphicons-halflings-regular.ttf"},
@@ -35,25 +45,26 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
        {"dist/fonts/glyphicons-halflings-regular.svg", "fonts/glyphicons-halflings-regular.svg"},
        {"dist/css/bootstrap.min.css", "css/bootstrap.css"}
      ]},
-    {"graphiql", "0.11.10",
+    {"graphiql", "1.0.2",
      [
        "graphiql.css",
        {"graphiql.min.js", "graphiql.js"}
      ]},
-    {"graphiql-workspace", "1.1.4",
+    {"graphiql-workspace", "1.1.4", 
+    # should probably deprecate this one, as the project is unmaintained for 2 years
      [
        "graphiql-workspace.css",
        {"graphiql-workspace.min.js", "graphiql-workspace.js"}
      ]},
     # Used by graphql-playground
-    {"typeface-source-code-pro", "0.0.44",
+    {"typeface-source-code-pro", "1.1.3",
      [
        {"index.css", "index.css"},
        {"files/source-code-pro-latin-400.woff2", "files/source-code-pro-latin-400.woff2"},
        {"files/source-code-pro-latin-700.woff2", "files/source-code-pro-latin-700.woff2"}
      ]},
     # Used by graphql-playground
-    {"typeface-open-sans", "0.0.44",
+    {"typeface-open-sans", "0.0.75",
      [
        {"index.css", "index.css"},
        {"files/open-sans-latin-300.woff2", "files/open-sans-latin-300.woff2"},
@@ -61,12 +72,13 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
        {"files/open-sans-latin-600.woff2", "files/open-sans-latin-600.woff2"},
        {"files/open-sans-latin-700.woff2", "files/open-sans-latin-700.woff2"}
      ]},
-    {"@absinthe/graphql-playground", "1.2.0",
+    {"@absinthe/graphql-playground", "1.2.0", 
+    # as nice as it is, this one should probably be deprecated, as playground is being shut down in favour of GraphiQL: https://github.com/prisma-labs/graphql-playground/issues/1143 and it is a very outdated version anyway
      [
        {"build/static/css/middleware.css", "playground.css"},
        {"build/static/js/middleware.js", "playground.js"}
      ]},
-    {"@absinthe/socket-graphiql", "0.1.1",
+    {"@absinthe/socket-graphiql", "0.2.1",
      [
        {"compat/umd/index.js", "socket-graphiql.js"}
      ]}
@@ -132,6 +144,14 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     build_asset_path(:remote_source, asset)
   end
 
+  defp build_asset_path(source, {package, nil, {real_path, aliased_path}}) do
+    assets_config()[source]
+    |> String.replace(":package", package)
+    |> String.replace("@:version", "")
+    |> String.replace(":file", real_path)
+    |> String.replace(":alias", aliased_path)
+  end
+  
   defp build_asset_path(source, {package, version, {real_path, aliased_path}}) do
     assets_config()[source]
     |> String.replace(":package", package)

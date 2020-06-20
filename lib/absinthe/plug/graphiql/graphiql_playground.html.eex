@@ -11,7 +11,7 @@ add "&raw" to the end of the URL within a browser.
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>GraphiQL Playground</title>
+  <title>GraphQL Playground</title>
 
   <link href="<%= assets["typeface-open-sans/index.css"] %>" rel="stylesheet">
   <link href="<%= assets["typeface-source-code-pro/index.css"] %>" rel="stylesheet">
