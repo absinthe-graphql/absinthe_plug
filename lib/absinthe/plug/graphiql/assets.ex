@@ -72,12 +72,12 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
        {"files/open-sans-latin-600.woff2", "files/open-sans-latin-600.woff2"},
        {"files/open-sans-latin-700.woff2", "files/open-sans-latin-700.woff2"}
      ]},
-    {"@absinthe/graphql-playground", "1.2.0", 
-    # as nice as it is, this one should probably be deprecated, as playground is being shut down in favour of GraphiQL: https://github.com/prisma-labs/graphql-playground/issues/1143 and it is a very outdated version anyway
-     [
-       {"build/static/css/middleware.css", "playground.css"},
-       {"build/static/js/middleware.js", "playground.js"}
-     ]},
+     {"graphql-playground-react", "1.7.23", 
+     # should probably be deprecated eventually, as playground is being shut down in favour of GraphiQL: https://github.com/prisma-labs/graphql-playground/issues/1143 
+      [
+        {"build/static/css/index.css", "playground.css"},
+        {"build/static/js/middleware.js", "playground.js"}
+      ]},
     {"@absinthe/socket-graphiql", "0.2.1",
      [
        {"compat/umd/index.js", "socket-graphiql.js"}

@@ -15,7 +15,8 @@ add "&raw" to the end of the URL within a browser.
 
   <link href="<%= assets["typeface-open-sans/index.css"] %>" rel="stylesheet">
   <link href="<%= assets["typeface-source-code-pro/index.css"] %>" rel="stylesheet">
-  <link rel="stylesheet" media="screen" href="<%= assets["@absinthe/graphql-playground/playground.css"] %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["graphql-playground-react/playground.css"] %>">
+  <link rel="shortcut icon" href="//cdn.jsdelivr.net/npm/graphql-playground-react/build/favicon.png" />
 </head>
 <body>
   <div id="root">
@@ -55,7 +56,19 @@ add "&raw" to the end of the URL within a browser.
     </div>
   </div>
   <script>
-    var options = {};
+    var options = { // FIXME: looks like these options are ignored
+    'editor.reuseHeaders': true, // new tab reuses headers from last tab
+    'editor.theme': 'dark', 
+    'general.betaUpdates': true,
+    'prettier.useTabs': true,
+    'request.credentials': 'same-origin', // possible values: 'omit', 'include', 'same-origin'
+    'schema.polling.enable': true, // enables automatic schema polling
+    'schema.polling.endpointFilter': <%= default_url %>, // endpoint filter for schema polling
+    'schema.polling.interval': 2000, // schema polling interval in ms
+    'schema.disableComments': false,
+    'tracing.tracingSupported': false
+    };
+
     var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
     <%= if default_url do %>
@@ -66,8 +79,10 @@ add "&raw" to the end of the URL within a browser.
       options.subscriptionEndpoint = <%= socket_url %>;
     <% end %>
 
+    console.log(options)
+
     window.addEventListener("load", function (n) { GraphQLPlayground.init(document.getElementById("root"), options) })
   </script>
-  <script type="text/javascript" src="<%= assets["@absinthe/graphql-playground/playground.js"] %>"></script>
+  <script type="text/javascript" src="<%= assets["graphql-playground-react/playground.js"] %>"></script>
 </body>
 </html>
