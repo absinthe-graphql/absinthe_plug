@@ -37,7 +37,7 @@ defmodule Absinthe.Plug.Request do
     config = Map.merge(config, %{root_value: root_value, context: context})
 
     config =
-      conn.private[:absinthe]
+      (conn.private[:absinthe] || %{})
       |> Enum.reduce(config, fn
         # keys we already handled
         {k, _}, config when k in [:context, :root_value] ->
