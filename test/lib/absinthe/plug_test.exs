@@ -514,6 +514,46 @@ defmodule Absinthe.PlugTest do
     end
   end
 
+  describe "assign_context/2" do
+    test "with a pristine connection it sets the values as provided" do
+      conn =
+        conn(:post, "/")
+        |> Absinthe.Plug.assign_context(current_user: %{id: 1})
+
+      assert conn.private.absinthe.context.current_user.id == 1
+    end
+
+    test "doesn't wipe out previously set context if called twice" do
+      conn =
+        conn(:post, "/")
+        |> Absinthe.Plug.assign_context(current_user: %{id: 1})
+        |> Absinthe.Plug.assign_context(foo: "bar")
+
+      assert conn.private.absinthe.context.current_user.id == 1
+      assert conn.private.absinthe.context.foo == "bar"
+    end
+
+    test "values can be added individually" do
+      conn =
+        conn(:post, "/")
+        |> Absinthe.Plug.assign_context(:current_user, %{id: 1})
+        |> Absinthe.Plug.assign_context(:foo, "bar")
+
+      assert conn.private.absinthe.context.current_user.id == 1
+      assert conn.private.absinthe.context.foo == "bar"
+    end
+
+    test "values are merged properly" do
+      conn =
+        conn(:post, "/")
+        |> Absinthe.Plug.assign_context(current_user: %{id: 1}, foo: "bar")
+        |> Absinthe.Plug.assign_context(current_user: %{id: 2})
+
+      assert conn.private.absinthe.context.current_user.id == 2
+      assert conn.private.absinthe.context.foo == "bar"
+    end
+  end
+
   test "before_send with single query" do
     opts = Absinthe.Plug.init(schema: TestSchema, before_send: {__MODULE__, :test_before_send})
 
