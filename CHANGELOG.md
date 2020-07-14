@@ -1,3 +1,8 @@
+v1.5.1
+
+- Allow overriding `Absinthe.Plug.DocumentProvider.Compiled` process function.
+- Ensure all Absinthe.Plug options are overrideable via the runtime `put_options` function.
+
 v1.5.0
 
 - Basically no changes in Absinthe.Plug, but required for Absinthe 1.5 pre-release support

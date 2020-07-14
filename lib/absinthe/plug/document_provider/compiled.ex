@@ -102,7 +102,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
         |> Absinthe.Pipeline.insert_before(remaining_pipeline_marker, telemetry_phase)
       end
 
-      defoverridable pipeline: 1
+      defoverridable pipeline: 1, process: 2
     end
   end
 

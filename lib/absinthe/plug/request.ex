@@ -34,11 +34,18 @@ defmodule Absinthe.Plug.Request do
       |> Map.get(:context, %{})
       |> Map.merge(extract_context(conn, config))
 
+    config = Map.merge(config, %{root_value: root_value, context: context})
+
     config =
-      Map.merge(config, %{
-        context: context,
-        root_value: root_value
-      })
+      conn.private[:absinthe]
+      |> Enum.reduce(config, fn
+        # keys we already handled
+        {k, _}, config when k in [:context, :root_value] ->
+          config
+
+        {k, v}, config ->
+          Map.put(config, k, v)
+      end)
 
     with {:ok, conn, body, params} <- extract_body_and_params(conn, config) do
       # Plug puts parsed params under the "_json" key when the
