@@ -68,7 +68,6 @@ defmodule Absinthe.Plug.DocumentProvider do
   def process(document_providers, query) do
     document_providers
     |> normalize
-    |> IO.inspect(label: :providers)
     |> Enum.reduce_while(query, fn {mod, opts} = provider, acc ->
       case mod.process(acc, opts) do
         {:halt, result} ->
