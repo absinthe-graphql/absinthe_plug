@@ -15,6 +15,16 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
     )
   end
 
+  defmodule ExtractedValueDocument do
+    use Absinthe.Plug.DocumentProvider.Compiled
+
+    @fixture Path.join([File.cwd!(), "test/support/fixtures/extracted_query.txt"])
+
+    provide(%{
+      1 => File.read!(@fixture)
+    })
+  end
+
   @query """
   query FooQuery($id: ID!) {
     item(id: $id) {
@@ -23,7 +33,6 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
   }
   """
   @result ~s({"data":{"item":{"name":"Foo"}}})
-
   test "works using documents provided as literals" do
     opts =
       Absinthe.Plug.init(
@@ -79,6 +88,22 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
   test "works using documents loaded from an extracted_queries.json" do
     opts =
       Absinthe.Plug.init(schema: TestSchema, document_providers: [__MODULE__.ExtractedDocuments])
+
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", %{"id" => "1", "variables" => %{"id" => "foo"}})
+             |> put_req_header("content-type", "application/graphql")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
+
+    assert resp_body == @result
+  end
+
+  test "works using documents loaded from an extracted_query.json" do
+    opts =
+      Absinthe.Plug.init(
+        schema: TestSchema,
+        document_providers: [__MODULE__.ExtractedValueDocument]
+      )
 
     assert %{status: 200, resp_body: resp_body} =
              conn(:post, "/", %{"id" => "1", "variables" => %{"id" => "foo"}})
