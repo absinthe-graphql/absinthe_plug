@@ -233,9 +233,10 @@ defmodule Absinthe.Plug do
     schema
   end
 
-  defp valid_schema_module?(schema) do
-    Code.ensure_loaded?(schema) &&
-      Absinthe.Schema in Keyword.get(schema.__info__(:attributes), :behaviour, [])
+  defp valid_schema_module?(module) do
+    is_atom(module) &&
+      Code.ensure_loaded?(module) &&
+      Absinthe.Schema in Keyword.get(module.__info__(:attributes), :behaviour, [])
   end
 
   @doc false

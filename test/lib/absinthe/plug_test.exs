@@ -573,16 +573,17 @@ defmodule Absinthe.PlugTest do
   defmodule NotaSchema do
   end
 
+  @message_matcher ~r/not a valid `Absinthe.Schema`/
   test "schema module validation checks" do
-    assert_raise ArgumentError, fn ->
+    assert_raise ArgumentError, @message_matcher, fn ->
       Absinthe.Plug.init(schema: :not_a_module)
     end
 
-    assert_raise ArgumentError, fn ->
+    assert_raise ArgumentError, @message_matcher, fn ->
       Absinthe.Plug.init(schema: NotaSchema)
     end
 
-    assert_raise ArgumentError, fn ->
+    assert_raise ArgumentError, @message_matcher, fn ->
       Absinthe.Plug.init(schema: "not even a module")
     end
   end
