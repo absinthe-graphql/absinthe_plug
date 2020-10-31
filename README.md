@@ -1,7 +1,8 @@
 # Absinthe Plug
 
-[![Build Status](https://travis-ci.org/absinthe-graphql/absinthe_plug.svg?branch=master
-"Build Status")](https://travis-ci.org/absinthe-graphql/absinthe_plug)[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Hex pm](http://img.shields.io/hexpm/v/absinthe_plug.svg)](https://hex.pm/packages/absinthe_plug)
+[![Build Status](https://github.com/absinthe-graphql/absinthe_plug/workflows/CI/badge.svg)](https://github.com/absinthe-graphql/absinthe_plug/actions?query=workflow%3ACI)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 [Plug](https://hex.pm/packages/plug) support for [Absinthe](https://hex.pm/packages/absinthe),
 the GraphQL toolkit for Elixir.
@@ -15,15 +16,6 @@ Install from [Hex.pm](https://hex.pm/packages/absinthe_plug):
 ```elixir
 def deps do
   [{:absinthe_plug, "~> 1.5.0"}]
-end
-```
-
-If using Elixir < 1.4 (or manually managing applications), make sure to add it
-to your `applications` configuration in `mix.exs`:
-
-```elixir
-def application do
-  [applications: [:absinthe_plug]]
 end
 ```
 
