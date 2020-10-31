@@ -227,15 +227,15 @@ defmodule Absinthe.Plug do
     default = Application.get_env(:absinthe, :schema)
     schema = Keyword.get(opts, :schema, default)
 
-    try do
-      Absinthe.Schema.types(schema)
-    rescue
-      UndefinedFunctionError ->
-        raise ArgumentError,
-              "The supplied schema: #{inspect(schema)} is not a valid Absinthe Schema"
-    end
+    valid_schema_module?(schema) ||
+      raise ArgumentError, "#{inspect(schema)} is not a valid `Absinthe.Schema`"
 
     schema
+  end
+
+  defp valid_schema_module?(schema) do
+    Code.ensure_loaded?(schema) &&
+      Absinthe.Schema in Keyword.get(schema.__info__(:attributes), :behaviour, [])
   end
 
   @doc false
