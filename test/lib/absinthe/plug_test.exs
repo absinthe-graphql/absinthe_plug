@@ -570,6 +570,24 @@ defmodule Absinthe.PlugTest do
     assert conn.private[:user_id] == 1
   end
 
+  defmodule NotaSchema do
+  end
+
+  @message_matcher ~r/not a valid `Absinthe.Schema`/
+  test "schema module validation checks" do
+    assert_raise ArgumentError, @message_matcher, fn ->
+      Absinthe.Plug.init(schema: :not_a_module)
+    end
+
+    assert_raise ArgumentError, @message_matcher, fn ->
+      Absinthe.Plug.init(schema: NotaSchema)
+    end
+
+    assert_raise ArgumentError, @message_matcher, fn ->
+      Absinthe.Plug.init(schema: "not even a module")
+    end
+  end
+
   def test_before_send(conn, val) do
     # just for easy testing
     send(self(), {:before_send, val})
