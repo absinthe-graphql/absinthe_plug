@@ -144,7 +144,7 @@ defmodule Absinthe.Plug.DocumentProvider.CompiledTest do
         document_providers: [Absinthe.Plug.TestLiteralDocuments]
       )
 
-    assert %{status: 200, resp_body: resp_body} =
+    assert %{status: 200, resp_body: _resp_body} =
              conn(:post, "/", %{"id" => "2"})
              |> Absinthe.Plug.put_options(context: %{user: "Foo"})
              |> put_req_header("content-type", "application/graphql")
