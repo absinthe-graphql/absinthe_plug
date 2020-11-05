@@ -33,7 +33,7 @@ defmodule Absinthe.Plug.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :plug, :absinthe]]
+    [extra_applications: [:logger, :inets]]
   end
 
   # Specifies which paths to compile per environment.
