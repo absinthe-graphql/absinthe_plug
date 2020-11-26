@@ -2,6 +2,8 @@ v1.5.1
 
 - Allow overriding `Absinthe.Plug.DocumentProvider.Compiled` process function.
 - Ensure all Absinthe.Plug options are overrideable via the runtime `put_options` function.
+- Opt out of the default Transport Batch response nesting with `transport_batch_payload_key: false`.
+- Add `Absinthe.Plug.assign_context/2` helper for inserting values into a `conn`'s Absinthe context.
 
 v1.5.0
 
