@@ -37,6 +37,11 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     %{"payload" => %{"data" => %{"item" => %{"name" => "Bar"}}}}
   ]
 
+  @apollo_batch_link_foo_result [
+    %{"data" => %{"item" => %{"name" => "Foo"}}},
+    %{"data" => %{"item" => %{"name" => "Bar"}}}
+  ]
+
   @apollo_variable_query """
   [{
     "query": "query FooQuery($id: ID!){ item(id: $id) { name } }",
@@ -92,6 +97,18 @@ defmodule Absinthe.Plug.TransportBatchingTest do
              |> absinthe_plug(opts)
 
     assert @apollo_foo_result == resp_body
+  end
+
+  test "single batched query in modern apollo-link-batch-http format works" do
+    opts = Absinthe.Plug.init(schema: TestSchema, transport_batch_payload_key: false)
+
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", @apollo_query)
+             |> put_req_header("content-type", "application/json")
+             |> plug_parser
+             |> absinthe_plug(opts)
+
+    assert @apollo_batch_link_foo_result == resp_body
   end
 
   test "single batched query in apollo format works with variables" do

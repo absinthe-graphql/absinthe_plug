@@ -142,6 +142,7 @@ defmodule Absinthe.Plug do
   - `:log_level` -- (Optional) Set the logger level for Absinthe Logger. Defaults to `:debug`.
   - `:analyze_complexity` -- (Optional) Set whether to calculate the complexity of incoming GraphQL queries.
   - `:max_complexity` -- (Optional) Set the maximum allowed complexity of the GraphQL query. If a document’s calculated complexity exceeds the maximum, resolution will be skipped and an error will be returned in the result detailing the calculated and maximum complexities.
+  - `:transport_batch_payload_key` -- (Optional) Set whether or not to nest Transport Batch request results in a `payload` key. Older clients expected this key to be present, but newer clients have dropped this pattern. (default: `true`)
 
   """
   @type opts :: [
@@ -160,7 +161,8 @@ defmodule Absinthe.Plug do
           serializer: module | {module, Keyword.t()},
           content_type: String.t(),
           before_send: {module, atom},
-          log_level: Logger.level()
+          log_level: Logger.level(),
+          transport_batch_payload_key: Boolean.t()
         ]
 
   @doc """
@@ -206,6 +208,8 @@ defmodule Absinthe.Plug do
 
     before_send = Keyword.get(opts, :before_send)
 
+    transport_batch_payload_key = Keyword.get(opts, :transport_batch_payload_key, true)
+
     %{
       adapter: adapter,
       context: context,
@@ -219,7 +223,8 @@ defmodule Absinthe.Plug do
       content_type: content_type,
       log_level: log_level,
       pubsub: pubsub,
-      before_send: before_send
+      before_send: before_send,
+      transport_batch_payload_key: transport_batch_payload_key
     }
   end
 
@@ -456,9 +461,12 @@ defmodule Absinthe.Plug do
       results
       |> Enum.zip(request.extra_keys)
       |> Enum.map(fn {result, extra_keys} ->
-        Map.merge(extra_keys, %{
-          payload: result
-        })
+        result =
+          if config.transport_batch_payload_key,
+            do: %{payload: result},
+            else: result
+
+        Map.merge(extra_keys, result)
       end)
 
     {conn, {:ok, results}}
