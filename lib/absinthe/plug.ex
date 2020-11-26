@@ -162,7 +162,7 @@ defmodule Absinthe.Plug do
           content_type: String.t(),
           before_send: {module, atom},
           log_level: Logger.level(),
-          transport_batch_payload_key: Boolean.t()
+          transport_batch_payload_key: boolean
         ]
 
   @doc """
