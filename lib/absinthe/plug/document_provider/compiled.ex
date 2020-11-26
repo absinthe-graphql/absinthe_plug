@@ -47,6 +47,8 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
   You need to configure `Absinthe.Plug` to use any document providers that you create.
   (Only `Absinthe.Plug.DocumentProviders.Default` is configured by default.)
 
+  Make sure that a `Compiled` document provider is placed before the `Default` provider.
+
   See the documentation on `Absinthe.Plug.init/1` for more details. Look for the
   `:document_providers` option.
   """
