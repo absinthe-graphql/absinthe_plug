@@ -99,8 +99,8 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert @apollo_foo_result == resp_body
   end
 
-  test "single batched query in apollo-link-batch-http format works" do
-    opts = Absinthe.Plug.init(schema: TestSchema, use_batch_http_link_format: true)
+  test "single batched query in modern apollo-link-batch-http format works" do
+    opts = Absinthe.Plug.init(schema: TestSchema, transport_batch_payload_key: false)
 
     assert %{status: 200, resp_body: resp_body} =
              conn(:post, "/", @apollo_query)
