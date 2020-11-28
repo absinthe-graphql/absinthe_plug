@@ -1,7 +1,8 @@
 # Absinthe Plug
 
-[![Hex pm](http://img.shields.io/hexpm/v/absinthe_plug.svg)](https://hex.pm/packages/absinthe_plug)
 [![Build Status](https://github.com/absinthe-graphql/absinthe_plug/workflows/CI/badge.svg)](https://github.com/absinthe-graphql/absinthe_plug/actions?query=workflow%3ACI)
+[![Hex pm](http://img.shields.io/hexpm/v/absinthe_plug.svg)](https://hex.pm/packages/absinthe_plug)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-blue.svg)](https://hexdocs.pm/absinthe_plug/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 [Plug](https://hex.pm/packages/plug) support for [Absinthe](https://hex.pm/packages/absinthe),
@@ -26,7 +27,7 @@ def deps do
   [
     ...,
     {:absinthe_plug, "~> 1.5.0"},
-    {:jason, "~> 1.1.0"}
+    {:jason, "~> 1.0"}
   ]
 end
 ```
