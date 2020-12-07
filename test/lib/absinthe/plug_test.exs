@@ -584,7 +584,7 @@ defmodule Absinthe.PlugTest do
     end
 
     assert_raise ArgumentError, @message_matcher, fn ->
-      Absinthe.Plug.init(schema: "not even a module")
+      Absinthe.Plug.init(schema: "not even an atom")
     end
   end
 
