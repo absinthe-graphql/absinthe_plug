@@ -239,9 +239,13 @@ defmodule Absinthe.Plug do
   end
 
   defp valid_schema_module?(module) do
-    is_atom(module) &&
-      Code.ensure_loaded?(module) &&
-      Absinthe.Schema in Keyword.get(module.__info__(:attributes), :behaviour, [])
+    with true <- is_atom(module),
+         {:module, _} <- Code.ensure_compiled(module),
+         true <- Absinthe.Schema in Keyword.get(module.__info__(:attributes), :behaviour, []) do
+      true
+    else
+      _ -> false
+    end
   end
 
   @doc false
