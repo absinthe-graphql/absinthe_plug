@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.5.3
+
+- Chore: [Loosen Absinthe version](https://github.com/absinthe-graphql/absinthe_plug/pull/242)
+
 ## v1.5.2
 
 - Bug fix: [Fix a compilation race condition](https://github.com/absinthe-graphql/absinthe_plug/pull/240) in plug options check.
