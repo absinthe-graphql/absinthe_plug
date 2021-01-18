@@ -115,7 +115,7 @@ See [HexDocs](https://hexdocs.pm/absinthe_plug).
 
 ## Related Projects
 
-See the project list at <http://absinthe-graphql.org/projects>.
+See the project list at <https://github.com/absinthe-graphql>.
 
 ## License
 
