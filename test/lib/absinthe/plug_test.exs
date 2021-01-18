@@ -512,6 +512,33 @@ defmodule Absinthe.PlugTest do
       assert conn.private.absinthe.context.current_user.id == 1
       assert conn.private.absinthe.root_value.field_on_root_value == "foo"
     end
+
+    test "set complexity" do
+      opts = Absinthe.Plug.init(schema: TestSchema)
+
+      query = "{expensive}"
+
+      assert %{status: 200, resp_body: resp_body} =
+               conn(:post, "/", Jason.encode!(%{"query" => query}))
+               |> Absinthe.Plug.put_options(analyze_complexity: true, max_complexity: 100)
+               |> put_req_header("content-type", "application/json")
+               |> call(opts)
+
+      expected = %{
+        "errors" => [
+          %{
+            "locations" => [%{"column" => 2, "line" => 1}],
+            "message" => "Field expensive is too complex: complexity is 1000 and maximum is 100"
+          },
+          %{
+            "locations" => [%{"column" => 1, "line" => 1}],
+            "message" => "Operation is too complex: complexity is 1000 and maximum is 100"
+          }
+        ]
+      }
+
+      assert expected == resp_body
+    end
   end
 
   describe "assign_context/2" do

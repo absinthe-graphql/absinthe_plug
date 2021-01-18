@@ -299,6 +299,12 @@ defmodule Absinthe.Plug do
   end
 
   defp update_config(conn, config) do
+    config
+    |> update_pubsub(conn)
+    |> update_raw_options(conn)
+  end
+
+  defp update_pubsub(config, conn) do
     pubsub = config[:pubsub] || config.context[:pubsub] || conn.private[:phoenix_endpoint]
 
     if pubsub do
@@ -306,6 +312,15 @@ defmodule Absinthe.Plug do
     else
       config
     end
+  end
+
+  defp update_raw_options(config, %{private: %{absinthe: absinthe}}) do
+    raw_options = Map.take(absinthe, @raw_options) |> Map.to_list()
+    update_in(config.raw_options, &Keyword.merge(&1, raw_options))
+  end
+
+  defp update_raw_options(config, _conn) do
+    config
   end
 
   def subscribe(conn, topic, %{context: %{pubsub: pubsub}} = config) do
