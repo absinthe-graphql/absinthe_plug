@@ -124,7 +124,27 @@ defmodule Absinthe.Plug do
 
   alias __MODULE__.Request
 
-  @raw_options [:analyze_complexity, :max_complexity]
+  @init_options [
+    :adapter,
+    :context,
+    :no_query_message,
+    :json_codec,
+    :pipeline,
+    :document_providers,
+    :schema,
+    :serializer,
+    :content_type,
+    :before_send,
+    :log_level,
+    :pubsub,
+    :analyze_complexity,
+    :max_complexity,
+    :transport_batch_payload_key
+  ]
+  @raw_options [
+    :analyze_complexity,
+    :max_complexity
+  ]
 
   @type function_name :: atom
 
@@ -140,6 +160,7 @@ defmodule Absinthe.Plug do
   - `:content_type` -- (Optional) The content type of the response. Should probably be set if `:serializer` option is used. Defaults to `"application/json"`.
   - `:before_send` -- (Optional) Set a value(s) on the connection after resolution but before values are sent to the client.
   - `:log_level` -- (Optional) Set the logger level for Absinthe Logger. Defaults to `:debug`.
+  - `:pubsub` -- (Optional) Pub Sub module for Subscriptions.
   - `:analyze_complexity` -- (Optional) Set whether to calculate the complexity of incoming GraphQL queries.
   - `:max_complexity` -- (Optional) Set the maximum allowed complexity of the GraphQL query. If a document’s calculated complexity exceeds the maximum, resolution will be skipped and an error will be returned in the result detailing the calculated and maximum complexities.
   - `:transport_batch_payload_key` -- (Optional) Set whether or not to nest Transport Batch request results in a `payload` key. Older clients expected this key to be present, but newer clients have dropped this pattern. (default: `true`)
@@ -162,6 +183,7 @@ defmodule Absinthe.Plug do
           content_type: String.t(),
           before_send: {module, atom},
           log_level: Logger.level(),
+          pubsub: module | nil,
           transport_batch_payload_key: boolean
         ]
 
@@ -300,11 +322,12 @@ defmodule Absinthe.Plug do
 
   defp update_config(conn, config) do
     config
-    |> update_pubsub(conn)
-    |> update_raw_options(conn)
+    |> update_config(:pubsub, conn)
+    |> update_config(:raw_options, conn)
+    |> update_config(:init_options, conn)
   end
 
-  defp update_pubsub(config, conn) do
+  defp update_config(config, :pubsub, conn) do
     pubsub = config[:pubsub] || config.context[:pubsub] || conn.private[:phoenix_endpoint]
 
     if pubsub do
@@ -314,12 +337,16 @@ defmodule Absinthe.Plug do
     end
   end
 
-  defp update_raw_options(config, %{private: %{absinthe: absinthe}}) do
+  defp update_config(config, :raw_options, %{private: %{absinthe: absinthe}}) do
     raw_options = Map.take(absinthe, @raw_options) |> Map.to_list()
     update_in(config.raw_options, &Keyword.merge(&1, raw_options))
   end
 
-  defp update_raw_options(config, _conn) do
+  defp update_config(config, :init_options, %{private: %{absinthe: absinthe}}) do
+    Map.merge(config, Map.take(absinthe, @init_options -- @raw_options))
+  end
+
+  defp update_config(config, _, _conn) do
     config
   end
 

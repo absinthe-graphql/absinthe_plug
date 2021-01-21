@@ -513,14 +513,17 @@ defmodule Absinthe.PlugTest do
       assert conn.private.absinthe.root_value.field_on_root_value == "foo"
     end
 
-    test "set complexity" do
+    test "sets complexity" do
       opts = Absinthe.Plug.init(schema: TestSchema)
 
       query = "{expensive}"
 
       assert %{status: 200, resp_body: resp_body} =
                conn(:post, "/", Jason.encode!(%{"query" => query}))
-               |> Absinthe.Plug.put_options(analyze_complexity: true, max_complexity: 100)
+               |> Absinthe.Plug.put_options(
+                 analyze_complexity: true,
+                 max_complexity: 100
+               )
                |> put_req_header("content-type", "application/json")
                |> call(opts)
 
@@ -538,6 +541,23 @@ defmodule Absinthe.PlugTest do
       }
 
       assert expected == resp_body
+    end
+
+    test "sets all init options" do
+      opts = Absinthe.Plug.init(schema: TestSchema)
+      query = ""
+
+      assert %{resp_body: resp_body, resp_headers: resp_headers} =
+               conn(:post, "/", Jason.encode!(%{"query" => query}))
+               |> Absinthe.Plug.put_options(
+                 no_query_message: "No query!!",
+                 content_type: "text/who-knows"
+               )
+               |> put_req_header("content-type", "application/json")
+               |> call(opts)
+
+      assert %{"errors" => [%{"message" => "No query!!"}]} = resp_body
+      assert {"content-type", "text/who-knows; charset=utf-8"} in resp_headers
     end
   end
 
