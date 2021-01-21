@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.5.4
+
+- Feature: [Set all plug options via put_options](https://github.com/absinthe-graphql/absinthe_plug/pull/243)
+
 ## v1.5.3
 
 - Chore: [Loosen Absinthe version](https://github.com/absinthe-graphql/absinthe_plug/pull/242)
