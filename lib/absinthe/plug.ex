@@ -343,11 +343,23 @@ defmodule Absinthe.Plug do
   end
 
   defp update_config(config, :init_options, %{private: %{absinthe: absinthe}}) do
-    Map.merge(config, Map.take(absinthe, @init_options -- @raw_options))
+    absinthe_config = Map.take(absinthe, @init_options -- @raw_options)
+    merge_config(config, absinthe_config)
   end
 
   defp update_config(config, _, _conn) do
     config
+  end
+
+  defp merge_config(config, config_to_merge) do
+    Enum.into(config_to_merge, config, fn
+      {key, value} when is_map(value) ->
+        merged_values = config |> Map.get(key, %{}) |> Map.merge(value)
+        {key, merged_values}
+
+      tuple ->
+        tuple
+    end)
   end
 
   def subscribe(conn, topic, %{context: %{pubsub: pubsub}} = config) do
