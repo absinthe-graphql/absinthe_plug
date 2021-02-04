@@ -559,6 +559,19 @@ defmodule Absinthe.PlugTest do
       assert %{"errors" => [%{"message" => "No query!!"}]} = resp_body
       assert {"content-type", "text/who-knows; charset=utf-8"} in resp_headers
     end
+
+    test "don't wipe out pubsub" do
+      config = Absinthe.Plug.init(schema: TestSchema, context: %{user_id: 1})
+
+      conn =
+        conn(:post, "/")
+        |> Absinthe.Plug.put_options(pubsub: PubSub)
+
+      updated_config = Absinthe.Plug.update_config(conn, config)
+
+      assert updated_config.context.pubsub == PubSub
+      assert updated_config.context.user_id == 1
+    end
   end
 
   describe "assign_context/2" do
