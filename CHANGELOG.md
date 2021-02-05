@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.5.5
+
+- Bug Fix: [Don't wipe out an existing pubsub value in context](https://github.com/absinthe-graphql/absinthe_plug/pull/249)
+
 ## v1.5.4
 
 - Feature: [Set all plug options via put_options](https://github.com/absinthe-graphql/absinthe_plug/pull/243)

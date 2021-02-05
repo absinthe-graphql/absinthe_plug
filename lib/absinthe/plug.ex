@@ -320,11 +320,12 @@ defmodule Absinthe.Plug do
     end
   end
 
-  defp update_config(conn, config) do
+  @doc false
+  def update_config(conn, config) do
     config
-    |> update_config(:pubsub, conn)
     |> update_config(:raw_options, conn)
     |> update_config(:init_options, conn)
+    |> update_config(:pubsub, conn)
   end
 
   defp update_config(config, :pubsub, conn) do
