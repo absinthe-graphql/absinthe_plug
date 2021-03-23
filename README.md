@@ -1,9 +1,11 @@
-# Absinthe Plug
+# Absinthe.Plug
 
 [![Build Status](https://github.com/absinthe-graphql/absinthe_plug/workflows/CI/badge.svg)](https://github.com/absinthe-graphql/absinthe_plug/actions?query=workflow%3ACI)
-[![Hex pm](http://img.shields.io/hexpm/v/absinthe_plug.svg)](https://hex.pm/packages/absinthe_plug)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-blue.svg)](https://hexdocs.pm/absinthe_plug/)
+[![Version](https://img.shields.io/hexpm/v/absinthe_plug.svg)](https://hex.pm/packages/absinthe_plug)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/absinthe_plug/)
+[![Download](https://img.shields.io/hexpm/dt/absinthe_plug.svg)](https://hex.pm/packages/absinthe_plug)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Last Updated](https://img.shields.io/github/last-commit/absinthe-graphql/absinthe_plug.svg)](https://github.com/absinthe-graphql/absinthe_plug/commits/master)
 
 [Plug](https://hex.pm/packages/plug) support for [Absinthe](https://hex.pm/packages/absinthe),
 the GraphQL toolkit for Elixir.
@@ -20,6 +22,8 @@ def deps do
 end
 ```
 
+Note: Absinthe.Plug requires Elixir 1.10 or higher.
+
 `Absinthe.Plug` also requires a JSON codec. `Jason` and `Poison` work out of the box.
 
 ```elixir
@@ -32,9 +36,27 @@ def deps do
 end
 ```
 
+## Upgrading
+
+See [CHANGELOG](./CHANGELOG.md) for upgrade steps between versions.
+
+You may want to look for the specific upgrade guide in the [Absinthe documentation](https://hexdocs.pm/absinthe).
+
+## Documentation
+
+See "Usage," below, for basic usage information and links to specific resources.
+
+- [Absinthe.Plug hexdocs](https://hexdocs.pm/absinthe_plug).
+- For the tutorial, guides, and general information about Absinthe-related
+  projects, see [http://absinthe-graphql.org](http://absinthe-graphql.org).
+
+## Related Projects
+
+See the [GitHub organization](https://github.com/absinthe-graphql).
+
 ## Usage
 
-Basic Usage:
+In your `MyAppWeb.Router` module add:
 
 ```elixir
 plug Plug.Parsers,
@@ -47,7 +69,7 @@ plug Absinthe.Plug,
 ```
 
 If you want `Absinthe.Plug` to serve only a particular route, configure your
-router like:
+`MyAppWeb.Router` like:
 
 ```elixir
 plug Plug.Parsers,
@@ -102,20 +124,19 @@ forward "/graphiql",
 
 See the API documentation for `Absinthe.Plug.GraphiQL` for more information.
 
+## Community
 
-## Documentation
+The project is under constant improvement by a growing list of
+contributors, and your feedback is important. Please join us in Slack
+(`#absinthe-graphql` under the Elixir Slack account) or the Elixir Forum
+(tagged `absinthe`).
 
-See [HexDocs](https://hexdocs.pm/absinthe_plug).
+Please remember that all interactions in our official spaces follow
+our [Code of Conduct](./CODE_OF_CONDUCT.md).
 
-## More Help
+## Contributing
 
-- For the tutorial, guides, and general information about Absinthe-related
-  projects, see [http://absinthe-graphql.org](http://absinthe-graphql.org).
-- Join the [community](http://absinthe-graphql.org/community) of Absinthe users.
-
-## Related Projects
-
-See the project list at <https://github.com/absinthe-graphql>.
+Please follow [contribution guide](./CONTRIBUTING.md).
 
 ## License
 
