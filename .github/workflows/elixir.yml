@@ -36,10 +36,10 @@ jobs:
         path: |
           deps
           _build
-        key: ${{ runner.os }}-deps-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}-git-${{ github.sha }}
+        key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}-git-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-deps-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
-          ${{ runner.os }}-deps-${{ matrix.otp }}-${{ matrix.elixir }}
+          deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
 
     - name: Install package dependencies
       run: mix deps.get
