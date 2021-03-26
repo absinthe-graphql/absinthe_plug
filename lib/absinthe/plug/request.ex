@@ -47,14 +47,25 @@ defmodule Absinthe.Plug.Request do
           Map.put(config, k, v)
       end)
 
-    with {:ok, conn, body, params} <- extract_body_and_params(conn, config) do
-      # Plug puts parsed params under the "_json" key when the
-      # structure is not a map; otherwise it's just the keys themselves,
-      # and they may sit in the body or in the params
-      batch? = Map.has_key?(params, "_json") && is_list(params["_json"])
-      {:ok, conn, build_request(body, params, config, batch?: batch?)}
+    with {:ok, conn, body, params} <- extract_body_and_params(conn, config),
+         true <- valid_request?(params) do
+      {:ok, conn, build_request(body, params, config, batch?: is_batch?(params))}
     end
   end
+
+  # Plug puts parsed params under the "_json" key when the
+  # structure is not a map; otherwise it's just the keys themselves,
+  # and they may sit in the body or in the params
+  defp is_batch?(params) do
+    Map.has_key?(params, "_json") && is_list(params["_json"])
+  end
+
+  defp valid_request?(%{"_json" => json}) do
+    Enum.all?(json, &is_map(&1)) ||
+      {:input_error, "Invalid request structure. Expecting a list of objects."}
+  end
+
+  defp valid_request?(_params), do: true
 
   defp build_request(_body, params, config, batch?: true) do
     queries =
