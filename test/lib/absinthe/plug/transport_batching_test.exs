@@ -441,6 +441,19 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     assert conn.private[:user_id] == 1
   end
 
+  test "returns 400 with invalid batch structure" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    # list of query strings is invalid
+    body = Jason.encode!(["{ item { name } }"])
+
+    assert %{status: 400} =
+             conn(:post, "/", body)
+             |> put_req_header("content-type", "application/json")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
+  end
+
   def test_before_send(conn, val) do
     # just for easy testing
     send(self(), {:before_send, val})
