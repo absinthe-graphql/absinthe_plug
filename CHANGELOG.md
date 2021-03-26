@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.5.6
+
+- Bug Fix: [Handle invalid batch request structure](https://github.com/absinthe-graphql/absinthe_plug/pull/255)
+
 ## v1.5.5
 
 - Bug Fix: [Don't wipe out an existing pubsub value in context](https://github.com/absinthe-graphql/absinthe_plug/pull/249)

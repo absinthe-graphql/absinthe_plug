@@ -56,6 +56,7 @@ defmodule Absinthe.Plug.Request do
   # Plug puts parsed params under the "_json" key when the
   # structure is not a map; otherwise it's just the keys themselves,
   # and they may sit in the body or in the params
+
   defp is_batch?(params) do
     Map.has_key?(params, "_json") && is_list(params["_json"])
   end
