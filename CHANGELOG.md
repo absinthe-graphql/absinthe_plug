@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.5.7
+
+- Bug Fix: [Handle over encoded JSON string request body](https://github.com/absinthe-graphql/absinthe_plug/pull/256)
+
 ## v1.5.6
 
 - Bug Fix: [Handle invalid batch request structure](https://github.com/absinthe-graphql/absinthe_plug/pull/255)

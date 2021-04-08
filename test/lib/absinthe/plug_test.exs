@@ -630,6 +630,20 @@ defmodule Absinthe.PlugTest do
     assert conn.private[:user_id] == 1
   end
 
+  test "returns 400 with over encoded JSON string" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    body = %{query: "{ item { name } }"} |> Jason.encode!() |> Jason.encode!() |> Jason.encode!()
+
+    assert %{status: 400, resp_body: resp_body} =
+             conn(:post, "/", body)
+             |> put_req_header("content-type", "application/json")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
+
+    assert resp_body =~ "Expecting an object or"
+  end
+
   defmodule NotaSchema do
   end
 
