@@ -61,9 +61,13 @@ defmodule Absinthe.Plug.Request do
     Map.has_key?(params, "_json") && is_list(params["_json"])
   end
 
-  defp valid_request?(%{"_json" => json}) do
+  defp valid_request?(%{"_json" => json}) when is_list(json) do
     Enum.all?(json, &is_map(&1)) ||
       {:input_error, "Invalid request structure. Expecting a list of objects."}
+  end
+
+  defp valid_request?(%{"_json" => json}) when is_binary(json) do
+    {:input_error, "Invalid request structure. Expecting an object or list of objects."}
   end
 
   defp valid_request?(_params), do: true

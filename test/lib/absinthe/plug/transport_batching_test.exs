@@ -447,11 +447,13 @@ defmodule Absinthe.Plug.TransportBatchingTest do
     # list of query strings is invalid
     body = Jason.encode!(["{ item { name } }"])
 
-    assert %{status: 400} =
+    assert %{status: 400, resp_body: resp_body} =
              conn(:post, "/", body)
              |> put_req_header("content-type", "application/json")
              |> plug_parser
              |> Absinthe.Plug.call(opts)
+
+    assert resp_body =~ "Expecting a list"
   end
 
   def test_before_send(conn, val) do
