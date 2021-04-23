@@ -482,6 +482,38 @@ defmodule Absinthe.PlugTest do
     assert Enum.member?(events, %{"data" => %{"update" => "BAR"}})
   end
 
+  @query """
+  query GetUser {
+    user
+  }
+  """
+
+  test "Context init options are preserved if conn.private[:absinthe][:context] is set" do
+    opts = Absinthe.Plug.init(schema: TestSchema, context: %{user: "Foo"})
+
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", %{"query" => @query})
+             |> Absinthe.Plug.assign_context(foo: "bar")
+             |> put_req_header("content-type", "application/json")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
+
+    assert resp_body == ~s({"data":{"user":"Foo"}})
+  end
+
+  test "Context init options are merged with conn.private[:absinthe][:context]" do
+    opts = Absinthe.Plug.init(schema: TestSchema, context: %{foo: "bar"})
+
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", %{"query" => @query})
+             |> Absinthe.Plug.assign_context(user: "Foo")
+             |> put_req_header("content-type", "application/json")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
+
+    assert resp_body == ~s({"data":{"user":"Foo"}})
+  end
+
   describe "put_options/2" do
     test "with a pristine connection it sets the values as provided" do
       conn =
@@ -571,6 +603,19 @@ defmodule Absinthe.PlugTest do
 
       assert updated_config.context.pubsub == PubSub
       assert updated_config.context.user_id == 1
+    end
+
+    test "don't wipe out context" do
+      config = Absinthe.Plug.init(schema: TestSchema, context: %{user: "Foo"})
+
+      conn =
+        conn(:post, "/")
+        |> Absinthe.Plug.assign_context(foo: "bar")
+
+      updated_config = Absinthe.Plug.update_config(conn, config)
+
+      assert updated_config.context.foo == "bar"
+      assert updated_config.context.user == "Foo"
     end
   end
 
