@@ -126,6 +126,7 @@ defmodule Absinthe.Plug do
 
   @init_options [
     :adapter,
+    :context,
     :no_query_message,
     :json_codec,
     :pipeline,
@@ -325,6 +326,7 @@ defmodule Absinthe.Plug do
     |> update_config(:raw_options, conn)
     |> update_config(:init_options, conn)
     |> update_config(:pubsub, conn)
+    |> update_config(:context, conn)
   end
 
   defp update_config(config, :pubsub, conn) do
@@ -343,7 +345,11 @@ defmodule Absinthe.Plug do
   end
 
   defp update_config(config, :init_options, %{private: %{absinthe: absinthe}}) do
-    Map.merge(config, Map.take(absinthe, @init_options -- @raw_options))
+    Map.merge(config, Map.take(absinthe, @init_options -- [:context | @raw_options]))
+  end
+
+  defp update_config(config, :context, %{private: %{absinthe: %{context: context}}}) do
+    update_in(config.context, &Map.merge(&1, context))
   end
 
   defp update_config(config, _, _conn) do

@@ -609,7 +609,7 @@ defmodule Absinthe.PlugTest do
       config = Absinthe.Plug.init(schema: TestSchema, context: %{user: "Foo"})
 
       conn =
-        conn(:post, "/", %{"query" => @query})
+        conn(:post, "/")
         |> Absinthe.Plug.assign_context(foo: "bar")
 
       updated_config = Absinthe.Plug.update_config(conn, config)
