@@ -126,7 +126,6 @@ defmodule Absinthe.Plug do
 
   @init_options [
     :adapter,
-    :context,
     :no_query_message,
     :json_codec,
     :pipeline,
