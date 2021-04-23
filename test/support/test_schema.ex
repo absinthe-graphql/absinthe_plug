@@ -39,13 +39,12 @@ defmodule Absinthe.Plug.TestSchema do
     end
 
     field :user, :string do
-      resolve fn _,
-                 %{
-                   context: %{
-                     user: user
-                   }
-                 } ->
-        {:ok, user}
+      resolve fn
+        _, %{context: %{user: user}} ->
+          {:ok, user}
+
+        _, %{context: %{}} ->
+          {:error, "User is missing in context"}
       end
     end
 
