@@ -604,6 +604,19 @@ defmodule Absinthe.PlugTest do
       assert updated_config.context.pubsub == PubSub
       assert updated_config.context.user_id == 1
     end
+
+    test "don't wipe out context" do
+      config = Absinthe.Plug.init(schema: TestSchema, context: %{user: "Foo"})
+
+      conn =
+        conn(:post, "/", %{"query" => @query})
+        |> Absinthe.Plug.assign_context(foo: "bar")
+
+      updated_config = Absinthe.Plug.update_config(conn, config)
+
+      assert updated_config.context.foo == "bar"
+      assert updated_config.context.user == "Foo"
+    end
   end
 
   describe "assign_context/2" do
