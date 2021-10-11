@@ -619,6 +619,32 @@ defmodule Absinthe.PlugTest do
     end
   end
 
+  describe "get_option/2" do
+    test "It gets the current options for the given key" do
+      context = %{current_user: %{id: 1}}
+
+      conn =
+        conn(:post, "/")
+        |> Absinthe.Plug.put_options(context: context)
+
+      assert Absinthe.Plug.get_option(conn, :context) == context
+    end
+
+    test "It returns nil if the key isn't found" do
+      context = %{current_user: %{id: 1}}
+
+      conn =
+        conn(:post, "/")
+        |> Absinthe.Plug.put_options(context: context)
+
+      assert Absinthe.Plug.get_option(conn, :doesnt_exist) == nil
+    end
+
+    test "It returns nil if there isn't aren't any options yet " do
+      assert Absinthe.Plug.get_option(conn(:post, "/"), :context) == nil
+    end
+  end
+
   describe "assign_context/2" do
     test "with a pristine connection it sets the values as provided" do
       conn =

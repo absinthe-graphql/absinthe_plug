@@ -398,6 +398,24 @@ defmodule Absinthe.Plug do
 
   ## Examples
 
+      iex> Absinthe.Plug.put_options(conn, context: :my_context)
+      iex> Absinthe.Plug.get_option(conn, :context)
+      :my_context
+  """
+  @spec get_option(Plug.Conn.t(), atom()) :: any()
+  def get_option(%Plug.Conn{private: %{absinthe: absinthe}}, key) do
+    Map.get(absinthe, key)
+  end
+
+  def get_option(_, _) do
+    nil
+  end
+
+  @doc """
+  Sets the options for a given GraphQL document execution.
+
+  ## Examples
+
       iex> Absinthe.Plug.put_options(conn, context: %{current_user: user})
       %Plug.Conn{}
   """
