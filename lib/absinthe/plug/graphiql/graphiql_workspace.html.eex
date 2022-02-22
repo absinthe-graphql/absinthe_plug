@@ -28,15 +28,10 @@ add "&raw" to the end of the URL within a browser.
 
       const urlObject = new URL(url);
 
-      const urlParams = urlObject.search
-                          .slice(1)
-                          .split('&')
-                          .filter(s => s !== '')
-                          .map(p => p.split('='))
-                          .reduce((obj, [key, value]) => {
-                            obj[key] = value;
-                            return obj;
-                          }, {});
+      const urlParams = {};
+      for (let [name, value] of urlObject.searchParams) {
+        urlParams[name] = value;
+      }
 
       return new AbsintheSocketGraphiql.SubscriptionsClient(`${urlObject.origin}${urlObject.pathname}`,
                                                             {params: Object.assign(urlParams, connectionParams)});
