@@ -260,12 +260,16 @@ defmodule Absinthe.Plug do
     schema
   end
 
-  defp valid_schema_module?(module) do
+  defp valid_schema_module?(module, retries \\ 0) do
     with true <- is_atom(module),
          {:module, _} <- Code.ensure_compiled(module),
          true <- Absinthe.Schema in Keyword.get(module.__info__(:attributes), :behaviour, []) do
       true
     else
+      {:error, :unavailable} when retries < 100 ->
+        Process.sleep(100)
+        valid_schema_module?(module, retries + 1)
+
       _ -> false
     end
   end
