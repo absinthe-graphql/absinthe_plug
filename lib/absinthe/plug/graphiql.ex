@@ -12,28 +12,24 @@ defmodule Absinthe.Plug.GraphiQL do
 
       if Mix.env == :dev do
         forward "/graphiql",
-          to: Absinthe.Plug.GraphiQL,
-          init_opts: [schema: MyAppWeb.Schema]
+          Absinthe.Plug.GraphiQL,
+          schema: MyAppWeb.Schema
       end
 
   Use the "simple" interface (original GraphiQL) instead:
 
       forward "/graphiql",
-        to: Absinthe.Plug.GraphiQL,
-        init_opts: [
-          schema: MyAppWeb.Schema,
-          interface: :simple
-        ]
+        Absinthe.Plug.GraphiQL,
+        schema: MyAppWeb.Schema,
+        interface: :simple
 
   Finally there is also support for GraphiQL Playground
   https://github.com/graphcool/graphql-playground
 
       forward "/graphiql",
-        to: Absinthe.Plug.GraphiQL,
-        init_opts: [
-          schema: MyAppWeb.Schema,
-          interface: :playground
-        ]
+        Absinthe.Plug.GraphiQL,
+        schema: MyAppWeb.Schema,
+        interface: :playground
 
 
   ## Interface Selection
