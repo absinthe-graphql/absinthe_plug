@@ -33,7 +33,7 @@
 - Feature: Allow overriding `Absinthe.Plug.DocumentProvider.Compiled` process function.
 - Feature: Opt out of the default [Transport Batch response nesting](https://github.com/absinthe-graphql/absinthe_plug/pull/237) with `transport_batch_payload_key: false`.
 - Feature: [Add `Absinthe.Plug.assign_context/2` helper](https://github.com/absinthe-graphql/absinthe_plug/pull/230) for inserting values into a `conn`'s Absinthe context.
-- Ensure all Absinthe.Plug options are overrideable via the runtime `put_options` function.
+- Ensure all Absinthe.Plug options are overridable via the runtime `put_options` function.
 
 ## v1.5.0
 
