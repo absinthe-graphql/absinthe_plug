@@ -130,6 +130,7 @@ defmodule Absinthe.Plug do
     :no_query_message,
     :json_codec,
     :pipeline,
+    :subscription_broker,
     :document_providers,
     :schema,
     :serializer,
@@ -153,8 +154,9 @@ defmodule Absinthe.Plug do
   - `:context` -- (Optional) Initial value for the Absinthe context, available to resolvers. (default: `%{}`).
   - `:no_query_message` -- (Optional) Message to return to the client if no query is provided (default: "No query document supplied").
   - `:json_codec` -- (Optional) A `module` or `{module, Keyword.t}` dictating which JSON codec should be used (default: `Jason`). The codec module should implement `encode!/2` (e.g., `module.encode!(body, opts)`).
-  - `:pipeline` -- (Optional) `{module, atom}` reference to a 2-arity function that will be called to generate the processing pipeline. (default: `{Absinthe.Plug, :default_pipeline}`).
-  - `:document_providers` -- (Optional) A `{module, atom}` reference to a 1-arity function that will be called to determine the document providers that will be used to process the request. (default: `{Absinthe.Plug, :default_document_providers}`, which configures `Absinthe.Plug.DocumentProvider.Default` as the lone document provider). A simple list of document providers can also be given. See `Absinthe.Plug.DocumentProvider` for more information about document providers, their role in processing requests, and how you can define and configure your own.
+  - `:pipeline` -- (Optional) `{module, atom}` reference to a 2-arity function that will be called to generate the processing pipeline. (default: [`{Absinthe.Plug, :default_pipeline}`](`default_pipeline/2`)).
+  - `:subscription_broker` -- (Optional) `{module, atom}` reference to a 3-arity function that will be called when `subscription` documents are submitted. (default: [`{Absinthe.Plug, :default_subscription_broker}`](`default_subscription_broker/3`)).
+  - `:document_providers` -- (Optional) A `{module, atom}` reference to a 1-arity function that will be called to determine the document providers that will be used to process the request. (default: [`{Absinthe.Plug, :default_document_providers}`](`default_document_providers/1`), which configures `Absinthe.Plug.DocumentProvider.Default` as the lone document provider). A simple list of document providers can also be given. See `Absinthe.Plug.DocumentProvider` for more information about document providers, their role in processing requests, and how you can define and configure your own.
   - `:schema` -- (Required, if not handled by Mix.Config) The Absinthe schema to use. If a module name is not provided, `Application.get_env(:absinthe, :schema)` will be attempt to find one.
   - `:serializer` -- (Optional) Similar to `:json_codec` but allows the use of serialization formats other than JSON, like MessagePack or Erlang Term Format. Defaults to whatever is set in `:json_codec`.
   - `:content_type` -- (Optional) The content type of the response. Should probably be set if `:serializer` option is used. Defaults to `"application/json"`.
@@ -172,6 +174,7 @@ defmodule Absinthe.Plug do
           context: map,
           json_codec: module | {module, Keyword.t()},
           pipeline: {module, atom},
+          subscription_broker: {module, atom},
           no_query_message: String.t(),
           document_providers:
             [Absinthe.Plug.DocumentProvider.t(), ...]
@@ -202,6 +205,9 @@ defmodule Absinthe.Plug do
     no_query_message = Keyword.get(opts, :no_query_message, "No query document supplied")
 
     pipeline = Keyword.get(opts, :pipeline, {__MODULE__, :default_pipeline})
+
+    subscription_broker =
+      Keyword.get(opts, :subscription_broker, {__MODULE__, :default_subscription_broker})
 
     document_providers =
       Keyword.get(opts, :document_providers, {__MODULE__, :default_document_providers})
@@ -239,6 +245,7 @@ defmodule Absinthe.Plug do
       json_codec: json_codec,
       no_query_message: no_query_message,
       pipeline: pipeline,
+      subscription_broker: subscription_broker,
       raw_options: raw_options,
       schema_mod: schema_mod,
       serializer: serializer,
@@ -294,9 +301,10 @@ defmodule Absinthe.Plug do
         conn
         |> encode(400, error_result(msg), config)
 
-      {:ok, %{"subscribed" => topic}} ->
-        conn
-        |> subscribe(topic, config)
+      {:ok, %{"subscribed" => _topic} = result} ->
+        {module, fun} = config.subscription_broker
+
+        apply(module, fun, [conn, config, result])
 
       {:ok, %{data: _} = result} ->
         conn
@@ -564,6 +572,17 @@ defmodule Absinthe.Plug do
         {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
       ]
     )
+  end
+
+  @doc """
+  The default subscription broker used to process GraphQL subscription documents.
+
+  It will start the subscription and any updates will be sent over the connection
+  using Server Side Events (SSE).
+  """
+  def default_subscription_broker(conn, config, %{"subscribed" => topic}) do
+    conn
+    |> subscribe(topic, config)
   end
 
   #

@@ -449,37 +449,61 @@ defmodule Absinthe.PlugTest do
     assert expected == resp_body
   end
 
-  test "Subscriptions over HTTP with Server Sent Events chunked response" do
-    TestPubSub.start_link()
-    Absinthe.Subscription.start_link(TestPubSub)
+  describe "Subscriptions" do
+    test "(default broker) over HTTP with Server Sent Events chunked response" do
+      TestPubSub.start_link()
+      Absinthe.Subscription.start_link(TestPubSub)
 
-    query = "subscription {update}"
-    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub)
+      query = "subscription {update}"
+      opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub)
 
-    request =
-      Task.async(fn ->
+      request =
+        Task.async(fn ->
+          conn(:post, "/", query: query)
+          |> put_req_header("content-type", "application/json")
+          |> plug_parser
+          |> Absinthe.Plug.call(opts)
+        end)
+
+      Process.sleep(200)
+      Absinthe.Subscription.publish(TestPubSub, "FOO", update: "*")
+      Absinthe.Subscription.publish(TestPubSub, "BAR", update: "*")
+      send(request.pid, :close)
+
+      conn = Task.await(request)
+      {_module, state} = conn.adapter
+
+      events =
+        state.chunks
+        |> String.split()
+        |> Enum.map(&Jason.decode!/1)
+
+      assert length(events) == 2
+      assert Enum.member?(events, %{"data" => %{"update" => "FOO"}})
+      assert Enum.member?(events, %{"data" => %{"update" => "BAR"}})
+    end
+
+    test "(custom broker) sends topic id in header" do
+      TestPubSub.start_link()
+      Absinthe.Subscription.start_link(TestPubSub)
+
+      query = "subscription {update}"
+
+      opts =
+        Absinthe.Plug.init(
+          schema: TestSchema,
+          pubsub: TestPubSub,
+          subscription_broker: {__MODULE__, :test_subscription_broker}
+        )
+
+      conn =
         conn(:post, "/", query: query)
         |> put_req_header("content-type", "application/json")
         |> plug_parser
         |> Absinthe.Plug.call(opts)
-      end)
 
-    Process.sleep(200)
-    Absinthe.Subscription.publish(TestPubSub, "FOO", update: "*")
-    Absinthe.Subscription.publish(TestPubSub, "BAR", update: "*")
-    send(request.pid, :close)
-
-    conn = Task.await(request)
-    {_module, state} = conn.adapter
-
-    events =
-      state.chunks
-      |> String.split()
-      |> Enum.map(&Jason.decode!/1)
-
-    assert length(events) == 2
-    assert Enum.member?(events, %{"data" => %{"update" => "FOO"}})
-    assert Enum.member?(events, %{"data" => %{"update" => "BAR"}})
+      assert ["__absinthe__:doc:" <> _] = get_resp_header(conn, "x-subscription-id")
+    end
   end
 
   @query """
@@ -713,6 +737,10 @@ defmodule Absinthe.PlugTest do
 
     conn
     |> put_private(:user_id, 1)
+  end
+
+  def test_subscription_broker(conn, _config, res) do
+    conn |> Plug.Conn.put_resp_header("x-subscription-id", res["subscribed"])
   end
 
   defp basic_opts(context) do
