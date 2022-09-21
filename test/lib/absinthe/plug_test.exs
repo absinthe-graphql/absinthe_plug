@@ -450,10 +450,13 @@ defmodule Absinthe.PlugTest do
   end
 
   describe "Subscriptions" do
-    test "(default broker) over HTTP with Server Sent Events chunked response" do
-      TestPubSub.start_link()
-      Absinthe.Subscription.start_link(TestPubSub)
+    setup do
+      start_supervised!(TestPubSub)
+      start_supervised!({Absinthe.Subscription, TestPubSub})
+      :ok
+    end
 
+    test "(default broker) over HTTP with Server Sent Events chunked response" do
       query = "subscription {update}"
       opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub)
 
@@ -484,9 +487,6 @@ defmodule Absinthe.PlugTest do
     end
 
     test "(custom broker) sends topic id in header" do
-      TestPubSub.start_link()
-      Absinthe.Subscription.start_link(TestPubSub)
-
       query = "subscription {update}"
 
       opts =
