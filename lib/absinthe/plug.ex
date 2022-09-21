@@ -103,6 +103,32 @@ defmodule Absinthe.Plug do
   end
   ```
 
+  ## Pipeline
+
+  GraphQL documents undergo a series of transformations when they are executed.
+  This happens in a pipeline. The pipeline is a series of phases, each of which
+  is responsible for e.g. parsing the document, validating it, or executing it.
+
+  The pipeline is configurable per document, and the pipeline callback can be
+  used to change it.
+
+  E.g. to skip the SubscribeSelf phase you can do:
+
+  ```elixir
+  plug Absinthe.Plug,
+    schema: MyApp.Schema,
+    pipeline: {__MODULE__, :document_pipeline}
+
+
+  def document_pipeline(config, pipeline_opts) do
+    config
+    |> Absinthe.Plug.default_pipeline(opts)
+    |> Absinthe.Pipeline.without(Absinthe.Phase.Subscription.SubscribeSelf)
+  end
+  ```
+
+  See `Absinthe.Pipeline` for more information.
+
   ## Included GraphQL Types
 
   This package includes additional types for use in Absinthe GraphQL schema and
