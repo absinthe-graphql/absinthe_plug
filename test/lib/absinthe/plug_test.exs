@@ -711,12 +711,13 @@ defmodule Absinthe.PlugTest do
     opts = Absinthe.Plug.init(schema: TestSchema)
     body = %{query: "{ exceptionRaising }"}
 
-    exception = assert_raise Plug.Conn.WrapperError, fn ->
-      conn(:post, "/", body)
-      |> put_req_header("content-type", "application/json")
-      |> plug_parser
-      |> Absinthe.Plug.call(opts)
-    end
+    exception =
+      assert_raise Plug.Conn.WrapperError, fn ->
+        conn(:post, "/", body)
+        |> put_req_header("content-type", "application/json")
+        |> plug_parser
+        |> Absinthe.Plug.call(opts)
+      end
 
     assert exception.conn.body_params == %{"query" => "{ exceptionRaising }"}
   end
