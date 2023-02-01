@@ -286,37 +286,43 @@ defmodule Absinthe.Plug do
   """
   @spec call(Plug.Conn.t(), map) :: Plug.Conn.t() | no_return
   def call(conn, config) do
-    config = update_config(conn, config)
-    {conn, result} = conn |> execute(config)
+    try do
+      config = update_config(conn, config)
+      {conn, result} = conn |> execute(config)
 
-    case result do
-      {:input_error, msg} ->
-        conn
-        |> encode(400, error_result(msg), config)
+      case result do
+        {:input_error, msg} ->
+          conn
+          |> encode(400, error_result(msg), config)
 
-      {:ok, %{"subscribed" => topic}} ->
-        conn
-        |> subscribe(topic, config)
+        {:ok, %{"subscribed" => topic}} ->
+          conn
+          |> subscribe(topic, config)
 
-      {:ok, %{data: _} = result} ->
-        conn
-        |> encode(200, result, config)
+        {:ok, %{data: _} = result} ->
+          conn
+          |> encode(200, result, config)
 
-      {:ok, %{errors: _} = result} ->
-        conn
-        |> encode(200, result, config)
+        {:ok, %{errors: _} = result} ->
+          conn
+          |> encode(200, result, config)
 
-      {:ok, result} when is_list(result) ->
-        conn
-        |> encode(200, result, config)
+        {:ok, result} when is_list(result) ->
+          conn
+          |> encode(200, result, config)
 
-      {:error, {:http_method, text}, _} ->
-        conn
-        |> encode(405, error_result(text), config)
+        {:error, {:http_method, text}, _} ->
+          conn
+          |> encode(405, error_result(text), config)
 
-      {:error, error, _} when is_binary(error) ->
-        conn
-        |> encode(500, error_result(error), config)
+        {:error, error, _} when is_binary(error) ->
+          conn
+          |> encode(500, error_result(error), config)
+      end
+    catch
+      kind, reason ->
+        stack = __STACKTRACE__
+        Plug.Conn.WrapperError.reraise(conn, kind, reason, stack)
     end
   end
 

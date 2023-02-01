@@ -50,7 +50,7 @@ defmodule Absinthe.Plug.DocumentProviderTest do
 
   test "cannot process without any document providers" do
     opts = Absinthe.Plug.init(schema: TestSchema, document_providers: [])
-    assert_raise RuntimeError, fn -> request(opts) end
+    assert_raise Plug.Conn.WrapperError, fn -> request(opts) end
   end
 
   defp request(opts) do

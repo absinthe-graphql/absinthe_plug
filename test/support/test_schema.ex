@@ -66,6 +66,12 @@ defmodule Absinthe.Plug.TestSchema do
         raise "complex string must not be resolved"
       end
     end
+
+    field :exception_raising, :string do
+      resolve fn _, _ ->
+        raise "uncaught exception"
+      end
+    end
   end
 
   subscription do

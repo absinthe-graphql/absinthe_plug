@@ -707,6 +707,21 @@ defmodule Absinthe.PlugTest do
     end
   end
 
+  test "raises wrapped error with plugged conn on uncaught exceptions" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+    body = %{query: "{ exceptionRaising }"}
+
+    exception =
+      assert_raise Plug.Conn.WrapperError, fn ->
+        conn(:post, "/", body)
+        |> put_req_header("content-type", "application/json")
+        |> plug_parser
+        |> Absinthe.Plug.call(opts)
+      end
+
+    assert exception.conn.body_params == %{"query" => "{ exceptionRaising }"}
+  end
+
   def test_before_send(conn, val) do
     # just for easy testing
     send(self(), {:before_send, val})
