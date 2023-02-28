@@ -262,21 +262,19 @@ defmodule Absinthe.Plug do
   defp get_schema(opts) do
     default = Application.get_env(:absinthe, :schema)
     schema = Keyword.get(opts, :schema, default)
-
-    valid_schema_module?(schema) ||
-      raise ArgumentError, "#{inspect(schema)} is not a valid `Absinthe.Schema`"
+    validate_schema_module!(schema)
 
     schema
   end
 
-  defp valid_schema_module?(module) do
-    with true <- is_atom(module),
-         {:module, _} <- Code.ensure_compiled(module),
-         true <- Absinthe.Schema in Keyword.get(module.__info__(:attributes), :behaviour, []) do
-      true
-    else
-      _ -> false
-    end
+  defp validate_schema_module!(schema) do
+    is_atom(schema) ||
+      raise ArgumentError, "#{inspect(schema)} is not a valid `Absinthe.Schema`, expected an atom"
+
+    Code.ensure_compiled!(schema)
+
+    Absinthe.Schema in Keyword.get(schema.__info__(:attributes), :behaviour, []) ||
+      raise ArgumentError, "#{inspect(schema)} is not a valid `Absinthe.Schema`"
   end
 
   @doc false

@@ -724,18 +724,20 @@ defmodule Absinthe.PlugTest do
   defmodule NotaSchema do
   end
 
-  @message_matcher ~r/not a valid `Absinthe.Schema`/
-  test "schema module validation checks" do
-    assert_raise ArgumentError, @message_matcher, fn ->
-      Absinthe.Plug.init(schema: :not_a_module)
+  describe "schema module validation checks" do
+    test "not an atom" do
+      error = ~r/not a valid `Absinthe.Schema`, expected an atom/
+      assert_raise ArgumentError, error, fn -> Absinthe.Plug.init(schema: "not even an atom") end
     end
 
-    assert_raise ArgumentError, @message_matcher, fn ->
-      Absinthe.Plug.init(schema: NotaSchema)
+    test "not a module" do
+      error = ~r/could not load module :not_a_module due to reason :nofile/
+      assert_raise ArgumentError, error, fn -> Absinthe.Plug.init(schema: :not_a_module) end
     end
 
-    assert_raise ArgumentError, @message_matcher, fn ->
-      Absinthe.Plug.init(schema: "not even an atom")
+    test "not a schema" do
+      error = ~r/not a valid `Absinthe.Schema`/
+      assert_raise ArgumentError, error, fn -> Absinthe.Plug.init(schema: NotaSchema) end
     end
   end
 

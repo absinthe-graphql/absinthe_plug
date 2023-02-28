@@ -7,7 +7,7 @@ defmodule Absinthe.Plug.Mixfile do
     [
       app: :absinthe_plug,
       version: @version,
-      elixir: "~> 1.10",
+      elixir: "~> 1.12",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
