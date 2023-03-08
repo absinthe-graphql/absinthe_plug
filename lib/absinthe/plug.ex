@@ -139,11 +139,13 @@ defmodule Absinthe.Plug do
     :pubsub,
     :analyze_complexity,
     :max_complexity,
+    :token_limit,
     :transport_batch_payload_key
   ]
   @raw_options [
     :analyze_complexity,
-    :max_complexity
+    :max_complexity,
+    :token_limit
   ]
 
   @type function_name :: atom
@@ -163,6 +165,7 @@ defmodule Absinthe.Plug do
   - `:pubsub` -- (Optional) Pub Sub module for Subscriptions.
   - `:analyze_complexity` -- (Optional) Set whether to calculate the complexity of incoming GraphQL queries.
   - `:max_complexity` -- (Optional) Set the maximum allowed complexity of the GraphQL query. If a document’s calculated complexity exceeds the maximum, resolution will be skipped and an error will be returned in the result detailing the calculated and maximum complexities.
+  - `:token_limit` -- (Optional) Set a limit on the number of allowed parseable tokens in the GraphQL query. Queries with exceedingly high token counts can be expensive to parse. If a query's token count exceeds the set limit, an error will be returned during Absinthe parsing (default: `:infinity`).
   - `:transport_batch_payload_key` -- (Optional) Set whether or not to nest Transport Batch request results in a `payload` key. Older clients expected this key to be present, but newer clients have dropped this pattern. (default: `true`)
 
   """
@@ -179,6 +182,7 @@ defmodule Absinthe.Plug do
             | {module, atom},
           analyze_complexity: boolean,
           max_complexity: non_neg_integer | :infinity,
+          token_limit: non_neg_integer | :infinity,
           serializer: module | {module, Keyword.t()},
           content_type: String.t(),
           before_send: {module, atom},
