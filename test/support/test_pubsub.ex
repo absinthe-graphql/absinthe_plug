@@ -1,6 +1,13 @@
 defmodule Absinthe.Plug.TestPubSub do
   @behaviour Absinthe.Subscription.Pubsub
 
+  def child_spec(_) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, []}
+    }
+  end
+
   def node_name() do
     to_string(node())
   end

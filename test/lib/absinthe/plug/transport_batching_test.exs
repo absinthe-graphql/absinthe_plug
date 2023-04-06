@@ -382,7 +382,7 @@ defmodule Absinthe.Plug.TransportBatchingTest do
                                  %{
                                    id: "2",
                                    query:
-                                     "query Upload($file: Upload) {uploadTest(fileA: $file)}",
+                                     "query Upload($file: Upload!) {uploadTest(fileA: $file)}",
                                    variables: %{"file" => "a"}
                                  }
                                ]
