@@ -1,0 +1,39 @@
+<!--
+See https://www.apollographql.com/docs/graphos/explorer/sandbox/#embedding-sandbox
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Apollo Explorer Sandbox</title>
+
+  <style>
+    /**
+     * The new CSS reset - version 1.8.4 (last updated 14.2.2023)
+     * GitHub page: https://github.com/elad2412/the-new-css-reset
+     */
+    *:where(:not(html, iframe, canvas, img, svg, video, audio):not(svg *, symbol *)) {all: unset;display: revert;}*, *::before, *::after {box-sizing: border-box;}a, button {cursor: revert;}ol, ul, menu {list-style: none;}img {max-inline-size: 100%;max-block-size: 100%;}table {border-collapse: collapse;}input, textarea {-webkit-user-select: auto;}textarea {white-space: revert;}meter {-webkit-appearance: revert;appearance: revert;}:where(pre) {all: revert;}::placeholder {color: unset;}::marker {content: initial;}:where([hidden]) {display: none;}:where([contenteditable]:not([contenteditable="false"])) {-moz-user-modify: read-write;-webkit-user-modify: read-write;overflow-wrap: break-word;-webkit-line-break: after-white-space;-webkit-user-select: auto;}:where([draggable="true"]) {-webkit-user-drag: element;}:where(dialog:modal) {all: revert;}
+  </style>
+
+  <style>
+    body {min-height: 100vh;}
+  </style>
+</head>
+<body>
+  <div style="width: 100%; height: 100vh;" id='embedded-sandbox'></div>
+  <script src="https://embeddable-sandbox.cdn.apollographql.com/_latest/embeddable-sandbox.umd.production.min.js"></script>
+  <script>
+    new window.EmbeddedSandbox({
+      target: '#embedded-sandbox',
+      initialEndpoint: <%= default_url %>,
+      initialState: {
+        headers: JSON.stringify(<%= default_headers %>),
+        variables: '<%= variables_string %>',
+        document: '<%= query_string %>'
+      }
+    });
+  </script>
+</body>
+</html>

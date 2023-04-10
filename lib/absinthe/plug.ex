@@ -36,7 +36,17 @@ defmodule Absinthe.Plug do
         to: Absinthe.Plug.GraphiQL,
         init_opts: [schema: MyAppWeb.Schema]
 
-  For more information, see the API documentation for `Absinthe.Plug`.
+  To specifywhat GraphiQL interface should be used, you may add the `:interface`
+  to `init_opts`:
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyAppWeb.Schema,
+          interface: :apollo_explorer_sandbox
+        ]
+
+  For more information, see the API documentation for `Absinthe.Plug` and `Absinthe.Plug.GraphiQL`.
 
   ### Phoenix.Router
 

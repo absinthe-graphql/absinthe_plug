@@ -1,39 +1,6 @@
 defmodule Absinthe.Plug.GraphiQL do
   @moduledoc """
-  Provides a GraphiQL interface.
-
-
-  ## Examples
-
-  The examples here are shown in
-
-  Serve the GraphiQL "advanced" interface at `/graphiql`, but only in
-  development:
-
-      if Mix.env == :dev do
-        forward "/graphiql",
-          to: Absinthe.Plug.GraphiQL,
-          init_opts: [schema: MyAppWeb.Schema]
-      end
-
-  Use the "simple" interface (original GraphiQL) instead:
-
-      forward "/graphiql",
-        to: Absinthe.Plug.GraphiQL,
-        init_opts: [
-          schema: MyAppWeb.Schema,
-          interface: :simple
-        ]
-
-  Finally there is also support for GraphiQL Playground
-  https://github.com/graphcool/graphql-playground
-
-      forward "/graphiql",
-        to: Absinthe.Plug.GraphiQL,
-        init_opts: [
-          schema: MyAppWeb.Schema,
-          interface: :playground
-        ]
+  Provides a GraphiQL interface to run queries from.
 
 
   ## Interface Selection
@@ -42,19 +9,78 @@ defmodule Absinthe.Plug.GraphiQL do
 
   - `:advanced` (default) will serve the [GraphiQL Workspace](https://github.com/OlegIlyenko/graphiql-workspace) interface from Oleg Ilyenko.
   - `:simple` will serve the original [GraphiQL](https://github.com/graphql/graphiql) interface from Facebook.
-  - `:playground` will serve the [GraphQL Playground](https://github.com/graphcool/graphql-playground) interface from Graphcool.
+  - `:playground` (project [deprecated in Dec 2022](https://www.apollographql.com/docs/apollo-server/v2/testing/graphql-playground/)) will serve the [GraphQL Playground](https://github.com/graphcool/graphql-playground) interface from Graphcool.
+  - `:apollo_explorer_sandbox` will serve the [Apollo Explorer Sandbox](https://www.apollographql.com/docs/graphos/explorer/sandbox/#embedding-sandbox) interface from Apollo.
 
-  See `Absinthe.Plug` for the other  options.
+  See `Absinthe.Plug` for the other options.
 
-  ## Default Headers
 
-  You can optionally provide default headers if the advanced interface (GraphiQL Workspace) is selected.
-  Note that you may have to clean up your existing workspace by clicking the trashcan icon in order to see the newly set default headers.
+  ## Examples
+
+  Using the GraphiQL `:advanced` interface at `/graphiql`:
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [schema: MyAppWeb.Schema]
+
+  Or, if you prever to serve the interface only for development environment:
+
+      if Mix.env == :dev do
+        forward "/graphiql",
+          to: Absinthe.Plug.GraphiQL,
+          init_opts: [schema: MyAppWeb.Schema]
+      end
+
+  Using the "simple" interface (original GraphiQL) instead:
 
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
         init_opts: [
           schema: MyAppWeb.Schema,
+          interface: :simple
+        ]
+
+  Using `:playground` interface ([deprecated in Dec 2022](https://www.apollographql.com/docs/apollo-server/v2/testing/graphql-playground/)):
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyAppWeb.Schema,
+          interface: :playground
+        ]
+
+  Using [Apollo Explorer Sandbox](https://www.apollographql.com/docs/graphos/explorer/sandbox)
+  (no Apollo account required):
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyAppWeb.Schema,
+          interface: :apollo_expolorer_sandbox
+        ]
+
+
+  ## Default Headers
+
+  Optionally defines headers commonly used to request the API, such as the
+  API token if the user accessing the interface is signed-in.
+
+  Supported by interfaces:
+  - `:advanced`;
+  - `:apollo_explorer_sandbox`.
+
+  Note that you migh need to clear the current headers to get refreshed ones
+  from the server. Each interface might have a different way to do so but,
+  if needed, regardless of the selected interface cleaning the application's
+  data from the browser's dev tools should do the trick.
+
+  ### Examples:
+
+      forward "/graphiql",
+        to: Absinthe.Plug.GraphiQL,
+        init_opts: [
+          schema: MyAppWeb.Schema,
+          interface: :advanced,
           default_headers: {__MODULE__, :graphiql_headers}
         ]
 
@@ -65,8 +91,9 @@ defmodule Absinthe.Plug.GraphiQL do
         }
       end
 
-  You can also provide a function that takes a conn argument if you need to access connection data
-  (e.g. if you need to set an Authorization header based on the currently logged-in user).
+  You can also provide a function that takes a `conn` argument if you need to
+  access connection data (e.g. if you need to set an Authorization header based
+  on the currently logged-in user).
 
       def graphiql_headers(conn) do
         %{
@@ -74,10 +101,17 @@ defmodule Absinthe.Plug.GraphiQL do
         }
       end
 
+
   ## Default URL
 
-  You can also optionally set the default URL to be used for sending the queries to.
-  This only applies to the advanced interface (GraphiQL Workspace) and the GraphQL Playground.
+  Optionally set the default URL to be used for sending the queries to.
+
+  Supported by interfaces:
+  - `:advanced`;
+  - `:playground`;
+  - `:apollo_explorer_sandbox`;
+
+  Examples:
 
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
@@ -99,10 +133,14 @@ defmodule Absinthe.Plug.GraphiQL do
         conn.assigns[:graphql_url]
       end
 
+
   ## Socket URL
 
-  You can also optionally set the default websocket URL to be used for subscriptions.
-  This only applies to the advanced interface (GraphiQL Workspace) and the GraphQL Playground.
+  Optionally set the default websocket URL to be used for subscriptions.
+
+  Supported by interfaces:
+  - `:advanced`;
+  - `:playground`.
 
       forward "/graphiql",
         to: Absinthe.Plug.GraphiQL,
@@ -150,6 +188,13 @@ defmodule Absinthe.Plug.GraphiQL do
     [:default_url, :socket_url, :assets]
   )
 
+  EEx.function_from_file(
+    :defp,
+    :graphiql_apollo_explorer_sandbox_html,
+    Path.join(@graphiql_template_path, "apollo_explorer_sandbox.html.eex"),
+    [:query_string, :variables_string, :default_headers, :default_url]
+  )
+
   @behaviour Plug
 
   import Plug.Conn
@@ -160,9 +205,9 @@ defmodule Absinthe.Plug.GraphiQL do
           path: binary,
           context: map,
           json_codec: atom | {atom, Keyword.t()},
-          interface: :playground | :advanced | :simple,
+          interface: :apollo_explorer_sandbox | :playground | :advanced | :simple,
           default_headers: {module, atom},
-          default_url: binary,
+          default_url: binary | {module, atom},
           assets: Keyword.t(),
           socket: module,
           socket_url: binary
@@ -205,12 +250,8 @@ defmodule Absinthe.Plug.GraphiQL do
     end
   end
 
-  defp do_call(conn, %{interface: interface} = config) do
-    config =
-      config
-      |> handle_default_headers(conn)
-      |> put_config_value(:default_url, conn)
-      |> handle_socket_url(conn)
+  defp do_call(conn, %{interface: interface} = opts) do
+    config = get_resolved_config(opts, conn)
 
     with {:ok, conn, request} <- Absinthe.Plug.Request.parse(conn, config),
          {:process, request} <- select_mode(request),
@@ -251,12 +292,11 @@ defmodule Absinthe.Plug.GraphiQL do
           |> js_escape
 
         config =
-          %{
+          Map.merge(config, %{
             query: query,
             var_string: var_string,
             result: result
-          }
-          |> Map.merge(config)
+          })
 
         conn
         |> render_interface(interface, config)
@@ -278,11 +318,10 @@ defmodule Absinthe.Plug.GraphiQL do
           |> js_escape
 
         config =
-          %{
+          Map.merge(config, %{
             query: query,
             var_string: var_string
-          }
-          |> Map.merge(config)
+          })
 
         conn
         |> render_interface(interface, config)
@@ -333,15 +372,11 @@ defmodule Absinthe.Plug.GraphiQL do
     end
   end
 
-  @render_defaults %{var_string: "", results: ""}
-
-  @spec render_interface(Plug.Conn.t(), :advanced | :simple | :playground, map()) ::
+  @spec render_interface(Plug.Conn.t(), :advanced | :simple | :playground | :apollo_explorer_sandbox, map) ::
           Plug.Conn.t()
   defp render_interface(conn, interface, opts)
 
   defp render_interface(conn, :simple, opts) do
-    opts = opts_with_default(opts)
-
     graphiql_html(
       opts[:query],
       opts[:var_string],
@@ -353,13 +388,11 @@ defmodule Absinthe.Plug.GraphiQL do
   end
 
   defp render_interface(conn, :advanced, opts) do
-    opts = opts_with_default(opts)
-
     graphiql_workspace_html(
       opts[:query],
       opts[:var_string],
-      opts[:default_headers],
-      default_url(opts[:default_url]),
+      opts[:default_headers] |> to_json_kv_list(opts.json_codec),
+      opts[:default_url] |> with_fallback_default_url(),
       opts[:socket_url],
       opts[:assets]
     )
@@ -367,24 +400,40 @@ defmodule Absinthe.Plug.GraphiQL do
   end
 
   defp render_interface(conn, :playground, opts) do
-    opts = opts_with_default(opts)
-
     graphiql_playground_html(
-      default_url(opts[:default_url]),
+      opts[:default_url] |> with_fallback_default_url(),
       opts[:socket_url],
       opts[:assets]
     )
     |> rendered(conn)
   end
 
-  defp opts_with_default(opts) do
-    defaults = Map.put(@render_defaults, :query, opts[:default_query])
+  defp render_interface(conn, :apollo_explorer_sandbox, opts) do
+    default_url = opts[:default_url] || conn.assigns[:graphql_url]
 
-    Map.merge(defaults, opts)
+    graphiql_apollo_explorer_sandbox_html(
+      opts[:query],
+      opts[:var_string],
+      opts[:default_headers] |> to_url_encoded!(),
+      default_url |> with_fallback_default_url()
+    )
+    |> rendered(conn)
   end
 
-  defp default_url(nil), do: "window.location.origin + window.location.pathname"
-  defp default_url(url), do: "'#{url}'"
+  @render_defaults %{var_string: "", result: ""}
+
+  defp get_resolved_config(opts, conn) do
+    @render_defaults
+    |> Map.put(:query, opts[:default_query])
+    |> Map.merge(opts)
+    |> resolve_config_value(conn, {:default_headers, :map})
+    |> resolve_config_value(conn, {:default_url, :string})
+    |> resolve_config_value(conn, {:socket_url, :string})
+    |> normalize_socket_url(conn)
+  end
+
+  defp with_fallback_default_url(nil), do: "window.location.origin + window.location.pathname"
+  defp with_fallback_default_url(url), do: "'#{url}'"
 
   @spec rendered(String.t(), Plug.Conn.t()) :: Plug.Conn.t()
   defp rendered(html, conn) do
@@ -399,53 +448,26 @@ defmodule Absinthe.Plug.GraphiQL do
     |> String.replace(~r/'/, "\\'")
   end
 
-  defp handle_default_headers(config, conn) do
-    case get_config_val(config, :default_headers, conn) do
-      nil ->
-        Map.put(config, :default_headers, "[]")
-
-      val when is_map(val) ->
-        header_string =
-          val
-          |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
-          |> config.json_codec.module.encode!(pretty: true)
-
-        Map.put(config, :default_headers, header_string)
-
-      val ->
-        raise "invalid default headers: #{inspect(val)}"
-    end
-  end
-
   defp function_arity(module, fun) do
     Enum.find([1, 0], nil, &function_exported?(module, fun, &1))
   end
 
-  defp put_config_value(config, key, conn) do
-    case get_config_val(config, key, conn) do
-      nil ->
-        config
-
-      val when is_binary(val) ->
-        Map.put(config, key, val)
-
-      val ->
-        raise "invalid #{key}: #{inspect(val)}"
-    end
-  end
-
   defp get_config_val(config, key, conn) do
     case Map.get(config, key) do
-      {module, fun} when is_atom(fun) ->
-        case function_arity(module, fun) do
+      {mod, fun} when is_atom(fun) ->
+        case function_arity(mod, fun) do
           1 ->
-            apply(module, fun, [conn])
+            apply(mod, fun, [conn])
 
           0 ->
-            apply(module, fun, [])
+            apply(mod, fun, [])
 
-          _ ->
-            raise "function for #{key}: {#{module}, #{fun}} is not exported with arity 1 or 0"
+          :error ->
+            raise """
+            invalid #{key}: expected `#{mod}.#{fun}/0` or `#{mod}.#{fun}/1` to have been defined
+
+            Is the function public? Make sure it is.
+            """
         end
 
       val ->
@@ -453,10 +475,20 @@ defmodule Absinthe.Plug.GraphiQL do
     end
   end
 
-  defp handle_socket_url(config, conn) do
-    config
-    |> put_config_value(:socket_url, conn)
-    |> normalize_socket_url(conn)
+  defp resolve_config_value(config, conn, {key, type})
+       when type in [:atom, :string, :map] do
+    value =
+      case {get_config_val(config, key, conn), type} do
+        {nil, :map} -> %{}
+        {nil, _} -> nil
+        {<<_::binary>> = val, :string} -> val
+        {val, :atom} when is_atom(val) -> val
+        {%_{} = val, :map} -> raise "invalid #{key}: expected nil or map, got struct `#{inspect(val)}`"
+        {%{} = val, :map} when is_map(val) -> val
+        val -> raise "invalid #{key}: expected nil or #{type}, got `#{inspect(val)}`"
+      end
+
+    Map.put(config, key, value)
   end
 
   defp normalize_socket_url(%{socket_url: nil, socket: socket} = config, conn) do
@@ -473,4 +505,16 @@ defmodule Absinthe.Plug.GraphiQL do
   defp normalize_socket_url(%{socket_url: url} = config, _) do
     %{config | socket_url: "'#{url}'"}
   end
+
+  defp to_json(value, {mod, opts}) when is_atom(mod) and is_list(opts), do: mod.encode!(value, opts)
+  defp to_json(value, mod) when is_atom(mod), do: to_json(value, {mod, pretty: true})
+
+  defp to_json_kv_list(%{} = map, json_coded) do
+    map
+    |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
+    |> to_json(json_coded)
+  end
+
+  defp to_url_encoded!(nil), do: nil
+  defp to_url_encoded!(%{} = map), do: URI.encode_query(map)
 end

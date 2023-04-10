@@ -1,5 +1,9 @@
 # This file is responsible for configuring your application
 # and its dependencies with the aid of the Mix.Config module.
+
+# `Mix.Config` is deprecated since elixir's version v1.12.3.
+# @TODO: Replace `use Mix.Config` for `import Config` on v2 release and bump
+#        Elixir's minimum version to v1.12.3.
 use Mix.Config
 
 # This configuration is loaded before any dependency and is restricted
