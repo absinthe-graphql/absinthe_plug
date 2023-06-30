@@ -14,7 +14,12 @@ defmodule Absinthe.Plug.Mixfile do
       package: package(),
       source_url: "https://github.com/absinthe-graphql/absinthe_plug",
       docs: [source_ref: "v#{@version}", main: "Absinthe.Plug"],
-      deps: deps()
+      deps: deps(),
+      dialyzer: [
+        plt_add_apps: [:mix],
+        plt_add_deps: :apps_direct,
+        plt_file: {:no_warn, "priv/plts/project.plt"}
+      ]
     ]
   end
 
@@ -42,10 +47,11 @@ defmodule Absinthe.Plug.Mixfile do
 
   defp deps do
     [
-      {:absinthe, "~> 1.5"},
+      {:absinthe, "~> 1.7"},
       {:plug, "~> 1.4"},
       {:jason, ">= 0.0.0", only: [:dev, :test]},
-      {:ex_doc, "~> 0.20", only: :dev}
+      {:ex_doc, "~> 0.20", only: :dev},
+      {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false}
     ]
   end
 end

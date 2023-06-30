@@ -58,9 +58,7 @@ add "&raw" to the end of the URL within a browser.
     var options = {};
     var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
-    <%= if default_url do %>
-      options.endpoint = <%= default_url %>;
-    <% end %>
+    options.endpoint = <%= default_url %>;
 
     <%= if socket_url do %>
       options.subscriptionEndpoint = <%= socket_url %>;

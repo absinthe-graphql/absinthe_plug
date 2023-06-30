@@ -146,7 +146,7 @@ defmodule Absinthe.Plug.Request.Query do
   # DOCUMENT PROVIDERS
   #
 
-  @spec calculate_document_providers(map) :: [Absinthe.Plug.DocumentProvider.t(), ...]
+  @spec calculate_document_providers(map) :: [Absinthe.Plug.DocumentProvider.t()]
   defp calculate_document_providers(%{document_providers: {module, fun}} = config)
        when is_atom(fun) do
     apply(module, fun, [config])
