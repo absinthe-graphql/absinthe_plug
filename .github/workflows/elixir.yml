@@ -14,22 +14,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        elixir:
+          - "1.13"
+          - "1.14"
+          - "1.15"
+        otp:
+          - "24"
+          - "25"
+          - "26"
         include:
-        - pair:
-            elixir: 1.10.4
-            otp: 21.3
-        - pair:
-            elixir: 1.13.3
-            otp: 24.2.1
-          lint: lint
+          - elixir: "1.15"
+            otp: "26"
+            format: true
+        exclude:
+          - elixir: "1.13"
+            otp: "26"
+          - elixir: "1.14"
+            otp: "26"
 
     steps:
     - uses: actions/checkout@v2
 
     - uses: erlef/setup-beam@v1
       with:
-        otp-version: ${{matrix.pair.otp}}
-        elixir-version: ${{matrix.pair.elixir}}
+        otp-version: ${{matrix.otp}}
+        elixir-version: ${{matrix.elixir}}
 
     - name: Restore deps cache
       uses: actions/cache@v2
@@ -47,6 +56,7 @@ jobs:
 
     - name: Check code format
       run: mix format --check-formatted
+      if: ${{ matrix.format }}
 
     - name: Compile dependencies
       run: mix compile
@@ -62,8 +72,8 @@ jobs:
         path: |
           priv/plts
         key: "${{ runner.os }}-\
-              erlang-${{ matrix.pair.otp }}-\
-              elixir-${{ matrix.pair.elixir }}-\
+              erlang-${{ matrix.otp }}-\
+              elixir-${{ matrix.elixir }}-\
               ${{ hashFiles('mix.lock') }}"
 
     - name: Run Dialyzer
