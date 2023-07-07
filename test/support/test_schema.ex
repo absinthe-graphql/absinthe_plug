@@ -67,7 +67,7 @@ defmodule Absinthe.Plug.TestSchema do
       end
     end
 
-    field :with_error_extensions do
+    field :with_error_extensions, :string do
       resolve fn _, _ ->
         {:error, message: "Simulated internal error", code: 500}
       end

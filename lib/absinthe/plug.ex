@@ -575,7 +575,7 @@ defmodule Absinthe.Plug do
     config.schema_mod
     |> Absinthe.Pipeline.for_document(pipeline_opts)
     # See: https://github.com/absinthe-graphql/absinthe/issues/925
-    |> Absinthe.Pipeline.replace(Absinthe.Phase.Document.Result, {Absinthe.Phase.Document.Result, merged_opts})
+    |> Absinthe.Pipeline.replace(Absinthe.Phase.Document.Result, {Absinthe.Phase.Document.Result, merged_pipeline_opts})
     |> Absinthe.Pipeline.insert_after(
       Absinthe.Phase.Document.CurrentOperation,
       [

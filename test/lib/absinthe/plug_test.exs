@@ -715,21 +715,21 @@ defmodule Absinthe.PlugTest do
 
   test "uses modern error spec" do
     opts = Absinthe.Plug.init(schema: TestSchema, spec_compliant_errors: true)
-    
-    assert %{status: 200, resp_body: resp_body} = 
+
+    assert %{status: 200, resp_body: resp_body} =
       conn(:post, "/", @internal_error_query)
       |> put_req_header("content-type", "application/graphql")
       |> plug_parser
       |> Absinthe.Plug.call(opts)
 
     body = Jason.decode!(resp_body)
-    assert %{"errors" => [%{"extensions" => %{"code" => 500}}]}
+    assert %{"errors" => [%{"extensions" => %{"code" => 500}}]} = body
   end
 
   test "uses legacy error spec" do
     opts = Absinthe.Plug.init(schema: TestSchema)
-    
-    assert %{status: 200, resp_body: resp_body} = 
+
+    assert %{status: 200, resp_body: resp_body} =
       conn(:post, "/", @internal_error_query)
       |> put_req_header("content-type", "application/graphql")
       |> plug_parser
