@@ -66,6 +66,12 @@ defmodule Absinthe.Plug.TestSchema do
         raise "complex string must not be resolved"
       end
     end
+
+    field :with_error_extensions do
+      resolve fn _, _ ->
+        {:error, message: "Simulated internal error", code: 500}
+      end
+    end
   end
 
   subscription do
