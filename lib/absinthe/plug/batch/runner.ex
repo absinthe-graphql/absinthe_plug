@@ -35,14 +35,14 @@ defmodule Absinthe.Plug.Batch.Runner do
         {:ok, bp, _query, _index} -> bp
       end)
 
-    querys_and_indices =
+    queries_and_indices =
       Enum.map(valid_queries, fn
         {:ok, _bp, query, index} -> {query, index}
       end)
 
     blueprints
     |> Absinthe.Pipeline.BatchResolver.run(schema: schema)
-    |> Enum.zip(querys_and_indices)
+    |> Enum.zip(queries_and_indices)
     |> Enum.map(fn {bp, {query, i}} ->
       {i, build_result(bp, query)}
     end)
