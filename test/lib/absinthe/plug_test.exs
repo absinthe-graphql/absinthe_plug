@@ -707,6 +707,38 @@ defmodule Absinthe.PlugTest do
     end
   end
 
+  @internal_error_query """
+  query InternalErrorQuery {
+    withErrorExtensions
+  }
+  """
+
+  test "uses modern error spec" do
+    opts = Absinthe.Plug.init(schema: TestSchema, spec_compliant_errors: true)
+
+    assert %{status: 200, resp_body: resp_body} =
+      conn(:post, "/", @internal_error_query)
+      |> put_req_header("content-type", "application/graphql")
+      |> plug_parser
+      |> Absinthe.Plug.call(opts)
+
+    body = Jason.decode!(resp_body)
+    assert %{"errors" => [%{"extensions" => %{"code" => 500}}]} = body
+  end
+
+  test "uses legacy error spec" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 200, resp_body: resp_body} =
+      conn(:post, "/", @internal_error_query)
+      |> put_req_header("content-type", "application/graphql")
+      |> plug_parser
+      |> Absinthe.Plug.call(opts)
+
+    body = Jason.decode!(resp_body)
+    assert %{"errors" => [%{"code" => 500}]} = body
+  end
+
   def test_before_send(conn, val) do
     # just for easy testing
     send(self(), {:before_send, val})

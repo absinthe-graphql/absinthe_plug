@@ -140,7 +140,8 @@ defmodule Absinthe.Plug do
     :analyze_complexity,
     :max_complexity,
     :token_limit,
-    :transport_batch_payload_key
+    :transport_batch_payload_key,
+    :spec_compliant_errors
   ]
   @raw_options [
     :analyze_complexity,
@@ -167,6 +168,7 @@ defmodule Absinthe.Plug do
   - `:max_complexity` -- (Optional) Set the maximum allowed complexity of the GraphQL query. If a document’s calculated complexity exceeds the maximum, resolution will be skipped and an error will be returned in the result detailing the calculated and maximum complexities.
   - `:token_limit` -- (Optional) Set a limit on the number of allowed parseable tokens in the GraphQL query. Queries with exceedingly high token counts can be expensive to parse. If a query's token count exceeds the set limit, an error will be returned during Absinthe parsing (default: `:infinity`).
   - `:transport_batch_payload_key` -- (Optional) Set whether or not to nest Transport Batch request results in a `payload` key. Older clients expected this key to be present, but newer clients have dropped this pattern. (default: `true`)
+  - `:spec_compliant_errors` -- (Optional) Set whether or not to use the modern error result format. (see: https://spec.graphql.org/June2018/#sec-Errors) (default: `false`)
 
   """
   @type opts :: [
@@ -188,7 +190,8 @@ defmodule Absinthe.Plug do
           before_send: {module, atom},
           log_level: Logger.level(),
           pubsub: module | nil,
-          transport_batch_payload_key: boolean
+          transport_batch_payload_key: boolean,
+          spec_compliant_errors: boolean
         ]
 
   @doc """
@@ -236,6 +239,8 @@ defmodule Absinthe.Plug do
 
     transport_batch_payload_key = Keyword.get(opts, :transport_batch_payload_key, true)
 
+    spec_compliant_errors = Keyword.get(opts, :spec_compliant_errors, false)
+
     %{
       adapter: adapter,
       context: context,
@@ -250,7 +255,8 @@ defmodule Absinthe.Plug do
       log_level: log_level,
       pubsub: pubsub,
       before_send: before_send,
-      transport_batch_payload_key: transport_batch_payload_key
+      transport_batch_payload_key: transport_batch_payload_key,
+      spec_compliant_errors: spec_compliant_errors
     }
   end
 
@@ -560,8 +566,16 @@ defmodule Absinthe.Plug do
   """
   @spec default_pipeline(map, Keyword.t()) :: Absinthe.Pipeline.t()
   def default_pipeline(config, pipeline_opts) do
+    spec_compliant_errors = Map.get(config, :spec_compliant_errors, false)
+    merged_pipeline_opts = Keyword.merge(
+      pipeline_opts,
+      spec_compliant_errors: spec_compliant_errors
+    )
+
     config.schema_mod
     |> Absinthe.Pipeline.for_document(pipeline_opts)
+    # See: https://github.com/absinthe-graphql/absinthe/issues/925
+    |> Absinthe.Pipeline.replace(Absinthe.Phase.Document.Result, {Absinthe.Phase.Document.Result, merged_pipeline_opts})
     |> Absinthe.Pipeline.insert_after(
       Absinthe.Phase.Document.CurrentOperation,
       [
