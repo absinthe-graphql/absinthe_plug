@@ -133,21 +133,29 @@ defmodule Absinthe.Plug.GraphiQL do
     :defp,
     :graphiql_html,
     Path.join(@graphiql_template_path, "graphiql.html.eex"),
-    [:query_string, :variables_string, :result_string, :socket_url, :assets]
+    [:query_string, :variables_string, :result_string, :socket_url, :assets, :csp_nonce]
   )
 
   EEx.function_from_file(
     :defp,
     :graphiql_workspace_html,
     Path.join(@graphiql_template_path, "graphiql_workspace.html.eex"),
-    [:query_string, :variables_string, :default_headers, :default_url, :socket_url, :assets]
+    [
+      :query_string,
+      :variables_string,
+      :default_headers,
+      :default_url,
+      :socket_url,
+      :assets,
+      :csp_nonce
+    ]
   )
 
   EEx.function_from_file(
     :defp,
     :graphiql_playground_html,
     Path.join(@graphiql_template_path, "graphiql_playground.html.eex"),
-    [:default_url, :socket_url, :assets]
+    [:default_url, :socket_url, :assets, :csp_nonce]
   )
 
   @behaviour Plug
@@ -165,7 +173,8 @@ defmodule Absinthe.Plug.GraphiQL do
           default_url: binary,
           assets: Keyword.t(),
           socket: module,
-          socket_url: binary
+          socket_url: binary,
+          csp_nonce_assign_key: binary
         ]
 
   @doc false
@@ -182,6 +191,7 @@ defmodule Absinthe.Plug.GraphiQL do
     |> Map.put(:socket, Keyword.get(opts, :socket))
     |> Map.put(:socket_url, Keyword.get(opts, :socket_url))
     |> Map.put(:default_query, Keyword.get(opts, :default_query, ""))
+    |> Map.put(:csp_nonce_assign_key, Keyword.get(opts, :csp_nonce_assign_key, ""))
     |> set_pipeline
   end
 
@@ -347,7 +357,8 @@ defmodule Absinthe.Plug.GraphiQL do
       opts[:var_string],
       opts[:result],
       opts[:socket_url],
-      opts[:assets]
+      opts[:assets],
+      conn.assigns[opts[:csp_nonce_assign_key]]
     )
     |> rendered(conn)
   end
@@ -361,7 +372,8 @@ defmodule Absinthe.Plug.GraphiQL do
       opts[:default_headers],
       default_url(opts[:default_url]),
       opts[:socket_url],
-      opts[:assets]
+      opts[:assets],
+      conn.assigns[opts[:csp_nonce_assign_key]]
     )
     |> rendered(conn)
   end
@@ -372,7 +384,8 @@ defmodule Absinthe.Plug.GraphiQL do
     graphiql_playground_html(
       default_url(opts[:default_url]),
       opts[:socket_url],
-      opts[:assets]
+      opts[:assets],
+      conn.assigns[opts[:csp_nonce_assign_key]]
     )
     |> rendered(conn)
   end
