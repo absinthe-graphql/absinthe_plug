@@ -18,10 +18,13 @@ jobs:
           - "1.13"
           - "1.14"
           - "1.15"
+          - "1.16"
+          - "1.17"
         otp:
           - "24"
           - "25"
           - "26"
+          - "27"
         include:
           - elixir: "1.15"
             otp: "26"
@@ -31,6 +34,14 @@ jobs:
             otp: "26"
           - elixir: "1.14"
             otp: "26"
+          - elixir: "1.13"
+            otp: "27"
+          - elixir: "1.14"
+            otp: "27"
+          - elixir: "1.15"
+            otp: "27"
+          - elixir: "1.16"
+            otp: "27"
 
     steps:
     - uses: actions/checkout@v2
