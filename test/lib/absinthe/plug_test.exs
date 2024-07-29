@@ -472,14 +472,13 @@ defmodule Absinthe.PlugTest do
     conn = Task.await(request)
     {_module, state} = conn.adapter
 
-    events =
-      state.chunks
-      |> String.split()
-      |> Enum.map(&Jason.decode!/1)
+    [event1, event2] = String.split(state.chunks, "\n\n", trim: true)
 
-    assert length(events) == 2
-    assert Enum.member?(events, %{"data" => %{"update" => "FOO"}})
-    assert Enum.member?(events, %{"data" => %{"update" => "BAR"}})
+    assert "event: next\ndata: " <> event1_data = event1
+    assert "event: next\ndata: " <> event2_data = event2
+
+    assert Jason.decode!(event1_data) == %{"data" => %{"update" => "FOO"}}
+    assert Jason.decode!(event2_data) == %{"data" => %{"update" => "BAR"}}
   end
 
   @query """
