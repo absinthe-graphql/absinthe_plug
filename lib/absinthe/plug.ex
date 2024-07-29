@@ -372,7 +372,7 @@ defmodule Absinthe.Plug do
   def subscribe_loop(conn, topic, config) do
     receive do
       %{event: "subscription:data", payload: %{result: result}} ->
-        case chunk(conn, "#{encode_json!(result, config)}\n\n") do
+        case chunk(conn, "event: next\ndata: #{encode_json!(result, config)}\n\n") do
           {:ok, conn} ->
             subscribe_loop(conn, topic, config)
 
