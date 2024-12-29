@@ -376,7 +376,7 @@ defmodule Absinthe.Plug do
           {:ok, conn} ->
             subscribe_loop(conn, topic, config)
 
-          {:error, :closed} ->
+          {:error, _} ->
             Absinthe.Subscription.unsubscribe(config.context.pubsub, topic)
             conn
         end
@@ -390,7 +390,7 @@ defmodule Absinthe.Plug do
           {:ok, conn} ->
             subscribe_loop(conn, topic, config)
 
-          {:error, :closed} ->
+          {:error, _} ->
             Absinthe.Subscription.unsubscribe(config.context.pubsub, topic)
             conn
         end
