@@ -449,12 +449,45 @@ defmodule Absinthe.PlugTest do
     assert expected == resp_body
   end
 
-  test "Subscriptions over HTTP with Server Sent Events chunked response" do
+  test "Subscriptions over HTTP with Server Sent Events chunked response (non standard)" do
     TestPubSub.start_link()
     Absinthe.Subscription.start_link(TestPubSub)
 
     query = "subscription {update}"
-    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub)
+    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub, standard_sse: false)
+
+    request =
+      Task.async(fn ->
+        conn(:post, "/", query: query)
+        |> put_req_header("content-type", "application/json")
+        |> plug_parser
+        |> Absinthe.Plug.call(opts)
+      end)
+
+    Process.sleep(200)
+    Absinthe.Subscription.publish(TestPubSub, "FOO", update: "*")
+    Absinthe.Subscription.publish(TestPubSub, "BAR", update: "*")
+    send(request.pid, :close)
+
+    conn = Task.await(request)
+    {_module, state} = conn.adapter
+
+    events =
+      state.chunks
+      |> String.split()
+      |> Enum.map(&Jason.decode!/1)
+
+    assert length(events) == 2
+    assert Enum.member?(events, %{"data" => %{"update" => "FOO"}})
+    assert Enum.member?(events, %{"data" => %{"update" => "BAR"}})
+  end
+
+  test "Subscriptions over HTTP with Server Sent Events chunked response (standard)" do
+    TestPubSub.start_link()
+    Absinthe.Subscription.start_link(TestPubSub)
+
+    query = "subscription {update}"
+    opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub, standard_sse: true)
 
     request =
       Task.async(fn ->
