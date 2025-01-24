@@ -11,7 +11,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     remote_source: "https://cdn.jsdelivr.net/npm/:package@:version/:file"
   ]
 
-  @react_version "15.6.1"
+  @react_version "16.13.1"
 
   @assets [
     {"whatwg-fetch", "2.0.3",
@@ -20,9 +20,17 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
      ]},
     {"react", @react_version,
      [
-       {"dist/react.min.js", "react.js"}
+       {"umd/react.production.min.js", "react.js"}
      ]},
     {"react-dom", @react_version,
+     [
+       {"umd/react-dom.production.min.js", "react-dom.js"}
+     ]},
+    {"react15", "15.4.2",
+     [
+       {"dist/react.min.js", "react.js"}
+     ]},
+    {"react15-dom", "15.4.2",
      [
        {"dist/react-dom.min.js", "react-dom.js"}
      ]},
@@ -35,7 +43,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
        {"dist/fonts/glyphicons-halflings-regular.svg", "fonts/glyphicons-halflings-regular.svg"},
        {"dist/css/bootstrap.min.css", "css/bootstrap.css"}
      ]},
-    {"graphiql", "0.11.10",
+    {"graphiql", "1.11.4",
      [
        "graphiql.css",
        {"graphiql.min.js", "graphiql.js"}
@@ -132,6 +140,14 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     build_asset_path(:remote_source, asset)
   end
 
+  defp build_asset_path(:remote_source, {package, version, {real_path, aliased_path}}) do
+    assets_config()[:remote_source]
+    |> String.replace(":package", get_package_name(package))
+    |> String.replace(":version", version)
+    |> String.replace(":file", real_path)
+    |> String.replace(":alias", aliased_path)
+  end
+
   defp build_asset_path(source, {package, version, {real_path, aliased_path}}) do
     assets_config()[source]
     |> String.replace(":package", package)
@@ -142,5 +158,11 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
 
   defp build_asset_path(source, {package, version, path}) do
     build_asset_path(source, {package, version, {path, path}})
+  end
+
+  def get_package_name(name) do
+    if Enum.member?(["react15", "react15-dom", "graphiql-beta"], name),
+      do: String.replace(name, "15", "") |> String.replace("-beta", ""),
+      else: name
   end
 end

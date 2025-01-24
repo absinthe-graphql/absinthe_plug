@@ -19,8 +19,8 @@ add "&raw" to the end of the URL within a browser.
 </head>
 <body>
   <div id="root" class="graphiql-workspace"></div>
-  <script src="<%= assets["react/react.js"] %>"></script>
-  <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
+  <script src="<%= assets["react15/react.js"] %>"></script>
+  <script src="<%= assets["react15-dom/react-dom.js"] %>"></script>
   <script src="<%= assets["graphiql-workspace/graphiql-workspace.js"] %>"></script>
   <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>"></script>
   <script type="text/javascript">
