@@ -11,7 +11,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
     remote_source: "https://cdn.jsdelivr.net/npm/:package@:version/:file"
   ]
 
-  @react_version "15.6.1"
+  @react_version "16.8.6"
 
   @assets [
     {"whatwg-fetch", "2.0.3",
@@ -20,11 +20,11 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
      ]},
     {"react", @react_version,
      [
-       {"dist/react.min.js", "react.js"}
+       {"umd/react.production.min.js", "react.js"}
      ]},
     {"react-dom", @react_version,
      [
-       {"dist/react-dom.min.js", "react-dom.js"}
+       {"umd/react-dom.production.min.js", "react-dom.js"}
      ]},
     {"bootstrap", "3.3.7",
      [
@@ -35,7 +35,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
        {"dist/fonts/glyphicons-halflings-regular.svg", "fonts/glyphicons-halflings-regular.svg"},
        {"dist/css/bootstrap.min.css", "css/bootstrap.css"}
      ]},
-    {"graphiql", "0.11.10",
+    {"graphiql", "3.8.3",
      [
        "graphiql.css",
        {"graphiql.min.js", "graphiql.js"}
