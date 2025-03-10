@@ -437,6 +437,8 @@ defmodule Absinthe.Plug.GraphiQL do
   defp get_config_val(config, key, conn) do
     case Map.get(config, key) do
       {module, fun} when is_atom(fun) ->
+        Code.ensure_loaded(module)
+
         case function_arity(module, fun) do
           1 ->
             apply(module, fun, [conn])
