@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.5.9
+
+- Chore: [Switch to `Application.compile_env/3`](https://github.com/absinthe-graphql/absinthe_plug/pull/276)
+- Feature: [Add token limit to init and raw options](https://github.com/absinthe-graphql/absinthe_plug/pull/281)
+- Chore: [Add dialyxer to CI](https://github.com/absinthe-graphql/absinthe_plug/pull/283)
+- Chore: [Fix typos](https://github.com/absinthe-graphql/absinthe_plug/pull/287)
+- Bug Fix: [Change SSE response structure so that it's compatible with GraphQL SSE standard](https://github.com/absinthe-graphql/absinthe_plug/pull/292)
+- Chore: [Update GraphiQL to 3.8.3](https://github.com/absinthe-graphql/absinthe_plug/pull/297)
+- Chore: [CI](https://github.com/absinthe-graphql/absinthe_plug/pull/295)[Updates](https://github.com/absinthe-graphql/absinthe_plug/pull/301)
+
 ## v1.5.8
 
 - Bug Fix: [Preserve `:context` during init](https://github.com/absinthe-graphql/absinthe_plug/pull/257)
