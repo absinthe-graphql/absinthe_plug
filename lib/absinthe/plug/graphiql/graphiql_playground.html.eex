@@ -13,13 +13,13 @@ add "&raw" to the end of the URL within a browser.
 
   <title>GraphiQL Playground</title>
 
-  <link href="<%= assets["typeface-open-sans/index.css"] %>" rel="stylesheet">
-  <link href="<%= assets["typeface-source-code-pro/index.css"] %>" rel="stylesheet">
-  <link rel="stylesheet" media="screen" href="<%= assets["@absinthe/graphql-playground/playground.css"] %>">
+  <link href="<%= assets["typeface-open-sans/index.css"] %>" rel="stylesheet" nonce="<%= csp_nonce %>">
+  <link href="<%= assets["typeface-source-code-pro/index.css"] %>" rel="stylesheet" nonce="<%= csp_nonce %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["@absinthe/graphql-playground/playground.css"] %>" nonce="<%= csp_nonce %>">
 </head>
 <body>
   <div id="root">
-    <style>
+    <style nonce="<%= csp_nonce %>">
       body {
         background-color: #172a3a;
         font-family: Open Sans, sans-serif;
@@ -54,7 +54,7 @@ add "&raw" to the end of the URL within a browser.
       <span class="title">GraphQL Playground</span>
     </div>
   </div>
-  <script>
+  <script nonce="<%= csp_nonce %>">
     var options = {};
     var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
@@ -66,6 +66,6 @@ add "&raw" to the end of the URL within a browser.
 
     window.addEventListener("load", function (n) { GraphQLPlayground.init(document.getElementById("root"), options) })
   </script>
-  <script type="text/javascript" src="<%= assets["@absinthe/graphql-playground/playground.js"] %>"></script>
+  <script type="text/javascript" src="<%= assets["@absinthe/graphql-playground/playground.js"] %>" nonce="<%= csp_nonce %>"></script>
 </body>
 </html>

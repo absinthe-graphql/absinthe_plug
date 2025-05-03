@@ -13,17 +13,17 @@ add "&raw" to the end of the URL within a browser.
 
   <title>GraphiQL Workspace</title>
 
-  <link rel="stylesheet" media="screen" href="<%= assets["bootstrap/css/bootstrap.css"] %>">
-  <link rel="stylesheet" media="screen" href="<%= assets["graphiql/graphiql.css"] %>">
-  <link rel="stylesheet" media="screen" href="<%= assets["graphiql-workspace/graphiql-workspace.css"] %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["bootstrap/css/bootstrap.css"] %>" nonce="<%= csp_nonce %>"> 
+  <link rel="stylesheet" media="screen" href="<%= assets["graphiql/graphiql.css"] %>" nonce="<%= csp_nonce %>">
+  <link rel="stylesheet" media="screen" href="<%= assets["graphiql-workspace/graphiql-workspace.css"] %>" nonce="<%= csp_nonce %>">
 </head>
 <body>
   <div id="root" class="graphiql-workspace"></div>
-  <script src="<%= assets["react/react.js"] %>"></script>
-  <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
-  <script src="<%= assets["graphiql-workspace/graphiql-workspace.js"] %>"></script>
-  <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>"></script>
-  <script type="text/javascript">
+  <script src="<%= assets["react/react.js"] %>" nonce="<%= csp_nonce %>"></script>
+  <script src="<%= assets["react-dom/react-dom.js"] %>" nonce="<%= csp_nonce %>"></script>
+  <script src="<%= assets["graphiql-workspace/graphiql-workspace.js"] %>" nonce="<%= csp_nonce %>"></script>
+  <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>" nonce="<%= csp_nonce %>"></script>
+  <script type="text/javascript" nonce="<%= csp_nonce %>">
     function absintheSubscriptionsClientBuilder(url, connectionParams) {
 
       const urlObject = new URL(url);
