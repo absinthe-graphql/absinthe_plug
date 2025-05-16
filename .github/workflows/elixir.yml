@@ -4,15 +4,16 @@ on:
   push:
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       MIX_ENV: test
     strategy:
       fail-fast: false
+      # see https://hexdocs.pm/elixir/compatibility-and-deprecations.html#between-elixir-and-erlang-otp
       matrix:
         elixir:
           - "1.13"
@@ -20,22 +21,25 @@ jobs:
           - "1.15"
           - "1.16"
           - "1.17"
+          - "1.18"
         otp:
           - "24"
           - "25"
           - "26"
           - "27"
         include:
-          - elixir: "1.15"
-            otp: "26"
+          - elixir: "1.18"
+            otp: "27"
             format: true
         exclude:
           - elixir: "1.13"
-            otp: "26"
-          - elixir: "1.14"
+            otp: "27"
+          - elixir: "1.13"
             otp: "26"
           - elixir: "1.13"
-            otp: "27"
+            otp: "25"
+          - elixir: "1.14"
+            otp: "26"
           - elixir: "1.14"
             otp: "27"
           - elixir: "1.15"
@@ -44,50 +48,52 @@ jobs:
             otp: "27"
           - elixir: "1.17"
             otp: "24"
+          - elixir: "1.18"
+            otp: "24"
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-    - uses: erlef/setup-beam@v1
-      with:
-        otp-version: ${{matrix.otp}}
-        elixir-version: ${{matrix.elixir}}
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
 
-    - name: Restore deps cache
-      uses: actions/cache@v2
-      with:
-        path: |
-          deps
-          _build
-        key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}-git-${{ github.sha }}
-        restore-keys: |
-          deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
-          deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
+      - name: Restore deps cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}-git-${{ github.sha }}
+          restore-keys: |
+            deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+            deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
 
-    - name: Install package dependencies
-      run: mix deps.get
+      - name: Install package dependencies
+        run: mix deps.get
 
-    - name: Check code format
-      run: mix format --check-formatted
-      if: ${{ matrix.format }}
+      - name: Check code format
+        run: mix format --check-formatted
+        if: ${{ matrix.format }}
 
-    - name: Compile dependencies
-      run: mix compile
-      env:
-        MIX_ENV: test
+      - name: Compile dependencies
+        run: mix compile
+        env:
+          MIX_ENV: test
 
-    - name: Run unit tests
-      run: mix test
+      - name: Run unit tests
+        run: mix test
 
-    - name: Cache/uncache PLTs
-      uses: actions/cache@v3
-      with:
-        path: |
-          priv/plts
-        key: "${{ runner.os }}-\
-              erlang-${{ matrix.otp }}-\
-              elixir-${{ matrix.elixir }}-\
-              ${{ hashFiles('mix.lock') }}"
+      - name: Cache/uncache PLTs
+        uses: actions/cache@v4
+        with:
+          path: |
+            priv/plts
+          key: "${{ runner.os }}-\
+            erlang-${{ matrix.otp }}-\
+            elixir-${{ matrix.elixir }}-\
+            ${{ hashFiles('mix.lock') }}"
 
-    - name: Run Dialyzer
-      run: mix dialyzer
+      - name: Run Dialyzer
+        run: mix dialyzer

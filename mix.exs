@@ -1,13 +1,13 @@
 defmodule Absinthe.Plug.Mixfile do
   use Mix.Project
 
-  @version "1.5.8"
+  @version "1.5.9"
 
   def project do
     [
       app: :absinthe_plug,
       version: @version,
-      elixir: "~> 1.12",
+      elixir: "~> 1.13",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),

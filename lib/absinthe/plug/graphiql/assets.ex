@@ -72,14 +72,10 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
      ]}
   ]
 
-  def assets_config do
-    case @config do
-      nil ->
-        @default_config
-
-      config ->
-        Keyword.merge(@default_config, Keyword.get(config, :assets, []))
-    end
+  if @config do
+    def assets_config, do: Keyword.merge(@default_config, Keyword.get(config, :assets, []))
+  else
+    def assets_config, do: @default_config
   end
 
   def get_assets do
