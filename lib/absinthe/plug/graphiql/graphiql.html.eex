@@ -13,7 +13,7 @@ add "&raw" to the end of the URL within a browser.
   
   <title>GraphiQL</title>
   
-  <style>
+  <style nonce="<%= csp_nonce %>">
     html, body {
       height: 100%;
       margin: 0;
@@ -25,16 +25,16 @@ add "&raw" to the end of the URL within a browser.
       height: 100%;
     }
   </style>
-  <link href="<%= assets["graphiql/graphiql.css"] %>" rel="stylesheet" />
+  <link href="<%= assets["graphiql/graphiql.css"] %>" rel="stylesheet" nonce="<%= csp_nonce %>" />
 </head>
 <body>
   <div id="root"></div>
-  <script src="<%= assets["whatwg-fetch/fetch.js"] %>"></script>
-  <script src="<%= assets["react/react.js"] %>"></script>
-  <script src="<%= assets["react-dom/react-dom.js"] %>"></script>
-  <script src="<%= assets["graphiql/graphiql.js"] %>"></script>
-  <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>"></script>
-  <script>
+  <script src="<%= assets["whatwg-fetch/fetch.js"] %>" nonce="<%= csp_nonce %>"></script>
+  <script src="<%= assets["react/react.js"] %>" nonce="<%= csp_nonce %>"></script>
+  <script src="<%= assets["react-dom/react-dom.js"] %>" nonce="<%= csp_nonce %>"></script>
+  <script src="<%= assets["graphiql/graphiql.js"] %>" nonce="<%= csp_nonce %>"></script>
+  <script src="<%= assets["@absinthe/socket-graphiql/socket-graphiql.js"] %>" nonce="<%= csp_nonce %>"></script>
+  <script nonce="<%= csp_nonce %>">
     // Collect the URL parameters
     var parameters = {};
     window.location.search.substr(1).split('&').forEach(function (entry) {
