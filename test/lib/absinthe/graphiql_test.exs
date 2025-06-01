@@ -165,6 +165,25 @@ defmodule Absinthe.Plug.GraphiQLTest do
            )
   end
 
+  test "default_url module is loaded" do
+    module = "Elixir.GraphiQLDefaultUrl" |> String.to_atom()
+
+    opts =
+      Absinthe.Plug.GraphiQL.init(
+        schema: TestSchema,
+        default_url: {module, :graphiql_default_url}
+      )
+
+    assert %{status: status, resp_body: body} =
+             conn(:get, "/")
+             |> plug_parser
+             |> put_req_header("accept", "text/html")
+             |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body, "defaultUrl: '#{graphiql_default_url()}'")
+  end
+
   test "socket_url option works a function of arity 0" do
     opts =
       Absinthe.Plug.GraphiQL.init(
