@@ -111,6 +111,48 @@ forward "/graphiql",
 For more information see [Phoenix.Router.forward/4](https://hexdocs.pm/phoenix/Phoenix.Router.html#forward/4).
 
 
+## File Uploads
+
+Absinthe.Plug supports file uploads via the
+[graphql-multipart-request-spec](https://github.com/jaydenseric/graphql-multipart-request-spec),
+which is the standard used by Apollo Client, urql, Relay, and most GraphQL clients.
+
+First, add the `:upload` type to your schema:
+
+```elixir
+defmodule MyAppWeb.Schema do
+  use Absinthe.Schema
+  import_types Absinthe.Plug.Types
+
+  mutation do
+    field :upload_file, :string do
+      arg :file, non_null(:upload)
+
+      resolve fn %{file: file}, _ ->
+        # file is a %Plug.Upload{} struct
+        {:ok, file.filename}
+      end
+    end
+  end
+end
+```
+
+Then clients can upload files using the standard multipart format:
+
+```shell
+curl -X POST \
+  -F operations='{"query": "mutation($file: Upload!) { uploadFile(file: $file) { id } }", "variables": {"file": null}}' \
+  -F map='{"0": ["variables.file"]}' \
+  -F 0=@my_file.jpg \
+  localhost:4000/graphql
+```
+
+No special client-side upload links are needed. Apollo Client, urql, and other
+clients that implement the spec will work out of the box.
+
+See the documentation on `Absinthe.Plug.Types` for more details and examples,
+including Absinthe's legacy upload format.
+
 ## GraphiQL
 
 To add support for a GraphiQL interface, add a configuration for

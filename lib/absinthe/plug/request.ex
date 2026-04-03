@@ -107,6 +107,38 @@ defmodule Absinthe.Plug.Request do
   #
 
   @spec extract_body_and_params(Plug.Conn.t(), map()) :: {:ok, Plug.Conn.t(), String.t(), map()}
+
+  # Handle standard graphql-multipart-request-spec format.
+  # See: https://github.com/jaydenseric/graphql-multipart-request-spec
+  #
+  # This is the format used by Apollo Client, urql, Relay, and most GraphQL
+  # clients for file uploads. The request contains three parts:
+  #   - `operations`: JSON with the query and variables (file slots are null)
+  #   - `map`: JSON mapping form field names to variable paths
+  #   - numbered fields (0, 1, ...): the actual files
+  #
+  # This clause transforms the standard format into Absinthe's native format
+  # by replacing null variable slots with string references to the form field
+  # names, so the existing :upload scalar resolver can pick them up unchanged.
+  defp extract_body_and_params(
+         %{body_params: %{"operations" => operations, "map" => map_json}} = conn,
+         config
+       ) do
+    conn = fetch_query_params(conn)
+
+    with {:ok, ops} <- config.json_codec.module.decode(operations),
+         {:ok, file_map} <- config.json_codec.module.decode(map_json) do
+      if is_list(ops) do
+        extract_body_and_params_standard_batch(conn, ops, file_map)
+      else
+        extract_body_and_params_standard_single(conn, ops, file_map)
+      end
+    else
+      {:error, _} ->
+        {:input_error, "Could not parse multipart operations or map as JSON"}
+    end
+  end
+
   defp extract_body_and_params(%{body_params: %{"query" => _}} = conn, _config) do
     conn = fetch_query_params(conn)
     {:ok, conn, "", conn.params}
@@ -120,6 +152,69 @@ defmodule Absinthe.Plug.Request do
     with {:ok, body, conn} <- read_body(conn) do
       extract_body_and_params_batched(conn, body, config)
     end
+  end
+
+  defp extract_body_and_params_standard_single(conn, ops, file_map) do
+    variables = apply_file_map(ops["variables"] || %{}, file_map)
+
+    params =
+      conn.params
+      |> Map.put("query", ops["query"])
+      |> Map.put("variables", variables)
+      |> Map.put("operationName", ops["operationName"])
+
+    {:ok, conn, "", params}
+  end
+
+  defp extract_body_and_params_standard_batch(conn, ops_list, file_map) do
+    json_list =
+      ops_list
+      |> Enum.with_index()
+      |> Enum.map(fn {ops, idx} ->
+        batch_file_map =
+          file_map
+          |> Enum.filter(fn {_field, paths} ->
+            Enum.any?(paths, &String.starts_with?(&1, "#{idx}."))
+          end)
+          |> Enum.map(fn {field, paths} ->
+            {field, Enum.map(paths, &String.replace_prefix(&1, "#{idx}.", ""))}
+          end)
+          |> Map.new()
+
+        variables = apply_file_map(ops["variables"] || %{}, batch_file_map)
+
+        %{
+          "query" => ops["query"],
+          "variables" => variables,
+          "operationName" => ops["operationName"]
+        }
+      end)
+
+    params = Map.put(conn.params, "_json", json_list)
+    {:ok, conn, "", params}
+  end
+
+  defp apply_file_map(variables, file_map) do
+    Enum.reduce(file_map, variables, fn {field_name, paths}, vars ->
+      Enum.reduce(paths, vars, fn path, v ->
+        keys = path |> String.replace_prefix("variables.", "") |> String.split(".")
+        deep_put(v, keys, field_name)
+      end)
+    end)
+  end
+
+  defp deep_put(map, [key], value) when is_map(map), do: Map.put(map, key, value)
+
+  defp deep_put(list, [index], value) when is_list(list) do
+    List.replace_at(list, String.to_integer(index), value)
+  end
+
+  defp deep_put(map, [key | rest], value) when is_map(map) do
+    Map.update(map, key, deep_put(%{}, rest, value), &deep_put(&1, rest, value))
+  end
+
+  defp deep_put(list, [index | rest], value) when is_list(list) do
+    List.update_at(list, String.to_integer(index), &deep_put(&1, rest, value))
   end
 
   defp convert_operations_param(conn = %{params: %{"operations" => operations}})

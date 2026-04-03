@@ -32,15 +32,53 @@ defmodule Absinthe.Plug.Types do
   end
   ```
 
-  To send a mutation that includes a file upload, you need to
-  use the `multipart/form-data` content type. For example, using `cURL`:
+  ### Standard multipart spec (recommended)
+
+  Absinthe supports the
+  [graphql-multipart-request-spec](https://github.com/jaydenseric/graphql-multipart-request-spec),
+  which is the standard used by Apollo Client, urql, Relay, and most GraphQL
+  client libraries. If you're using any of these clients, file uploads should
+  work out of the box with no additional configuration.
+
+  The standard format sends three parts in a `multipart/form-data` request:
+
+  - `operations`: a JSON string with the query and variables (file slots set to `null`)
+  - `map`: a JSON object mapping form field names to variable paths
+  - `0`, `1`, etc.: the actual files
+
+  For example, using `cURL`:
 
   ```shell
-  $ curl -X POST \
-  -F query='mutation { uploadFile(users: "users_csv", metadata: "metadata_json") }' \
-  -F users_csv=@users.csv \
-  -F metadata_json=@metadata.json \
-  localhost:4000/graphql
+  $ curl -X POST \\
+    -F operations='{"query": "mutation($file: Upload!) { uploadFile(users: $file) { id } }", "variables": {"file": null}}' \\
+    -F map='{"0": ["variables.file"]}' \\
+    -F 0=@users.csv \\
+    localhost:4000/graphql
+  ```
+
+  Multiple files work the same way:
+
+  ```shell
+  $ curl -X POST \\
+    -F operations='{"query": "mutation($a: Upload!, $b: Upload) { uploadFile(users: $a, metadata: $b) { id } }", "variables": {"a": null, "b": null}}' \\
+    -F map='{"0": ["variables.a"], "1": ["variables.b"]}' \\
+    -F 0=@users.csv \\
+    -F 1=@metadata.json \\
+    localhost:4000/graphql
+  ```
+
+  ### Absinthe's legacy format
+
+  Absinthe also supports its own upload format where the mutation argument
+  value is a string that references the form field name containing the file.
+  This format continues to work as before:
+
+  ```shell
+  $ curl -X POST \\
+    -F query='mutation { uploadFile(users: "users_csv", metadata: "metadata_json") }' \\
+    -F users_csv=@users.csv \\
+    -F metadata_json=@metadata.json \\
+    localhost:4000/graphql
   ```
 
   Note how there is a correspondence between the value of the `:users` argument
