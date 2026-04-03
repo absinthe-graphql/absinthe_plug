@@ -155,7 +155,7 @@ defmodule Absinthe.Plug do
   - `:adapter` -- (Optional) Absinthe adapter to use (default: `Absinthe.Adapter.LanguageConventions`).
   - `:context` -- (Optional) Initial value for the Absinthe context, available to resolvers. (default: `%{}`).
   - `:no_query_message` -- (Optional) Message to return to the client if no query is provided (default: "No query document supplied").
-  - `:json_codec` -- (Optional) A `module` or `{module, Keyword.t}` dictating which JSON codec should be used (default: `Jason`). The codec module should implement `encode!/2` (e.g., `module.encode!(body, opts)`).
+  - `:json_codec` -- (Optional) A `module` or `{module, Keyword.t}` dictating which JSON codec should be used (default: `Jason`). The codec module should implement `encode!/1` at minimum. Codecs that accept keyword options (like Jason) can also be configured as `{module, opts}`. Elixir 1.18+'s built-in `JSON` module is supported when passed as a bare module (i.e. `json_codec: JSON`).
   - `:pipeline` -- (Optional) `{module, atom}` reference to a 2-arity function that will be called to generate the processing pipeline. (default: `{Absinthe.Plug, :default_pipeline}`).
   - `:document_providers` -- (Optional) A `{module, atom}` reference to a 1-arity function that will be called to determine the document providers that will be used to process the request. (default: `{Absinthe.Plug, :default_document_providers}`, which configures `Absinthe.Plug.DocumentProvider.Default` as the lone document provider). A simple list of document providers can also be given. See `Absinthe.Plug.DocumentProvider` for more information about document providers, their role in processing requests, and how you can define and configure your own.
   - `:schema` -- (Required, if not handled by Mix.Config) The Absinthe schema to use. If a module name is not provided, `Application.get_env(:absinthe, :schema)` will be attempt to find one.
@@ -602,12 +602,29 @@ defmodule Absinthe.Plug do
       }) do
     conn
     |> put_resp_content_type(content_type)
-    |> send_resp(status, mod.encode!(body, opts))
+    |> send_resp(status, safe_encode!(mod, body, opts))
   end
 
   @doc false
   def encode_json!(value, %{json_codec: json_codec}) do
-    json_codec.module.encode!(value, json_codec.opts)
+    safe_encode!(json_codec.module, value, json_codec.opts)
+  end
+
+  # Safely encode a value using the given codec module and options.
+  #
+  # Elixir 1.18's built-in JSON module has a different `encode!/2` signature
+  # than Jason: `JSON.encode!/2` expects an encoder function as the second
+  # argument, not a keyword list of options. To stay compatible with both
+  # conventions, we call `encode!/1` when opts is empty, and only pass opts
+  # through when they are non-empty (which means the user chose a codec like
+  # Jason that actually supports keyword options).
+  @doc false
+  def safe_encode!(module, value, opts) when opts == [] do
+    module.encode!(value)
+  end
+
+  def safe_encode!(module, value, opts) do
+    module.encode!(value, opts)
   end
 
   @doc false
