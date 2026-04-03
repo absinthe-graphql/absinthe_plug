@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Feature: [Support standard graphql-multipart-request-spec for file uploads](https://github.com/absinthe-graphql/absinthe_plug/pull/309)
+
 ## v1.5.9
 
 - Chore: [Switch to `Application.compile_env/3`](https://github.com/absinthe-graphql/absinthe_plug/pull/276)
