@@ -395,8 +395,11 @@ defmodule Absinthe.Plug.GraphiQL do
 
   defp js_escape(string) do
     string
-    |> String.replace(~r/\n/, "\\n")
-    |> String.replace(~r/'/, "\\'")
+    |> String.replace("\\", "\\\\")
+    |> String.replace("'", "\\'")
+    |> String.replace("\n", "\\n")
+    |> String.replace("\r", "\\r")
+    |> String.replace("</", "<\\/")
   end
 
   defp handle_default_headers(config, conn) do
