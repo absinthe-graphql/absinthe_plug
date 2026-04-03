@@ -423,6 +423,107 @@ defmodule Absinthe.PlugTest do
     end
   end
 
+  describe "file uploads via standard graphql-multipart-request-spec" do
+    setup [:basic_opts]
+
+    @upload_mutation "query ($fileA: Upload!) { uploadTest(fileA: $fileA) }"
+
+    test "single file upload", %{opts: opts} do
+      upload = %Plug.Upload{}
+
+      operations =
+        Jason.encode!(%{query: @upload_mutation, variables: %{fileA: nil}})
+
+      map = Jason.encode!(%{"0" => ["variables.fileA"]})
+
+      assert %{status: 200, resp_body: resp_body} =
+               conn(:post, "/", %{
+                 "operations" => operations,
+                 "map" => map,
+                 "0" => upload
+               })
+               |> put_req_header("content-type", "multipart/form-data")
+               |> call(opts)
+
+      assert resp_body == %{"data" => %{"uploadTest" => "file_a"}}
+    end
+
+    test "multiple file uploads", %{opts: opts} do
+      query = "query ($a: Upload!, $b: Upload) { uploadTest(fileA: $a, fileB: $b) }"
+      upload = %Plug.Upload{}
+
+      operations =
+        Jason.encode!(%{query: query, variables: %{a: nil, b: nil}})
+
+      map = Jason.encode!(%{"0" => ["variables.a"], "1" => ["variables.b"]})
+
+      assert %{status: 200, resp_body: resp_body} =
+               conn(:post, "/", %{
+                 "operations" => operations,
+                 "map" => map,
+                 "0" => upload,
+                 "1" => upload
+               })
+               |> put_req_header("content-type", "multipart/form-data")
+               |> call(opts)
+
+      assert resp_body == %{"data" => %{"uploadTest" => "file_a, file_b"}}
+    end
+
+    test "upload with additional variables", %{opts: opts} do
+      query = "query ($a: Upload!, $auth: String) { uploadTest(fileA: $a, auth: $auth) }"
+      upload = %Plug.Upload{}
+
+      operations =
+        Jason.encode!(%{query: query, variables: %{a: nil, auth: "foo"}})
+
+      map = Jason.encode!(%{"0" => ["variables.a"]})
+
+      assert %{status: 200, resp_body: resp_body} =
+               conn(:post, "/", %{
+                 "operations" => operations,
+                 "map" => map,
+                 "0" => upload
+               })
+               |> put_req_header("content-type", "multipart/form-data")
+               |> call(opts)
+
+      assert resp_body == %{"data" => %{"uploadTest" => "auth, file_a"}}
+    end
+
+    test "returns error with invalid operations JSON", %{opts: opts} do
+      assert %{status: 400, resp_body: resp_body} =
+               conn(:post, "/", %{
+                 "operations" => "not json",
+                 "map" => "{}"
+               })
+               |> put_req_header("content-type", "multipart/form-data")
+               |> call(opts)
+
+      assert %{"errors" => [%{"message" => msg}]} = resp_body
+      assert msg =~ "Could not parse multipart"
+    end
+
+    test "returns error when required upload is missing from map", %{opts: opts} do
+      operations =
+        Jason.encode!(%{query: @upload_mutation, variables: %{fileA: nil}})
+
+      # empty map - no file mapped to the variable
+      map = Jason.encode!(%{})
+
+      assert %{status: 200, resp_body: resp_body} =
+               conn(:post, "/", %{
+                 "operations" => operations,
+                 "map" => map
+               })
+               |> put_req_header("content-type", "multipart/form-data")
+               |> call(opts)
+
+      assert %{"errors" => errors} = resp_body
+      assert length(errors) > 0
+    end
+  end
+
   test "it works with basic documents and complexity limits" do
     opts = Absinthe.Plug.init(schema: TestSchema, max_complexity: 100, analyze_complexity: true)
 
