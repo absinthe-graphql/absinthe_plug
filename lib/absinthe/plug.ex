@@ -140,13 +140,15 @@ defmodule Absinthe.Plug do
     :analyze_complexity,
     :max_complexity,
     :token_limit,
+    :spec_compliant_errors,
     :transport_batch_payload_key,
     :standard_sse
   ]
   @raw_options [
     :analyze_complexity,
     :max_complexity,
-    :token_limit
+    :token_limit,
+    :spec_compliant_errors
   ]
 
   @type function_name :: atom
@@ -167,6 +169,7 @@ defmodule Absinthe.Plug do
   - `:analyze_complexity` -- (Optional) Set whether to calculate the complexity of incoming GraphQL queries.
   - `:max_complexity` -- (Optional) Set the maximum allowed complexity of the GraphQL query. If a document’s calculated complexity exceeds the maximum, resolution will be skipped and an error will be returned in the result detailing the calculated and maximum complexities.
   - `:token_limit` -- (Optional) Set a limit on the number of allowed parseable tokens in the GraphQL query. Queries with exceedingly high token counts can be expensive to parse. If a query's token count exceeds the set limit, an error will be returned during Absinthe parsing (default: `:infinity`).
+  - `:spec_compliant_errors` -- (Optional) Set whether to use the modern GraphQL spec error format, placing extra error fields under an `extensions` key instead of at the top level (default: `false`). See the [October 2021 GraphQL spec](https://spec.graphql.org/October2021/#sec-Errors.Error-result-format) for details.
   - `:transport_batch_payload_key` -- (Optional) Set whether or not to nest Transport Batch request results in a `payload` key. Older clients expected this key to be present, but newer clients have dropped this pattern. (default: `true`)
   - `:standard_sse` -- (Optional) Set whether or not to adopt SSE standard. Older clients don't support this key. (default: `false`)
 
@@ -185,6 +188,7 @@ defmodule Absinthe.Plug do
           analyze_complexity: boolean,
           max_complexity: non_neg_integer | :infinity,
           token_limit: non_neg_integer | :infinity,
+          spec_compliant_errors: boolean,
           serializer: module | {module, Keyword.t()},
           content_type: String.t(),
           before_send: {module, atom},
@@ -563,14 +567,25 @@ defmodule Absinthe.Plug do
   """
   @spec default_pipeline(map, Keyword.t()) :: Absinthe.Pipeline.t()
   def default_pipeline(config, pipeline_opts) do
-    config.schema_mod
-    |> Absinthe.Pipeline.for_document(pipeline_opts)
-    |> Absinthe.Pipeline.insert_after(
-      Absinthe.Phase.Document.CurrentOperation,
-      [
-        {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
-      ]
-    )
+    pipeline =
+      config.schema_mod
+      |> Absinthe.Pipeline.for_document(pipeline_opts)
+      |> Absinthe.Pipeline.insert_after(
+        Absinthe.Phase.Document.CurrentOperation,
+        [
+          {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
+        ]
+      )
+
+    if pipeline_opts[:spec_compliant_errors] do
+      Absinthe.Pipeline.replace(
+        pipeline,
+        Absinthe.Phase.Document.Result,
+        {Absinthe.Phase.Document.Result, spec_compliant_errors: true}
+      )
+    else
+      pipeline
+    end
   end
 
   #
