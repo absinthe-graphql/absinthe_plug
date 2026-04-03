@@ -232,6 +232,27 @@ defmodule Absinthe.Plug.GraphiQLTest do
     assert String.contains?(body, "defaultWebsocketUrl: ''")
   end
 
+  test "query parameter is properly escaped against XSS" do
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema)
+
+    # This payload would break out of a JS string if backslashes aren't escaped.
+    # Without the fix: xxx\');confirm(document.domain);// would close the string.
+    # With the fix: backslashes are escaped so the string stays intact.
+    xss_payload = "xxx\\');confirm(document.domain);//"
+
+    assert %{status: 200, resp_body: body} =
+             conn(:get, "/?query=#{URI.encode(xss_payload)}")
+             |> plug_parser
+             |> put_req_header("accept", "text/html")
+             |> Absinthe.Plug.GraphiQL.call(opts)
+
+    # The payload must NOT appear as unquoted JS code.
+    # With proper escaping, the backslash before the quote is escaped (\\'),
+    # so the quote doesn't close the string and the code never executes.
+    # We check that the escaped version is present (backslash is doubled).
+    assert String.contains?(body, "xxx\\\\\\');confirm")
+  end
+
   defp plug_parser(conn) do
     opts =
       Plug.Parsers.init(
