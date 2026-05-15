@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.5.10
+
+- Bug Fix: [Fix XSS vulnerability in GraphiQL js_escape function](https://github.com/absinthe-graphql/absinthe_plug/pull/312)
+- Bug Fix: [Better errors for schema module validation failures](https://github.com/absinthe-graphql/absinthe_plug/pull/279)
+
 ## v1.5.9
 
 - Chore: [Switch to `Application.compile_env/3`](https://github.com/absinthe-graphql/absinthe_plug/pull/276)
