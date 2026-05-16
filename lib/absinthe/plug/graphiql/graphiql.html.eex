@@ -10,9 +10,9 @@ add "&raw" to the end of the URL within a browser.
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  
+
   <title>GraphiQL</title>
-  
+
   <style>
     html, body {
       height: 100%;
@@ -69,7 +69,28 @@ add "&raw" to the end of the URL within a browser.
     var wsUrl = <%= if socket_url do %> <%= socket_url %><% else %>'ws://localhost:4000/socket'<% end %>;
 
     var subscriptionsClient = new AbsintheSocketGraphiql.SubscriptionsClient(wsUrl, {});
-    var fetcher = AbsintheSocketGraphiql.createFetcher(fetchURL, subscriptionsClient, 'Your subscription data will appear here after server publication!');
+    var absintheFetcher = AbsintheSocketGraphiql.createFetcher(fetchURL, subscriptionsClient, 'Your subscription data will appear here after server publication!');
+
+    var fetcher = function(graphQLParams, fetcherOpts) {
+      var query = (graphQLParams.query || '').trim();
+      if (/^subscription\b/i.test(query)) {
+        return absintheFetcher(graphQLParams);
+      }
+
+      var headers = Object.assign(
+        { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        (fetcherOpts && fetcherOpts.headers) || {}
+      );
+
+      return fetch(fetchURL, {
+        method: 'post',
+        headers: headers,
+        body: JSON.stringify(graphQLParams),
+        credentials: 'same-origin'
+      }).then(function(response) {
+        return response.json();
+      });
+    };
 
     // When the query and variables string is edited, update the URL bar so
     // that it can be easily shared.
@@ -85,6 +106,11 @@ add "&raw" to the end of the URL within a browser.
       history.replaceState(null, null, locationQuery(parameters));
     }
     // Render <GraphiQL />
+    var defaultHeaders = <%= default_headers %>;
+    var headersString = defaultHeaders.length > 0
+      ? JSON.stringify(defaultHeaders.reduce(function(acc, h) { acc[h.name] = h.value; return acc; }, {}), null, 2)
+      : undefined;
+
     ReactDOM.render(
       React.createElement(GraphiQL, {
         fetcher,
@@ -93,6 +119,8 @@ add "&raw" to the end of the URL within a browser.
         query: '<%= query_string %>',
         response: '<%= result_string %>',
         variables: '<%= variables_string %>',
+        headers: headersString,
+        headerEditorEnabled: true,
       }),
       document.getElementById("root")
     );

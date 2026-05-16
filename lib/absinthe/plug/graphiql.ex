@@ -133,7 +133,7 @@ defmodule Absinthe.Plug.GraphiQL do
     :defp,
     :graphiql_html,
     Path.join(@graphiql_template_path, "graphiql.html.eex"),
-    [:query_string, :variables_string, :result_string, :socket_url, :assets]
+    [:query_string, :variables_string, :result_string, :default_headers, :socket_url, :assets]
   )
 
   EEx.function_from_file(
@@ -346,6 +346,7 @@ defmodule Absinthe.Plug.GraphiQL do
       opts[:query],
       opts[:var_string],
       opts[:result],
+      opts[:default_headers],
       opts[:socket_url],
       opts[:assets]
     )
