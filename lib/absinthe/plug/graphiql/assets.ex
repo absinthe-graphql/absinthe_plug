@@ -2,7 +2,6 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
   @moduledoc """
   """
 
-  @config Application.compile_env(:absinthe_plug, Absinthe.Plug.GraphiQL)
   @default_config [
     source: :smart,
     local_url_path: "/absinthe_graphiql",
@@ -72,10 +71,13 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
      ]}
   ]
 
-  if @config do
-    def assets_config, do: Keyword.merge(@default_config, Keyword.get(config, :assets, []))
-  else
-    def assets_config, do: @default_config
+  def assets_config do
+    runtime_config =
+      :absinthe_plug
+      |> Application.get_env(Absinthe.Plug.GraphiQL, [])
+      |> Keyword.get(:assets, [])
+
+    Keyword.merge(@default_config, runtime_config)
   end
 
   def get_assets do

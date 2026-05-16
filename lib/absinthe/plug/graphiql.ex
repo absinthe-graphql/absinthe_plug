@@ -163,7 +163,6 @@ defmodule Absinthe.Plug.GraphiQL do
           interface: :playground | :advanced | :simple,
           default_headers: {module, atom},
           default_url: binary,
-          assets: Keyword.t(),
           socket: module,
           socket_url: binary
         ]
