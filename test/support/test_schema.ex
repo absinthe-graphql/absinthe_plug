@@ -57,6 +57,12 @@ defmodule Absinthe.Plug.TestSchema do
         {:ok, @items[item_id]}
       end
 
+    field :error_with_code, :string do
+      resolve fn _, _ ->
+        {:error, message: "unauthorized", code: "UNAUTHORIZED"}
+      end
+    end
+
     field :field_on_root_value, :string
 
     field :complex, :string do

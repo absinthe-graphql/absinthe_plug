@@ -211,6 +211,37 @@ defmodule Absinthe.PlugTest do
              resp_body |> Jason.decode!()
   end
 
+  test "spec_compliant_errors option is forwarded to the pipeline" do
+    opts = Absinthe.Plug.init(schema: TestSchema, spec_compliant_errors: true)
+    assert opts.raw_options[:spec_compliant_errors] == true
+  end
+
+  @error_with_code_query """
+  { errorWithCode }
+  """
+
+  test "spec_compliant_errors places extra error fields under extensions key" do
+    opts = Absinthe.Plug.init(schema: TestSchema, spec_compliant_errors: true)
+
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", Jason.encode!(%{"query" => @error_with_code_query}))
+             |> put_req_header("content-type", "application/json")
+             |> call(opts)
+
+    assert %{"errors" => [%{"extensions" => %{"code" => "UNAUTHORIZED"}} | _]} = resp_body
+  end
+
+  test "without spec_compliant_errors extra error fields are at the top level" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 200, resp_body: resp_body} =
+             conn(:post, "/", Jason.encode!(%{"query" => @error_with_code_query}))
+             |> put_req_header("content-type", "application/json")
+             |> call(opts)
+
+    assert %{"errors" => [%{"code" => "UNAUTHORIZED"} | _]} = resp_body
+  end
+
   @query """
   {
     item(id: "foo") {
