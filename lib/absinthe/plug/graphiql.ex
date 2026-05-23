@@ -242,12 +242,12 @@ defmodule Absinthe.Plug.GraphiQL do
 
         var_string =
           variables
-          |> config.json_codec.module.encode!(pretty: true)
+          |> pretty_encode!(config.json_codec.module)
           |> js_escape
 
         result =
           result
-          |> config.json_codec.module.encode!(pretty: true)
+          |> pretty_encode!(config.json_codec.module)
           |> js_escape
 
         config =
@@ -274,7 +274,7 @@ defmodule Absinthe.Plug.GraphiQL do
 
         var_string =
           variables
-          |> config.json_codec.module.encode!(pretty: true)
+          |> pretty_encode!(config.json_codec.module)
           |> js_escape
 
         config =
@@ -411,7 +411,7 @@ defmodule Absinthe.Plug.GraphiQL do
         header_string =
           val
           |> Enum.map(fn {k, v} -> %{"name" => k, "value" => v} end)
-          |> config.json_codec.module.encode!(pretty: true)
+          |> pretty_encode!(config.json_codec.module)
 
         Map.put(config, :default_headers, header_string)
 
@@ -475,5 +475,27 @@ defmodule Absinthe.Plug.GraphiQL do
 
   defp normalize_socket_url(%{socket_url: url} = config, _) do
     %{config | socket_url: "'#{url}'"}
+  end
+
+  # Encode a value with pretty-printing when the codec supports keyword options.
+  # Jason and Poison accept `encode!(value, pretty: true)`, but Elixir 1.18's
+  # built-in JSON module uses a different `encode!/2` signature where the second
+  # argument is an encoder function, not keyword options.
+  defp pretty_encode!(value, module) do
+    if supports_keyword_opts?(module) do
+      module.encode!(value, pretty: true)
+    else
+      module.encode!(value)
+    end
+  end
+
+  @supported_keyword_codecs [Jason, Poison]
+
+  defp supports_keyword_opts?(module) when module in @supported_keyword_codecs, do: true
+
+  defp supports_keyword_opts?(module) do
+    # For unknown codecs, check if encode!/2 exists and is not the Elixir
+    # built-in JSON module (which uses encode!/2 with a function argument).
+    function_exported?(module, :encode!, 2) and module != JSON
   end
 end

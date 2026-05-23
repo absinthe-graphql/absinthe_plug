@@ -752,4 +752,61 @@ defmodule Absinthe.PlugTest do
   defp basic_opts(context) do
     Map.put(context, :opts, Absinthe.Plug.init(schema: TestSchema))
   end
+
+  describe "safe_encode!/3" do
+    test "calls encode!/1 when opts is empty" do
+      assert Absinthe.Plug.safe_encode!(Jason, %{a: 1}, []) == ~s({"a":1})
+    end
+
+    test "calls encode!/2 when opts is non-empty" do
+      result = Absinthe.Plug.safe_encode!(Jason, %{a: 1}, pretty: true)
+      assert result =~ "\"a\""
+      assert result =~ "\n"
+    end
+
+    if Code.ensure_loaded?(JSON) do
+      test "works with Elixir 1.18 built-in JSON module and empty opts" do
+        assert Absinthe.Plug.safe_encode!(JSON, %{a: 1}, []) == ~s({"a":1})
+      end
+    end
+  end
+
+  if Code.ensure_loaded?(JSON) do
+    describe "Elixir 1.18 JSON codec integration" do
+      @query """
+      {
+        item(id: "foo") {
+          name
+        }
+      }
+      """
+
+      test "works as json_codec for basic queries" do
+        opts = Absinthe.Plug.init(schema: TestSchema, json_codec: JSON)
+
+        assert %{status: 200, resp_body: resp_body} =
+                 conn(:post, "/", @query)
+                 |> put_req_header("content-type", "application/graphql")
+                 |> plug_parser
+                 |> Absinthe.Plug.call(opts)
+
+        assert Jason.decode!(resp_body) == %{"data" => %{"item" => %{"name" => "Foo"}}}
+      end
+
+      test "works as json_codec with JSON content type" do
+        opts = Absinthe.Plug.init(schema: TestSchema, json_codec: JSON)
+
+        query_str = ~S|{ item(id: "foo") { name } }|
+        body = JSON.encode!(%{query: query_str})
+
+        assert %{status: 200, resp_body: resp_body} =
+                 conn(:post, "/", body)
+                 |> put_req_header("content-type", "application/json")
+                 |> plug_parser
+                 |> Absinthe.Plug.call(opts)
+
+        assert Jason.decode!(resp_body) == %{"data" => %{"item" => %{"name" => "Foo"}}}
+      end
+    end
+  end
 end
