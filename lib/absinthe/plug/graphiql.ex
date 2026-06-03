@@ -391,12 +391,12 @@ defmodule Absinthe.Plug.GraphiQL do
   defp default_url(nil), do: "window.location.origin + window.location.pathname"
   defp default_url(url), do: "'#{url}'"
 
-  @spec rendered(String.t(), Plug.Conn.t()) :: Plug.Conn.t()
-  # This is the GraphiQL developer interface, intentionally served as text/html.
-  # Every request-derived value embedded in the page (the query, the variables, and
-  # the result) is passed through `js_escape/1` before interpolation into the script
-  # context, neutralizing markup/script breakout.
+  # The GraphiQL developer interface is intentionally served as `text/html`.
+  # Every request-derived value embedded in the page (the query, variables, and result)
+  # passes through `js_escape/1` before interpolation into `render_interface/3`,
+  # neutralizing XSS injection.
   # sobelow_skip ["XSS.SendResp"]
+  @spec rendered(String.t(), Plug.Conn.t()) :: Plug.Conn.t()
   defp rendered(html, conn) do
     conn
     |> put_resp_content_type("text/html")
