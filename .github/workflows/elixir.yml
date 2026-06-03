@@ -97,3 +97,19 @@ jobs:
 
       - name: Run Dialyzer
         run: mix dialyzer
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27"
+          elixir-version: "1.18"
+
+      - name: Install package dependencies
+        run: mix deps.get
+
+      - name: Run Sobelow
+        run: mix sobelow --conf

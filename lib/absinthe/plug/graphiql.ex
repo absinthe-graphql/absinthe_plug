@@ -205,6 +205,11 @@ defmodule Absinthe.Plug.GraphiQL do
     end
   end
 
+  # The `{:input_error, msg}` and `{:error, error, _}` branches return plain-text
+  # diagnostic strings (a fixed `"Could not parse JSON. ..."` prefix, or an
+  # Absinthe-generated message). Neither is sent with a `text/html` content type,
+  # and therefore should not be rendered as HTML by the browser.
+  # sobelow_skip ["XSS.SendResp"]
   defp do_call(conn, %{interface: interface} = config) do
     config =
       config
@@ -387,6 +392,11 @@ defmodule Absinthe.Plug.GraphiQL do
   defp default_url(url), do: "'#{url}'"
 
   @spec rendered(String.t(), Plug.Conn.t()) :: Plug.Conn.t()
+  # This is the GraphiQL developer interface, intentionally served as text/html.
+  # Every request-derived value embedded in the page (the query, the variables, and
+  # the result) is passed through `js_escape/1` before interpolation into the script
+  # context, neutralizing markup/script breakout.
+  # sobelow_skip ["XSS.SendResp"]
   defp rendered(html, conn) do
     conn
     |> put_resp_content_type("text/html")

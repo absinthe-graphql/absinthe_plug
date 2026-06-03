@@ -596,6 +596,10 @@ defmodule Absinthe.Plug do
 
   @doc false
   @spec encode(Plug.Conn.t(), 200 | 400 | 405 | 500, map | list, map) :: Plug.Conn.t() | no_return
+  # `content_type` and the serializer `mod` are fixed configuration values on the Plug
+  # (supplied by the host application), not derived from request data. Likewise, the body
+  # is serialized by the host application via an explicit opt-in.
+  # sobelow_skip ["XSS.ContentType", "XSS.SendResp"]
   def encode(conn, status, body, %{
         serializer: %{module: mod, opts: opts},
         content_type: content_type
