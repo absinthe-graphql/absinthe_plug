@@ -120,7 +120,6 @@ defmodule Absinthe.Plug do
 
   @behaviour Plug
   import Plug.Conn
-  require Logger
 
   alias __MODULE__.Request
 
