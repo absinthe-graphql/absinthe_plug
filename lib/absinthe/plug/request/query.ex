@@ -117,8 +117,14 @@ defmodule Absinthe.Plug.Request.Query do
 
   defp decode_variables(variables, codec) when is_binary(variables) do
     case codec.module.decode(variables) do
-      {:ok, results} ->
+      {:ok, %{} = results} ->
         {:ok, results}
+
+      {:ok, nil} ->
+        {:ok, %{}}
+
+      {:ok, _not_a_map} ->
+        {:input_error, "Variables must be a map."}
 
       _ ->
         {:input_error, "The variable values could not be decoded"}
