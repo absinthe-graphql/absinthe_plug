@@ -46,6 +46,31 @@ defmodule Absinthe.PlugTest do
              |> Absinthe.Plug.call(opts)
   end
 
+  test "returns 400 with JSON-encoded variables list" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+    body = Jason.encode!(%{query: @variable_query, variables: Jason.encode!([%{id: 123}])})
+
+    assert %{status: 400, resp_body: resp_body} =
+             conn(:post, "/", body)
+             |> put_req_header("content-type", "application/json")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
+
+    assert resp_body =~ "Variables must be a map."
+  end
+
+  test "returns 400 with JSON-encoded variables content" do
+    opts = Absinthe.Plug.init(schema: TestSchema)
+
+    assert %{status: 400, resp_body: resp_body} =
+             conn(:post, ~s(/?variables=7), @variable_query)
+             |> put_req_header("content-type", "application/graphql")
+             |> plug_parser
+             |> Absinthe.Plug.call(opts)
+
+    assert resp_body =~ "Variables must be a map."
+  end
+
   @query """
   {
     item(id: "foo") {
