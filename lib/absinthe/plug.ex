@@ -319,6 +319,7 @@ defmodule Absinthe.Plug do
 
       {:error, {:http_method, text}, _} ->
         conn
+        |> put_resp_header("allow", "GET, POST")
         |> encode(405, error_result(text), config)
 
       {:error, error, _} when is_binary(error) ->

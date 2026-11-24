@@ -150,10 +150,13 @@ defmodule Absinthe.PlugTest do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
     assert %{status: 405, resp_body: resp_body} =
+             conn =
              conn(:get, "/", query: @mutation)
              |> put_req_header("content-type", "application/x-www-form-urlencoded")
              |> plug_parser
              |> Absinthe.Plug.call(opts)
+
+    assert Plug.Conn.get_resp_header(conn, "allow") == ["GET, POST"]
 
     message = "Can only perform a mutation from a POST request"
     assert %{"errors" => [%{"message" => ^message}]} = resp_body |> Jason.decode!()
