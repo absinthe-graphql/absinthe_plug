@@ -120,9 +120,10 @@ defmodule Absinthe.Plug do
 
   @behaviour Plug
   import Plug.Conn
-  require Logger
 
+  alias __MODULE__.ContentNegotiation
   alias __MODULE__.Request
+  alias __MODULE__.Response
 
   @init_options [
     :adapter,
@@ -297,10 +298,28 @@ defmodule Absinthe.Plug do
   Parses, validates, resolves, and executes the given Graphql Document
   """
   @spec call(Plug.Conn.t(), map) :: Plug.Conn.t() | no_return
+  def call(conn, %{graphql_over_http: true} = config) do
+    config = update_config(conn, config)
+
+    case ContentNegotiation.negotiate(get_req_header(conn, "accept")) do
+      {:ok, media_type} ->
+        {conn, result} = conn |> execute(config)
+        respond(conn, result, media_type, config)
+
+      :not_acceptable ->
+        conn
+        |> put_resp_header("accept", ContentNegotiation.supported_media_types())
+        |> encode_spec(406, error_result("Not Acceptable"), :json, config)
+    end
+  end
+
   def call(conn, config) do
     config = update_config(conn, config)
     {conn, result} = conn |> execute(config)
+    respond_legacy(conn, result, config)
+  end
 
+  defp respond_legacy(conn, result, config) do
     case result do
       {:input_error, _reason, msg} ->
         conn
@@ -331,6 +350,59 @@ defmodule Absinthe.Plug do
         conn
         |> encode(500, error_result(error), config)
     end
+  end
+
+  # GraphQL over HTTP specification response path (`graphql_over_http: true`).
+  defp respond(conn, result, media_type, config) do
+    case result do
+      {:input_error, reason, msg} ->
+        outcome = input_error_outcome(reason)
+
+        encode_spec(
+          conn,
+          Response.status(outcome, media_type),
+          error_result(msg),
+          media_type,
+          config
+        )
+
+      {:ok, %{"subscribed" => topic}} ->
+        conn
+        |> subscribe(topic, config)
+
+      {:ok, %{data: _} = result} ->
+        outcome = Response.classify(result)
+        encode_spec(conn, Response.status(outcome, media_type), result, media_type, config)
+
+      {:ok, %{errors: _} = result} ->
+        validation_errors = conn.private[:absinthe_validation_errors] || []
+        outcome = Response.classify(result, validation_errors)
+        encode_spec(conn, Response.status(outcome, media_type), result, media_type, config)
+
+      {:ok, result} when is_list(result) ->
+        encode_spec(conn, 200, result, media_type, config)
+
+      {:error, {:http_method, text}, _} ->
+        status = Response.status(:method_not_allowed, media_type)
+
+        conn
+        |> put_resp_header("allow", "GET, POST")
+        |> encode_spec(status, error_result(text), media_type, config)
+
+      {:error, error, _} when is_binary(error) ->
+        encode_spec(conn, 500, error_result(error), media_type, config)
+    end
+  end
+
+  # The `:input_error` reason atoms (see `Absinthe.Plug.Request`) differ from the
+  # `Absinthe.Plug.Response` outcome atoms only for JSON parse failures.
+  defp input_error_outcome(:json_parse), do: :json_parse_error
+  defp input_error_outcome(:not_well_formed), do: :not_well_formed
+
+  defp encode_spec(conn, status, body, media_type, config) do
+    conn
+    |> put_resp_content_type(ContentNegotiation.media_type_string(media_type))
+    |> send_resp(status, encode_json!(body, config))
   end
 
   @doc false
@@ -551,13 +623,27 @@ defmodule Absinthe.Plug do
 
     case Absinthe.Pipeline.run(document, pipeline) do
       {:ok, %{result: result} = bp, _} ->
-        conn = apply_before_send(conn, [bp], config)
+        conn =
+          conn
+          |> apply_before_send([bp], config)
+          |> put_validation_errors(bp, config)
+
         {conn, {:ok, result}}
 
       val ->
         {conn, val}
     end
   end
+
+  # Spec-mode (`graphql_over_http: true`) needs the blueprint's validation errors
+  # to tell a document parse failure (`400`) from a validation failure (`422`);
+  # the result map alone does not carry the phase. Stash them on the conn so the
+  # response path can classify. The legacy path never reads this.
+  defp put_validation_errors(conn, bp, %{graphql_over_http: true}) do
+    put_private(conn, :absinthe_validation_errors, bp.execution.validation_errors)
+  end
+
+  defp put_validation_errors(conn, _bp, _config), do: conn
 
   #
   # PIPELINE

@@ -43,6 +43,25 @@ defmodule Absinthe.Plug.ContentNegotiation do
     |> Enum.find_value(:not_acceptable, &match_media_type/1)
   end
 
+  @doc """
+  The bare media type string for a negotiated media type.
+
+  The charset is intentionally omitted; `Plug.Conn.put_resp_content_type/3`
+  appends `; charset=utf-8`.
+  """
+  @spec media_type_string(media_type) :: String.t()
+  def media_type_string(:graphql_response_json), do: @graphql_response_json
+  def media_type_string(:json), do: @json
+
+  @doc """
+  The value for the `accept` response header on a `406 Not Acceptable` response,
+  listing the media types this server can produce.
+  """
+  @spec supported_media_types() :: String.t()
+  def supported_media_types do
+    "#{@graphql_response_json}; charset=utf-8, #{@json}; charset=utf-8"
+  end
+
   @spec match_media_type(String.t()) :: {:ok, media_type} | nil
   defp match_media_type(entry) do
     [media_type | params] = String.split(entry, ";")
