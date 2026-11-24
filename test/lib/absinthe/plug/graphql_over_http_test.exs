@@ -161,6 +161,25 @@ defmodule Absinthe.Plug.GraphqlOverHttpTest do
     end
   end
 
+  describe "transport batching (outside the specification)" do
+    test "a batched request stays 200 even with a per-operation validation error" do
+      body =
+        Jason.encode!([
+          %{id: "1", query: @valid_query},
+          %{id: "2", query: @validation_error_query}
+        ])
+
+      conn =
+        conn(:post, "/", body)
+        |> put_req_header("content-type", @json)
+        |> put_req_header("accept", @graphql_response_json)
+        |> plug_parser()
+        |> Absinthe.Plug.call(opts())
+
+      assert conn.status == 200
+    end
+  end
+
   describe "with graphql_over_http disabled (legacy default)" do
     test "a validation failure is 200, not 422" do
       conn =

@@ -138,7 +138,9 @@ defmodule Absinthe.Plug do
   > non-JSON `:serializer` with `graphql_over_http: true`.
 
   Subscriptions are out of scope of the specification and are unaffected by this
-  option.
+  option. Transport batching is likewise outside the specification: a batched
+  request always responds with `200`, carrying any per-operation errors in the
+  response body.
 
   ## Included GraphQL Types
 
