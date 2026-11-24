@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Feature: Add opt-in support for the [GraphQL over HTTP specification](https://http-spec.graphql.org/) via `graphql_over_http: true`, enabling `Accept`-based content negotiation and specification status codes (`294`/`400`/`405`/`406`/`415`/`422`). Defaults to `false`, preserving existing behaviour.
+- Bug Fix: Set the `Allow` header on `405` responses.
+- Chore: Raise the minimum Elixir version to 1.17 and Plug to 1.15.
+
 ## v1.5.10
 
 - Bug Fix: [Fix XSS vulnerability in GraphiQL js_escape function](https://github.com/absinthe-graphql/absinthe_plug/pull/312)

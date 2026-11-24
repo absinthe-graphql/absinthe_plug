@@ -103,6 +103,43 @@ defmodule Absinthe.Plug do
   end
   ```
 
+  ## GraphQL over HTTP specification
+
+  By default `Absinthe.Plug` uses its historical response behaviour: every
+  processed request is answered with a `200` status and an `application/json`
+  body, regardless of whether the result contains errors.
+
+  Setting `graphql_over_http: true` opts in to the
+  [GraphQL over HTTP specification](https://http-spec.graphql.org/) for content
+  negotiation and response status codes:
+
+      plug Absinthe.Plug,
+        schema: MyAppWeb.Schema,
+        graphql_over_http: true
+
+  When enabled:
+
+  - The response media type is negotiated from the request's `Accept` header.
+    A client that lists `application/graphql-response+json` receives that media
+    type; `application/json`, `application/*`, `*/*`, and a missing `Accept`
+    header fall back to `application/json` for compatibility. If nothing
+    acceptable is offered the response is `406 Not Acceptable`.
+  - Status codes follow the specification: `200` for a successful result, `294`
+    for partial success (data *and* errors) under `application/graphql-response+json`
+    (and `200` under `application/json`), `400` for an unparseable JSON body or
+    GraphQL document, `422` for a not-well-formed request or a validation
+    failure, `405` for a mutation over `GET`, and `415` for an unsupported
+    request `Content-Type`.
+
+  > #### JSON only {: .info}
+  >
+  > Spec mode always encodes responses with the configured `:json_codec`; the
+  > `:serializer` and `:content_type` options are ignored. Do not combine a
+  > non-JSON `:serializer` with `graphql_over_http: true`.
+
+  Subscriptions are out of scope of the specification and are unaffected by this
+  option.
+
   ## Included GraphQL Types
 
   This package includes additional types for use in Absinthe GraphQL schema and
