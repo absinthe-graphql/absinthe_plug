@@ -66,9 +66,8 @@ defmodule Absinthe.Plug.ContentNegotiationTest do
     end
 
     test "application/json listed first wins even if graphql-response+json follows" do
-      assert ContentNegotiation.negotiate(
-               "application/json, application/graphql-response+json"
-             ) == {:ok, :json}
+      assert ContentNegotiation.negotiate("application/json, application/graphql-response+json") ==
+               {:ok, :json}
     end
 
     test "skips an unsupported type to reach a supported one" do

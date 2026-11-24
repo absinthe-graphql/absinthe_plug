@@ -22,6 +22,7 @@ defmodule Absinthe.Plug.ResponseTest do
 
     test "errors without data and a parse-phase error is :document_parse_error" do
       validation_errors = [%{phase: Absinthe.Phase.Parse, message: "syntax error"}]
+
       assert Response.classify(%{errors: [%{message: "x"}]}, validation_errors) ==
                :document_parse_error
     end
