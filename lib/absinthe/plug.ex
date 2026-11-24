@@ -303,8 +303,13 @@ defmodule Absinthe.Plug do
 
     case ContentNegotiation.negotiate(get_req_header(conn, "accept")) do
       {:ok, media_type} ->
-        {conn, result} = conn |> execute(config)
-        respond(conn, result, media_type, config)
+        if supported_request_content_type?(conn) do
+          {conn, result} = conn |> execute(config)
+          respond(conn, result, media_type, config)
+        else
+          status = Response.status(:unsupported_media_type, media_type)
+          encode_spec(conn, status, error_result("Unsupported media type"), media_type, config)
+        end
 
       :not_acceptable ->
         conn
@@ -398,6 +403,31 @@ defmodule Absinthe.Plug do
   # `Absinthe.Plug.Response` outcome atoms only for JSON parse failures.
   defp input_error_outcome(:json_parse), do: :json_parse_error
   defp input_error_outcome(:not_well_formed), do: :not_well_formed
+
+  # Request media types this plug can parse (via `Plug.Parsers` and
+  # `Absinthe.Plug.Parser`). A POST with any other `Content-Type` is a `415`
+  # under the GraphQL over HTTP specification.
+  @supported_request_media_types ~w(
+    application/json
+    application/graphql
+    application/x-www-form-urlencoded
+    multipart/form-data
+  )
+
+  defp supported_request_content_type?(%{method: "POST"} = conn) do
+    case get_req_header(conn, "content-type") do
+      [content_type | _] ->
+        media_type =
+          content_type |> String.split(";") |> hd() |> String.trim() |> String.downcase()
+
+        media_type in @supported_request_media_types
+
+      [] ->
+        false
+    end
+  end
+
+  defp supported_request_content_type?(_conn), do: true
 
   defp encode_spec(conn, status, body, media_type, config) do
     conn

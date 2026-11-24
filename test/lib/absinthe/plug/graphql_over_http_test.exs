@@ -31,6 +31,20 @@ defmodule Absinthe.Plug.GraphqlOverHttpTest do
 
   defp content_type(conn), do: conn |> get_resp_header("content-type") |> List.first()
 
+  # Mirrors the `pass: ["*/*"]` config recommended in the docs, which lets an
+  # unsupported Content-Type through to `Absinthe.Plug` rather than having
+  # `Plug.Parsers` raise its own 415.
+  defp lenient_parser(conn) do
+    opts =
+      Plug.Parsers.init(
+        parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+        pass: ["*/*"],
+        json_decoder: Jason
+      )
+
+    Plug.Parsers.call(conn, opts)
+  end
+
   describe "Accept: application/graphql-response+json" do
     test "a successful query is 200 with the graphql-response+json content type" do
       conn = post(@valid_query, @graphql_response_json)
@@ -101,6 +115,32 @@ defmodule Absinthe.Plug.GraphqlOverHttpTest do
       conn = post(@valid_query, "#{@graphql_response_json}, #{@json};q=0.9")
       assert conn.status == 200
       assert content_type(conn) == "#{@graphql_response_json}; charset=utf-8"
+    end
+  end
+
+  describe "request Content-Type" do
+    test "an unsupported POST Content-Type is 415" do
+      conn =
+        conn(:post, "/", "some body")
+        |> put_req_header("content-type", "text/plain")
+        |> put_req_header("accept", @graphql_response_json)
+        |> lenient_parser()
+        |> Absinthe.Plug.call(opts())
+
+      assert conn.status == 415
+      assert content_type(conn) == "#{@graphql_response_json}; charset=utf-8"
+    end
+
+    test "application/graphql (a supported alternate type) is not rejected" do
+      conn =
+        conn(:post, "/", @valid_query)
+        |> put_req_header("content-type", "application/graphql")
+        |> put_req_header("accept", @graphql_response_json)
+        |> plug_parser()
+        |> Absinthe.Plug.call(opts())
+
+      assert conn.status == 200
+      assert Jason.decode!(conn.resp_body) == %{"data" => %{"item" => %{"name" => "Foo"}}}
     end
   end
 
