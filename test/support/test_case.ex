@@ -2,7 +2,8 @@ defmodule Absinthe.Plug.TestCase do
   defmacro __using__(_) do
     quote do
       use ExUnit.Case, async: true
-      use Plug.Test
+      import Plug.Test
+      import Plug.Conn
 
       import unquote(__MODULE__)
     end
