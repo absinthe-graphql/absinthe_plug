@@ -141,7 +141,8 @@ defmodule Absinthe.Plug do
     :max_complexity,
     :token_limit,
     :transport_batch_payload_key,
-    :standard_sse
+    :standard_sse,
+    :graphql_over_http
   ]
   @raw_options [
     :analyze_complexity,
@@ -169,6 +170,7 @@ defmodule Absinthe.Plug do
   - `:token_limit` -- (Optional) Set a limit on the number of allowed parseable tokens in the GraphQL query. Queries with exceedingly high token counts can be expensive to parse. If a query's token count exceeds the set limit, an error will be returned during Absinthe parsing (default: `:infinity`).
   - `:transport_batch_payload_key` -- (Optional) Set whether or not to nest Transport Batch request results in a `payload` key. Older clients expected this key to be present, but newer clients have dropped this pattern. (default: `true`)
   - `:standard_sse` -- (Optional) Set whether or not to adopt SSE standard. Older clients don't support this key. (default: `false`)
+  - `:graphql_over_http` -- (Optional) Set whether to follow the [GraphQL over HTTP specification](https://http-spec.graphql.org/) for content negotiation and response status codes. When `false`, responses use the legacy behaviour (always `200`/`application/json` for processed requests). (default: `false`)
 
   """
   @type opts :: [
@@ -191,7 +193,8 @@ defmodule Absinthe.Plug do
           log_level: Logger.level(),
           pubsub: module | nil,
           transport_batch_payload_key: boolean,
-          standard_sse: boolean
+          standard_sse: boolean,
+          graphql_over_http: boolean
         ]
 
   @doc """
@@ -239,6 +242,7 @@ defmodule Absinthe.Plug do
 
     transport_batch_payload_key = Keyword.get(opts, :transport_batch_payload_key, true)
     standard_sse = Keyword.get(opts, :standard_sse, false)
+    graphql_over_http = Keyword.get(opts, :graphql_over_http, false)
 
     %{
       adapter: adapter,
@@ -255,7 +259,8 @@ defmodule Absinthe.Plug do
       pubsub: pubsub,
       before_send: before_send,
       transport_batch_payload_key: transport_batch_payload_key,
-      standard_sse: standard_sse
+      standard_sse: standard_sse,
+      graphql_over_http: graphql_over_http
     }
   end
 

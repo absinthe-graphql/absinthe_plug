@@ -14,6 +14,15 @@ defmodule Absinthe.PlugTest do
   }
   """
 
+  test "graphql_over_http defaults to false" do
+    assert %{graphql_over_http: false} = Absinthe.Plug.init(schema: TestSchema)
+  end
+
+  test "graphql_over_http can be enabled" do
+    assert %{graphql_over_http: true} =
+             Absinthe.Plug.init(schema: TestSchema, graphql_over_http: true)
+  end
+
   test "returns 400 with invalid variables syntax" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
