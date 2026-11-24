@@ -302,7 +302,7 @@ defmodule Absinthe.Plug do
     {conn, result} = conn |> execute(config)
 
     case result do
-      {:input_error, msg} ->
+      {:input_error, _reason, msg} ->
         conn
         |> encode(400, error_result(msg), config)
 
@@ -471,49 +471,52 @@ defmodule Absinthe.Plug do
   end
 
   @doc false
-  @spec ensure_processable(Request.t(), map) :: {:ok, Request.t()} | {:input_error, String.t()}
+  @spec ensure_processable(Request.t(), map) ::
+          {:ok, Request.t()} | {:input_error, Request.input_error_reason(), String.t()}
   def ensure_processable(request, config) do
     with {:ok, request} <- ensure_documents(request, config) do
       ensure_document_provider(request)
     end
   end
 
-  @spec ensure_documents(Request.t(), map) :: {:ok, Request.t()} | {:input_error, String.t()}
+  @spec ensure_documents(Request.t(), map) ::
+          {:ok, Request.t()} | {:input_error, Request.input_error_reason(), String.t()}
   defp ensure_documents(%{queries: []}, config) do
-    {:input_error, config.no_query_message}
+    {:input_error, :not_well_formed, config.no_query_message}
   end
 
   defp ensure_documents(%{queries: queries} = request, config) do
     Enum.reduce_while(queries, {:ok, request}, fn query, _acc ->
       query_status =
         case query do
-          {:input_error, error_msg} -> {:input_error, error_msg}
+          {:input_error, reason, error_msg} -> {:input_error, reason, error_msg}
           query -> ensure_document(query, config)
         end
 
       case query_status do
         {:ok, _query} -> {:cont, {:ok, request}}
-        {:input_error, error_msg} -> {:halt, {:input_error, error_msg}}
+        {:input_error, reason, error_msg} -> {:halt, {:input_error, reason, error_msg}}
       end
     end)
   end
 
   @spec ensure_document(Request.Query.t(), map) ::
-          {:ok, Request.Query.t()} | {:input_error, String.t()}
+          {:ok, Request.Query.t()} | {:input_error, Request.input_error_reason(), String.t()}
   defp ensure_document(%{document: nil}, config) do
-    {:input_error, config.no_query_message}
+    {:input_error, :not_well_formed, config.no_query_message}
   end
 
   defp ensure_document(%{document: _} = query, _) do
     {:ok, query}
   end
 
-  @spec ensure_document_provider(Request.t()) :: {:ok, Request.t()} | {:input_error, String.t()}
+  @spec ensure_document_provider(Request.t()) ::
+          {:ok, Request.t()} | {:input_error, Request.input_error_reason(), String.t()}
   defp ensure_document_provider(%{queries: queries} = request) do
     if Enum.all?(queries, &Map.has_key?(&1, :document_provider)) do
       {:ok, request}
     else
-      {:input_error, "No document provider found to handle this request"}
+      {:input_error, :not_well_formed, "No document provider found to handle this request"}
     end
   end
 

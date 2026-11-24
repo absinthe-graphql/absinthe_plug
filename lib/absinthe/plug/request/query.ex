@@ -99,7 +99,8 @@ defmodule Absinthe.Plug.Request.Query do
   # VARIABLES
   #
 
-  @spec extract_variables(map, map) :: {:ok, map} | {:input_error, String.t()}
+  @spec extract_variables(map, map) ::
+          {:ok, map} | {:input_error, :not_well_formed, String.t()}
   defp extract_variables(params, %{json_codec: json_codec}) do
     Map.get(params, "variables", "{}")
     |> decode_variables(json_codec)
@@ -109,7 +110,7 @@ defmodule Absinthe.Plug.Request.Query do
     {:error, "No json_codec available"}
   end
 
-  @spec decode_variables(any, map) :: {:ok, map} | {:input_error, String.t()}
+  @spec decode_variables(any, map) :: {:ok, map} | {:input_error, :not_well_formed, String.t()}
   defp decode_variables(%{} = variables, _), do: {:ok, variables}
   defp decode_variables("", _), do: {:ok, %{}}
   defp decode_variables("null", _), do: {:ok, %{}}
@@ -121,12 +122,12 @@ defmodule Absinthe.Plug.Request.Query do
         {:ok, results}
 
       _ ->
-        {:input_error, "The variable values could not be decoded"}
+        {:input_error, :not_well_formed, "The variable values could not be decoded"}
     end
   end
 
   defp decode_variables(_variables, _),
-    do: {:input_error, "Variables must be a map."}
+    do: {:input_error, :not_well_formed, "Variables must be a map."}
 
   #
   # DOCUMENT
