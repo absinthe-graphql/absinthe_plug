@@ -24,16 +24,15 @@ defmodule Absinthe.Plug.Response do
           | :unsupported_media_type
           | :not_acceptable
 
-  @doc """
-  Classify a GraphQL result map.
-
-  The second argument is the blueprint's `execution.validation_errors` list (used
-  only to distinguish a GraphQL document parse failure, which the spec maps to
-  `400`, from a validation failure, which maps to `422`). It defaults to `[]`.
-
-  Request-level failures that happen before execution (unparseable JSON bodies,
-  malformed requests) are classified by the caller, not here.
-  """
+  # Classify a GraphQL result map.
+  #
+  # The second argument is the blueprint's `execution.validation_errors` list
+  # (used only to distinguish a GraphQL document parse failure, which the spec
+  # maps to `400`, from a validation failure, which maps to `422`). It defaults
+  # to `[]`.
+  #
+  # Request-level failures that happen before execution (unparseable JSON bodies,
+  # malformed requests) are classified by the caller, not here.
   @spec classify(map, list) :: outcome
   def classify(result, validation_errors \\ []) do
     case result do
@@ -52,14 +51,12 @@ defmodule Absinthe.Plug.Response do
     end
   end
 
-  @doc """
-  Map an outcome and the negotiated response media type to an HTTP status code.
-
-  Partial success (data present alongside errors) is the only outcome whose
-  status depends on the media type: `294` under `application/graphql-response+json`
-  and `200` under `application/json`, since `294`'s "treat as 200" guarantee only
-  holds for clients that opted into the `graphql-response+json` media type.
-  """
+  # Map an outcome and the negotiated response media type to an HTTP status code.
+  #
+  # Partial success (data present alongside errors) is the only outcome whose
+  # status depends on the media type: `294` under `application/graphql-response+json`
+  # and `200` under `application/json`, since `294`'s "treat as 200" guarantee
+  # only holds for clients that opted into the `graphql-response+json` media type.
   @spec status(outcome, Absinthe.Plug.ContentNegotiation.media_type()) :: 200..599
   def status(outcome, media_type) do
     case {outcome, media_type} do
