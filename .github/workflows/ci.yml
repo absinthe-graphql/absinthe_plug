@@ -22,6 +22,7 @@ jobs:
           - "26"
           - "27"
           - "28"
+          - "29"
         # see https://hexdocs.pm/elixir/compatibility-and-deprecations.html#between-elixir-and-erlang-otp
         exclude:
           - elixir: 1.20
@@ -30,8 +31,14 @@ jobs:
             otp: 26
           - elixir: 1.19
             otp: 25
+          - elixir: 1.19
+            otp: 29
+          - elixir: 1.18
+            otp: 29
           - elixir: 1.17
             otp: 28
+          - elixir: 1.17
+            otp: 29
 
     steps:
       - name: Checkout
