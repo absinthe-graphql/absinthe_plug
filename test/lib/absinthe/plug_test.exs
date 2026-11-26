@@ -450,8 +450,12 @@ defmodule Absinthe.PlugTest do
   end
 
   test "Subscriptions over HTTP with Server Sent Events chunked response (non standard)" do
-    TestPubSub.start_link()
-    Absinthe.Subscription.start_link(TestPubSub)
+    start_supervised!(%{id: TestPubSub, start: {TestPubSub, :start_link, []}})
+
+    start_supervised!(%{
+      id: Absinthe.Subscription,
+      start: {Absinthe.Subscription, :start_link, [TestPubSub]}
+    })
 
     query = "subscription {update}"
     opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub, standard_sse: false)
@@ -483,8 +487,12 @@ defmodule Absinthe.PlugTest do
   end
 
   test "Subscriptions over HTTP with Server Sent Events chunked response (standard)" do
-    TestPubSub.start_link()
-    Absinthe.Subscription.start_link(TestPubSub)
+    start_supervised!(%{id: TestPubSub, start: {TestPubSub, :start_link, []}})
+
+    start_supervised!(%{
+      id: Absinthe.Subscription,
+      start: {Absinthe.Subscription, :start_link, [TestPubSub]}
+    })
 
     query = "subscription {update}"
     opts = Absinthe.Plug.init(schema: TestSchema, pubsub: TestPubSub, standard_sse: true)
