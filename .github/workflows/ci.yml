@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Elixir ${{matrix.elixir}} / OTP ${{matrix.otp}}
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        elixir:
+          - "1.17"
+          - "1.18"
+          - "1.19"
+          - "1.20"
+        otp:
+          - "25"
+          - "26"
+          - "27"
+          - "28"
+          - "29"
+        # see https://hexdocs.pm/elixir/compatibility-and-deprecations.html#between-elixir-and-erlang-otp
+        exclude:
+          - elixir: 1.20
+            otp: 25
+          - elixir: 1.20
+            otp: 26
+          - elixir: 1.19
+            otp: 25
+          - elixir: 1.19
+            otp: 29
+          - elixir: 1.18
+            otp: 29
+          - elixir: 1.17
+            otp: 28
+          - elixir: 1.17
+            otp: 29
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - name: Restore deps cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            deps
+            _build
+          key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}-${{ github.sha }}
+          restore-keys: |
+            deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+            deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
+
+      - name: Install package dependencies
+        run: mix deps.get
+
+      - name: Check Formatting
+        run: mix format --check-formatted
+
+      - name: Run unit tests
+        run: |
+          mix clean
+          mix test
+
+      - name: Cache/uncache PLTs
+        uses: actions/cache@v6
+        with:
+          path: |
+            priv/plts
+          key: "v2-${{ runner.os }}-\
+            erlang-${{ matrix.otp }}-\
+            elixir-${{ matrix.elixir }}-\
+            ${{ hashFiles('mix.lock') }}"
+
+      - name: Run Dialyzer
+        run: mix dialyzer
+
+  ci:
+    name: CI Success
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: always()
+    steps:
+      - name: Verify test matrix succeeded
+        run: |
+          if [ "${{ needs.test.result }}" != "success" ]; then
+            echo "One or more test matrix jobs failed."
+            exit 1
+          fi
+
+  release:
+    name: Create or Update Release PR
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: googleapis/release-please-action@v5
+        with:
+          token: ${{ secrets.REPO_GITHUB_TOKEN }}
+          release-type: elixir
