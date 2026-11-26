@@ -14,6 +14,15 @@ defmodule Absinthe.PlugTest do
   }
   """
 
+  test "graphql_over_http defaults to false" do
+    assert %{graphql_over_http: false} = Absinthe.Plug.init(schema: TestSchema)
+  end
+
+  test "graphql_over_http can be enabled" do
+    assert %{graphql_over_http: true} =
+             Absinthe.Plug.init(schema: TestSchema, graphql_over_http: true)
+  end
+
   test "returns 400 with invalid variables syntax" do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
@@ -150,10 +159,13 @@ defmodule Absinthe.PlugTest do
     opts = Absinthe.Plug.init(schema: TestSchema)
 
     assert %{status: 405, resp_body: resp_body} =
+             conn =
              conn(:get, "/", query: @mutation)
              |> put_req_header("content-type", "application/x-www-form-urlencoded")
              |> plug_parser
              |> Absinthe.Plug.call(opts)
+
+    assert Plug.Conn.get_resp_header(conn, "allow") == ["GET, POST"]
 
     message = "Can only perform a mutation from a POST request"
     assert %{"errors" => [%{"message" => ^message}]} = resp_body |> Jason.decode!()

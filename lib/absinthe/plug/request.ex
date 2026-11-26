@@ -22,7 +22,13 @@ defmodule Absinthe.Plug.Request do
           extra_keys: list(map())
         }
 
-  @spec parse(Plug.Conn.t(), map) :: {:ok, Plug.Conn.t(), t} | {:input_error, String.t()}
+  # Classifies an input error so spec-mode (`:graphql_over_http`) responses can
+  # distinguish an unparseable JSON body (`400`) from an otherwise not-well-formed
+  # request (`422`). The legacy response path ignores the reason and returns `400`.
+  @type input_error_reason :: :json_parse | :not_well_formed
+
+  @spec parse(Plug.Conn.t(), map) ::
+          {:ok, Plug.Conn.t(), t} | {:input_error, input_error_reason, String.t()}
   def parse(conn, config) do
     root_value =
       config
@@ -63,11 +69,12 @@ defmodule Absinthe.Plug.Request do
 
   defp valid_request?(%{"_json" => json}) when is_list(json) do
     Enum.all?(json, &is_map(&1)) ||
-      {:input_error, "Invalid request structure. Expecting a list of objects."}
+      {:input_error, :not_well_formed, "Invalid request structure. Expecting a list of objects."}
   end
 
   defp valid_request?(%{"_json" => json}) when is_binary(json) do
-    {:input_error, "Invalid request structure. Expecting an object or list of objects."}
+    {:input_error, :not_well_formed,
+     "Invalid request structure. Expecting an object or list of objects."}
   end
 
   defp valid_request?(_params), do: true
@@ -141,10 +148,11 @@ defmodule Absinthe.Plug.Request do
       {:ok, conn, body, %{params | "_json" => decoded}}
     else
       {:error, {:invalid, token, pos}} ->
-        {:input_error, "Could not parse JSON. Invalid token `#{token}` at position #{pos}"}
+        {:input_error, :json_parse,
+         "Could not parse JSON. Invalid token `#{token}` at position #{pos}"}
 
       {:error, %{__exception__: true} = exception} ->
-        {:input_error, "Could not parse JSON. #{Exception.message(exception)}"}
+        {:input_error, :json_parse, "Could not parse JSON. #{Exception.message(exception)}"}
 
       %{} ->
         {:ok, conn, body, conn.params}

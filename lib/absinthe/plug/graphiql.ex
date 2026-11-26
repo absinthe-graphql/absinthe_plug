@@ -261,7 +261,7 @@ defmodule Absinthe.Plug.GraphiQL do
         conn
         |> render_interface(interface, config)
 
-      {:input_error, msg} ->
+      {:input_error, _reason, msg} ->
         conn
         |> send_resp(400, msg)
 
